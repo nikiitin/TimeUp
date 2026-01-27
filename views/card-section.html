@@ -374,8 +374,16 @@
 
     let updateInterval = null;
     let isRunning = false;
-    let currentChecklists = [];
+    let cachedChecklists = [];  // Cache checklists to avoid API call on every refresh
     const t = TrelloPowerUp.iframe();
+
+    // Security: Escape HTML to prevent XSS
+    const escapeHtml = (str) => {
+      if (!str) return '';
+      return String(str).replace(/[<>&"']/g, c => ({
+        '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;'
+      })[c]);
+    };
 
     const handleDeleteEntry = async (entryId) => {
       if (!confirm('Delete this time entry?')) return;
@@ -476,11 +484,17 @@
       const itemData = timerData.checklistItems?.[itemId];
       const isItemRunning = itemData?.state === TIMER_STATE.RUNNING;
 
+      let result;
       if (isItemRunning) {
-        await TimerService.stopItemTimer(t, itemId);
+        result = await TimerService.stopItemTimer(t, itemId);
       } else {
-        await TimerService.startItemTimer(t, itemId);
-        startLoop();
+        result = await TimerService.startItemTimer(t, itemId);
+        if (result.success) startLoop();
+      }
+
+      if (!result.success) {
+        alert(`Timer operation failed: ${result.error}`);
+        return;
       }
       await refresh();
     };
@@ -488,7 +502,11 @@
     const handleItemEstimate = async (itemId, value) => {
       const ms = parseTimeString(value);
       if (ms) {
-        await TimerService.setItemEstimate(t, itemId, ms);
+        const result = await TimerService.setItemEstimate(t, itemId, ms);
+        if (!result.success) {
+          alert(`Failed to set estimate: ${result.error}`);
+          return;
+        }
         await refresh();
       } else if (value && value.trim()) {
         alert('Invalid time format. Please use a format like "1h 30m", "90m", or "1:30".');
@@ -509,7 +527,7 @@
         if (!checklist.checkItems || checklist.checkItems.length === 0) continue;
 
         html += `<div class="checklist">
-          <div class="checklist__title">${checklist.name}</div>`;
+          <div class="checklist__title">${escapeHtml(checklist.name)}</div>`;
 
         for (const item of checklist.checkItems) {
           const itemData = checklistItems[item.id] || {};
@@ -523,16 +541,17 @@
           const nameClass = isOver ? 'checklist-item__name checklist-item__name--over' : 'checklist-item__name';
           const timeClass = isOver ? 'checklist-item__time checklist-item__time--over' : 'checklist-item__time';
           const btnClass = itemIsRunning ? 'btn-item-toggle btn-item-toggle--running' : 'btn-item-toggle';
+          const escapedName = escapeHtml(item.name);
 
-          html += `<div class="${itemClass}" data-item-id="${item.id}">
-            <button class="${btnClass}" data-item-id="${item.id}" title="${itemIsRunning ? 'Stop' : 'Start'}">
+          html += `<div class="${itemClass}" data-item-id="${escapeHtml(item.id)}">
+            <button class="${btnClass}" data-item-id="${escapeHtml(item.id)}" title="${itemIsRunning ? 'Stop' : 'Start'}">
               ${itemIsRunning
                 ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
                 : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}
             </button>
-            <span class="${nameClass}" title="${item.name}">${item.name}</span>
+            <span class="${nameClass}" title="${escapedName}">${escapedName}</span>
             <span class="${timeClass}">${formatDuration(itemTime, { compact: true, showSeconds: false })}</span>
-            <input type="text" class="checklist-item__estimate-input" data-item-id="${item.id}"
+            <input type="text" class="checklist-item__estimate-input" data-item-id="${escapeHtml(item.id)}"
               placeholder="${itemEstimate > 0 ? formatDuration(itemEstimate, { compact: true, showSeconds: false }) : 'Est'}"
               title="Set estimate (e.g. 30m, 1h)">
           </div>`;
@@ -558,11 +577,17 @@
       });
     };
 
+    // Lightweight refresh - only updates timer state (called every second)
     const refresh = async () => {
       const timerData = await StorageService.getTimerData(t);
-      currentChecklists = await ChecklistService.getChecklists(t);
       updateUI(timerData);
-      renderChecklists(timerData, currentChecklists);
+      renderChecklists(timerData, cachedChecklists);  // Use cached checklists
+    };
+
+    // Full refresh - includes fetching checklists (called on user actions)
+    const fullRefresh = async () => {
+      cachedChecklists = await ChecklistService.getChecklists(t);
+      await refresh();
     };
 
     const startLoop = () => {
@@ -612,7 +637,7 @@
     });
 
     t.render(async () => {
-      await refresh();
+      await fullRefresh();  // Initial load - fetch checklists
       const timerData = await StorageService.getTimerData(t);
       if (timerData.state === TIMER_STATE.RUNNING) {
         startLoop();
