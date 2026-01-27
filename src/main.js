@@ -117,12 +117,12 @@ TrelloPowerUp.initialize({
     // Embed timer section directly inside the card
     'card-back-section': async (t) => {
         return {
-            title: '⏱️ Time Tracker',
+            title: 'Time Tracker',
             icon: ICON_TIMER,
             content: {
                 type: 'iframe',
-                url: t.signUrl('./views/card-section.html?v=2'),
-                height: 200,
+                url: t.signUrl('./views/card-section.html?v=3'),
+                height: 180,
             },
         };
     },

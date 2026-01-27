@@ -9,93 +9,106 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 14px;
-      color: #172b4d;
-      padding: 4px 0;
+      color: #b6c2cf;
+      background: transparent;
     }
     .timer-section {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
     }
     .timer-header {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
     .btn-toggle {
-      width: 36px;
-      height: 36px;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 16px;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: background-color 0.15s, transform 0.1s;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.1);
+      color: #b6c2cf;
+      transition: background-color 0.1s;
     }
-    .btn-toggle:hover { transform: scale(1.05); }
-    .btn-toggle:active { transform: scale(0.95); }
-    .btn-toggle--start {
-      background: #61bd4f;
-      color: white;
+    .btn-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
     }
-    .btn-toggle--start:hover { background: #519839; }
-    .btn-toggle--stop {
-      background: #eb5a46;
-      color: white;
+    .btn-toggle--running {
+      background: rgba(235, 90, 70, 0.3);
+      color: #f87168;
     }
-    .btn-toggle--stop:hover { background: #cf513d; }
+    .btn-toggle--running:hover {
+      background: rgba(235, 90, 70, 0.4);
+    }
+    .btn-toggle svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
     .timer-display {
-      font-family: 'SFMono-Regular', Consolas, monospace;
-      font-size: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 16px;
       font-weight: 600;
+      font-variant-numeric: tabular-nums;
     }
-    .timer-display--running { color: #61bd4f; }
-    .timer-display--idle { color: #5e6c84; }
+    .timer-display--running { color: #4bce97; }
+    .timer-display--idle { color: #8c9bab; }
     .timer-total {
       font-size: 12px;
-      color: #5e6c84;
+      color: #8c9bab;
       margin-left: auto;
     }
     .entries-list {
-      max-height: 120px;
+      max-height: 100px;
       overflow-y: auto;
-      border: 1px solid #dfe1e6;
+      background: rgba(255, 255, 255, 0.04);
       border-radius: 3px;
-      background: #fafbfc;
     }
-    .entries-list:empty {
-      display: none;
+    .entries-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    .entries-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
     }
     .entry {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 6px 10px;
-      font-size: 12px;
-      border-bottom: 1px solid #ebecf0;
+      padding: 8px 12px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
     .entry:last-child { border-bottom: none; }
-    .entry__time {
-      color: #5e6c84;
-    }
+    .entry__time { color: #8c9bab; }
     .entry__duration {
       font-weight: 500;
-      font-family: 'SFMono-Regular', Consolas, monospace;
+      color: #b6c2cf;
+      font-variant-numeric: tabular-nums;
     }
     .empty-msg {
-      padding: 12px;
+      padding: 16px;
       text-align: center;
-      color: #97a0af;
-      font-size: 12px;
+      color: #626f86;
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
   <div class="timer-section">
     <div class="timer-header">
-      <button class="btn-toggle btn-toggle--start" id="btn-toggle" title="Start Timer">▶</button>
+      <button class="btn-toggle" id="btn-toggle" title="Start Timer">
+        <svg id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="icon-stop" viewBox="0 0 24 24" hidden><path d="M6 6h12v12H6z"/></svg>
+        <span id="btn-text">Start</span>
+      </button>
       <div class="timer-display timer-display--idle" id="display">00:00:00</div>
       <div class="timer-total" id="total"></div>
     </div>
@@ -111,6 +124,9 @@
 
     const display = document.getElementById('display');
     const btnToggle = document.getElementById('btn-toggle');
+    const btnText = document.getElementById('btn-text');
+    const iconPlay = document.getElementById('icon-play');
+    const iconStop = document.getElementById('icon-stop');
     const entriesEl = document.getElementById('entries');
     const totalEl = document.getElementById('total');
 
@@ -125,7 +141,6 @@
         return;
       }
 
-      // Show most recent first
       const sorted = [...entries].reverse();
       entriesEl.innerHTML = sorted.map(entry => `
         <div class="entry">
@@ -145,9 +160,11 @@
       display.textContent = formatDuration(elapsed);
       display.className = `timer-display timer-display--${isRunning ? 'running' : 'idle'}`;
 
-      btnToggle.textContent = isRunning ? '⏹' : '▶';
-      btnToggle.className = `btn-toggle btn-toggle--${isRunning ? 'stop' : 'start'}`;
+      btnText.textContent = isRunning ? 'Stop' : 'Start';
+      btnToggle.className = `btn-toggle${isRunning ? ' btn-toggle--running' : ''}`;
       btnToggle.title = isRunning ? 'Stop Timer' : 'Start Timer';
+      iconPlay.hidden = isRunning;
+      iconStop.hidden = !isRunning;
 
       renderEntries(timerData.entries);
     };
