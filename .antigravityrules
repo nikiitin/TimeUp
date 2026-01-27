@@ -1,4 +1,4 @@
-# TimingUp - Trello Power-Up for Time Tracking
+# TimeUp - Trello Power-Up for Time Tracking
 # Agent Rules of Engagement
 
 ## Project Overview
@@ -219,7 +219,7 @@ Always use CSS custom properties aligned with Trello's Atlas Design System:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TimingUp - [View Name]</title>
+  <title>TimeUp - [View Name]</title>
   <link rel="stylesheet" href="../styles/variables.css">
   <link rel="stylesheet" href="../styles/base.css">
   <link rel="stylesheet" href="../styles/components.css">

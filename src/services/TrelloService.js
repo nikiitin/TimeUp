@@ -1,5 +1,5 @@
 /**
- * TimingUp - Trello Service
+ * TimeUp - Trello Service
  * Wrapper for Trello Power-Up API calls
  */
 

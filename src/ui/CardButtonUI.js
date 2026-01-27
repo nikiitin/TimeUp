@@ -1,5 +1,5 @@
 /**
- * TimingUp - Card Button UI
+ * TimeUp - Card Button UI
  * DOM manipulation for the timer popup view
  */
 

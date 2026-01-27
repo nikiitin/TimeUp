@@ -1,5 +1,5 @@
 /**
- * TimingUp - Input Validators
+ * TimeUp - Input Validators
  * Pure validation functions
  */
 

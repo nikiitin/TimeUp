@@ -1,5 +1,5 @@
 /**
- * TimingUp - Storage Service
+ * TimeUp - Storage Service
  * Abstraction layer over Trello's t.set() and t.get() API
  * Provides consistent error handling and data validation
  */

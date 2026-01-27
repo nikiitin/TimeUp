@@ -1,5 +1,5 @@
 /**
- * TimingUp - Timer Service
+ * TimeUp - Timer Service
  * Business logic for timer operations
  */
 

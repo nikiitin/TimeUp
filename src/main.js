@@ -1,5 +1,5 @@
 /**
- * TimingUp - Main Power-Up Initialization
+ * TimeUp - Main Power-Up Initialization
  * Registers all Power-Up capabilities with Trello
  */
 

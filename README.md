@@ -1,4 +1,4 @@
-# TimingUp
+# TimeUp
 
 A Trello Power-Up for time tracking, built with pure HTML5, CSS3, and Vanilla JavaScript.
 

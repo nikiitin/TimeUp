@@ -1,5 +1,5 @@
 /**
- * TimingUp - Time Formatting Utilities
+ * TimeUp - Time Formatting Utilities
  * Pure functions for formatting time values
  */
 

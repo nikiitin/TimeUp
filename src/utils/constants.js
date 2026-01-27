@@ -1,5 +1,5 @@
 /**
- * TimingUp - Application Constants
+ * TimeUp - Application Constants
  * Central location for all app-wide constant values
  */
 
@@ -56,9 +56,9 @@ export const TIME = {
  * @readonly
  */
 export const APP_INFO = {
-    NAME: 'TimingUp',
+    NAME: 'TimeUp',
     VERSION: '1.0.0',
-    POWER_UP_NAME: 'TimingUp - Time Tracker',
+    POWER_UP_NAME: 'TimeUp - Time Tracker',
 };
 
 /**
