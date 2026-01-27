@@ -210,4 +210,114 @@ describe('TimerService', () => {
             expect(result.error).toBe('Entry not found');
         });
     });
+
+    describe('startItemTimer', () => {
+        test('starts item timer when idle', async () => {
+            setTimerData({ ...DEFAULTS.TIMER_DATA });
+
+            const result = await TimerService.startItemTimer(mockT, 'item1');
+
+            expect(result.success).toBe(true);
+            expect(result.data.checklistItems.item1.state).toBe(TIMER_STATE.RUNNING);
+        });
+
+        test('fails when card timer is running', async () => {
+            setTimerData({
+                ...DEFAULTS.TIMER_DATA,
+                state: TIMER_STATE.RUNNING,
+                currentEntry: { startTime: Date.now() },
+            });
+
+            const result = await TimerService.startItemTimer(mockT, 'item1');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Card timer already running');
+        });
+
+        test('fails when another item timer is running', async () => {
+            setTimerData({
+                ...DEFAULTS.TIMER_DATA,
+                checklistItems: {
+                    item1: { state: TIMER_STATE.RUNNING, currentEntry: { startTime: Date.now() } },
+                },
+            });
+
+            const result = await TimerService.startItemTimer(mockT, 'item2');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Item already running');
+        });
+    });
+
+    describe('stopItemTimer', () => {
+        test('stops item timer and creates entry', async () => {
+            setTimerData({
+                ...DEFAULTS.TIMER_DATA,
+                checklistItems: {
+                    item1: {
+                        entries: [],
+                        state: TIMER_STATE.RUNNING,
+                        currentEntry: { startTime: Date.now() - 60000, pausedDuration: 0 },
+                    },
+                },
+            });
+
+            const result = await TimerService.stopItemTimer(mockT, 'item1');
+
+            expect(result.success).toBe(true);
+            expect(result.data.checklistItems.item1.state).toBe(TIMER_STATE.IDLE);
+            expect(result.data.checklistItems.item1.entries).toHaveLength(1);
+            expect(result.entry.duration).toBeGreaterThan(0);
+        });
+
+        test('fails when no timer running for item', async () => {
+            setTimerData({ ...DEFAULTS.TIMER_DATA });
+
+            const result = await TimerService.stopItemTimer(mockT, 'item1');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('No active timer for this item');
+        });
+    });
+
+    describe('setItemEstimate', () => {
+        test('sets estimate for item', async () => {
+            setTimerData({ ...DEFAULTS.TIMER_DATA });
+
+            const result = await TimerService.setItemEstimate(mockT, 'item1', 3600000);
+
+            expect(result.success).toBe(true);
+            expect(result.data.checklistItems.item1.estimatedTime).toBe(3600000);
+        });
+
+        test('clears estimate when null', async () => {
+            setTimerData({
+                ...DEFAULTS.TIMER_DATA,
+                checklistItems: { item1: { estimatedTime: 5000 } },
+            });
+
+            const result = await TimerService.setItemEstimate(mockT, 'item1', null);
+
+            expect(result.success).toBe(true);
+            expect(result.data.checklistItems.item1.estimatedTime).toBeNull();
+        });
+    });
+
+    describe('getItemCurrentElapsed', () => {
+        test('returns 0 for no current entry', () => {
+            expect(TimerService.getItemCurrentElapsed(null)).toBe(0);
+            expect(TimerService.getItemCurrentElapsed({})).toBe(0);
+        });
+
+        test('calculates elapsed for running item', () => {
+            const itemData = {
+                state: TIMER_STATE.RUNNING,
+                currentEntry: { startTime: Date.now() - 5000, pausedDuration: 0 },
+            };
+
+            const elapsed = TimerService.getItemCurrentElapsed(itemData);
+            expect(elapsed).toBeGreaterThanOrEqual(5000);
+            expect(elapsed).toBeLessThan(6000);
+        });
+    });
 });
