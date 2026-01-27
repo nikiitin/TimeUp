@@ -60,20 +60,87 @@
     }
     .timer-display--running { color: #4bce97; }
     .timer-display--idle { color: #8c9bab; }
-    .timer-total {
+    .timer-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      font-size: 12px;
+    }
+    .timer-total { color: #8c9bab; }
+    .timer-remaining { color: #579dff; }
+    .timer-remaining--warning { color: #f5cd47; }
+    .timer-remaining--over { color: #f87168; }
+
+    /* Estimate row */
+    .estimate-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .estimate-label {
       font-size: 12px;
       color: #8c9bab;
-      margin-left: auto;
     }
+    .estimate-input {
+      flex: 1;
+      max-width: 100px;
+      padding: 4px 8px;
+      font-size: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #b6c2cf;
+    }
+    .estimate-input:focus {
+      outline: none;
+      border-color: #579dff;
+    }
+    .estimate-input::placeholder { color: #626f86; }
+    .btn-small {
+      padding: 4px 8px;
+      font-size: 12px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      background: rgba(87, 157, 255, 0.2);
+      color: #579dff;
+      transition: background-color 0.1s;
+    }
+    .btn-small:hover { background: rgba(87, 157, 255, 0.3); }
+    .btn-small--clear {
+      background: rgba(255, 255, 255, 0.1);
+      color: #8c9bab;
+    }
+    .btn-small--clear:hover { background: rgba(255, 255, 255, 0.15); }
+    .estimate-display {
+      font-size: 12px;
+      color: #8c9bab;
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar__fill {
+      height: 100%;
+      background: #579dff;
+      transition: width 0.3s ease;
+    }
+    .progress-bar__fill--warning { background: #f5cd47; }
+    .progress-bar__fill--over { background: #f87168; }
+
+    /* Entries list */
     .entries-list {
       max-height: 100px;
       overflow-y: auto;
       background: rgba(255, 255, 255, 0.04);
       border-radius: 3px;
     }
-    .entries-list::-webkit-scrollbar {
-      width: 6px;
-    }
+    .entries-list::-webkit-scrollbar { width: 6px; }
     .entries-list::-webkit-scrollbar-thumb {
       background: rgba(255, 255, 255, 0.2);
       border-radius: 3px;
@@ -88,10 +155,41 @@
     }
     .entry:last-child { border-bottom: none; }
     .entry__time { color: #8c9bab; }
+    .entry__right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     .entry__duration {
       font-weight: 500;
       color: #b6c2cf;
       font-variant-numeric: tabular-nums;
+    }
+    .btn-delete {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      background: transparent;
+      color: #626f86;
+      font-size: 14px;
+      line-height: 1;
+      transition: all 0.15s;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .entry:hover .btn-delete {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .btn-delete:hover {
+      background: rgba(248, 113, 104, 0.2);
+      color: #f87168;
     }
     .empty-msg {
       padding: 16px;
@@ -110,15 +208,31 @@
         <span id="btn-text">Start</span>
       </button>
       <div class="timer-display timer-display--idle" id="display">00:00:00</div>
-      <div class="timer-total" id="total"></div>
+      <div class="timer-info">
+        <span class="timer-total" id="total"></span>
+        <span class="timer-remaining" id="remaining" hidden></span>
+      </div>
     </div>
+
+    <div class="estimate-row" id="estimate-row">
+      <span class="estimate-label">Estimate:</span>
+      <input type="text" class="estimate-input" id="estimate-input" placeholder="e.g. 2h 30m">
+      <button class="btn-small" id="btn-set-estimate">Set</button>
+      <span class="estimate-display" id="estimate-display" hidden></span>
+      <button class="btn-small btn-small--clear" id="btn-clear-estimate" hidden>Clear</button>
+    </div>
+
+    <div class="progress-bar" id="progress-bar" hidden>
+      <div class="progress-bar__fill" id="progress-fill"></div>
+    </div>
+
     <div class="entries-list" id="entries"></div>
   </div>
 
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <script type="module">
     import { TIMER_STATE } from '../src/utils/constants.js';
-    import { formatDuration, formatTimestamp, sumDurations } from '../src/utils/formatTime.js';
+    import { formatDuration, formatTimestamp, sumDurations, getRemainingTime, parseTimeString } from '../src/utils/formatTime.js';
     import StorageService from '../src/services/StorageService.js';
     import TimerService from '../src/services/TimerService.js';
 
@@ -129,10 +243,23 @@
     const iconStop = document.getElementById('icon-stop');
     const entriesEl = document.getElementById('entries');
     const totalEl = document.getElementById('total');
+    const remainingEl = document.getElementById('remaining');
+    const estimateInput = document.getElementById('estimate-input');
+    const btnSetEstimate = document.getElementById('btn-set-estimate');
+    const btnClearEstimate = document.getElementById('btn-clear-estimate');
+    const estimateDisplay = document.getElementById('estimate-display');
+    const progressBar = document.getElementById('progress-bar');
+    const progressFill = document.getElementById('progress-fill');
 
     let updateInterval = null;
     let isRunning = false;
     const t = TrelloPowerUp.iframe();
+
+    const handleDeleteEntry = async (entryId) => {
+      if (!confirm('Delete this time entry?')) return;
+      await TimerService.deleteEntry(t, entryId);
+      await refresh();
+    };
 
     const renderEntries = (entries) => {
       if (!entries || entries.length === 0) {
@@ -145,12 +272,63 @@
       entriesEl.innerHTML = sorted.map(entry => `
         <div class="entry">
           <span class="entry__time">${formatTimestamp(entry.startTime, { showDate: true })}</span>
-          <span class="entry__duration">${formatDuration(entry.duration, { compact: true })}</span>
+          <div class="entry__right">
+            <span class="entry__duration">${formatDuration(entry.duration, { compact: true })}</span>
+            <button class="btn-delete" data-id="${entry.id}" title="Delete entry">×</button>
+          </div>
         </div>
       `).join('');
 
+      // Attach delete handlers
+      entriesEl.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', () => handleDeleteEntry(btn.dataset.id));
+      });
+
       const total = sumDurations(entries);
       totalEl.textContent = `Total: ${formatDuration(total, { compact: true, showSeconds: false })}`;
+    };
+
+    const updateEstimateUI = (timerData) => {
+      const hasEstimate = timerData.estimatedTime && timerData.estimatedTime > 0;
+
+      if (hasEstimate) {
+        estimateInput.hidden = true;
+        btnSetEstimate.hidden = true;
+        estimateDisplay.hidden = false;
+        estimateDisplay.textContent = formatDuration(timerData.estimatedTime, { compact: true, showSeconds: false });
+        btnClearEstimate.hidden = false;
+
+        // Show progress bar and remaining time
+        const remainingInfo = getRemainingTime(timerData.entries, timerData.estimatedTime);
+        if (remainingInfo) {
+          progressBar.hidden = false;
+          progressFill.style.width = `${remainingInfo.percentComplete}%`;
+
+          // Update colors based on progress
+          progressFill.className = 'progress-bar__fill';
+          remainingEl.className = 'timer-remaining';
+
+          if (remainingInfo.isOverBudget) {
+            progressFill.classList.add('progress-bar__fill--over');
+            remainingEl.classList.add('timer-remaining--over');
+            remainingEl.textContent = `${formatDuration(Math.abs(remainingInfo.remaining), { compact: true, showSeconds: false })} over`;
+          } else if (remainingInfo.percentComplete >= 80) {
+            progressFill.classList.add('progress-bar__fill--warning');
+            remainingEl.classList.add('timer-remaining--warning');
+            remainingEl.textContent = `${formatDuration(remainingInfo.remaining, { compact: true, showSeconds: false })} left`;
+          } else {
+            remainingEl.textContent = `${formatDuration(remainingInfo.remaining, { compact: true, showSeconds: false })} left`;
+          }
+          remainingEl.hidden = false;
+        }
+      } else {
+        estimateInput.hidden = false;
+        btnSetEstimate.hidden = false;
+        estimateDisplay.hidden = true;
+        btnClearEstimate.hidden = true;
+        progressBar.hidden = true;
+        remainingEl.hidden = true;
+      }
     };
 
     const updateUI = (timerData) => {
@@ -167,6 +345,7 @@
       iconStop.hidden = !isRunning;
 
       renderEntries(timerData.entries);
+      updateEstimateUI(timerData);
     };
 
     const refresh = async () => {
@@ -194,6 +373,29 @@
         await TimerService.startTimer(t);
         startLoop();
       }
+      await refresh();
+    });
+
+    btnSetEstimate.addEventListener('click', async () => {
+      const value = estimateInput.value.trim();
+      const ms = parseTimeString(value);
+      if (ms) {
+        await TimerService.setEstimate(t, ms);
+        estimateInput.value = '';
+        await refresh();
+      } else {
+        alert('Invalid time format. Try: 2h 30m, 1.5h, or 90 (minutes)');
+      }
+    });
+
+    estimateInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        btnSetEstimate.click();
+      }
+    });
+
+    btnClearEstimate.addEventListener('click', async () => {
+      await TimerService.setEstimate(t, null);
       await refresh();
     });
 

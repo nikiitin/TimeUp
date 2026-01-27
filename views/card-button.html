@@ -9,6 +9,103 @@
     <link rel="stylesheet" href="../styles/base.css">
     <link rel="stylesheet" href="../styles/components.css">
     <link rel="stylesheet" href="../styles/views/card-button.css">
+    <style>
+        .timer__entry {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .timer__entry-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .timer__entry-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-delete-entry {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--color-text-muted, #626f86);
+            font-size: 16px;
+            line-height: 1;
+            transition: all 0.15s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .timer__entry:hover .btn-delete-entry {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .btn-delete-entry:hover {
+            background: rgba(248, 113, 104, 0.2);
+            color: #f87168;
+        }
+        .estimate-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+            margin-bottom: 8px;
+        }
+        .estimate-label {
+            font-size: 12px;
+            color: var(--color-text-muted, #8c9bab);
+        }
+        .estimate-input {
+            flex: 1;
+            max-width: 100px;
+            padding: 4px 8px;
+            font-size: 12px;
+            border: 1px solid var(--color-border, rgba(255, 255, 255, 0.2));
+            border-radius: 3px;
+            background: var(--color-bg-input, rgba(255, 255, 255, 0.08));
+            color: var(--color-text, #b6c2cf);
+        }
+        .estimate-input:focus {
+            outline: none;
+            border-color: var(--color-primary, #579dff);
+        }
+        .estimate-display {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-text, #b6c2cf);
+        }
+        .btn-estimate {
+            padding: 4px 8px;
+            font-size: 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background: rgba(87, 157, 255, 0.2);
+            color: #579dff;
+            transition: background-color 0.1s;
+        }
+        .btn-estimate:hover { background: rgba(87, 157, 255, 0.3); }
+        .btn-estimate--clear {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--color-text-muted, #8c9bab);
+        }
+        .btn-estimate--clear:hover { background: rgba(255, 255, 255, 0.15); }
+        .remaining-text {
+            font-size: 12px;
+            margin-left: auto;
+        }
+        .remaining-text--normal { color: #579dff; }
+        .remaining-text--warning { color: #f5cd47; }
+        .remaining-text--over { color: #f87168; }
+    </style>
 </head>
 
 <body>
@@ -19,6 +116,16 @@
                 <button class="btn btn--success" id="btn-start">Start</button>
                 <button class="btn btn--danger" id="btn-stop" hidden>Stop</button>
             </div>
+
+            <div class="estimate-section" id="estimate-section">
+                <span class="estimate-label">Estimate:</span>
+                <input type="text" class="estimate-input" id="estimate-input" placeholder="e.g. 2h 30m">
+                <button class="btn-estimate" id="btn-set-estimate">Set</button>
+                <span class="estimate-display" id="estimate-display" hidden></span>
+                <button class="btn-estimate btn-estimate--clear" id="btn-clear-estimate" hidden>Clear</button>
+                <span class="remaining-text" id="remaining-text" hidden></span>
+            </div>
+
             <div class="timer__entries" id="entries-list"></div>
             <div class="timer__total" id="total-time" hidden>
                 <span>Total:</span>

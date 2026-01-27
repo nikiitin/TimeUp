@@ -70,6 +70,7 @@ export const DEFAULTS = {
         entries: [],
         state: TIMER_STATE.IDLE,
         currentEntry: null,
+        estimatedTime: null,  // Estimated time in milliseconds
     },
     BOARD_SETTINGS: {
         hourlyRate: null,
