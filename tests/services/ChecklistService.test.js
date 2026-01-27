@@ -3,6 +3,7 @@
  */
 
 import {
+    getChecklists,
     getAllCheckItems,
     calculateChecklistEstimate,
     getEffectiveEstimate,
@@ -11,8 +12,60 @@ import {
     getRunningCheckItem,
 } from '../../src/services/ChecklistService.js';
 import { TIMER_STATE } from '../../src/utils/constants.js';
+import { jest } from '@jest/globals';
+import { createTrelloMock, createErrorMock } from '../mocks/trelloMock.js';
 
 describe('ChecklistService', () => {
+    let mockT;
+
+    beforeEach(() => {
+        mockT = createTrelloMock();
+        jest.clearAllMocks();
+    });
+
+    describe('getChecklists', () => {
+        test('returns checklists from card', async () => {
+            const mockChecklists = [
+                {
+                    id: 'cl1',
+                    name: 'Checklist 1',
+                    checkItems: [
+                        { id: 'item1', name: 'Item 1', state: 'incomplete' },
+                    ],
+                },
+                {
+                    id: 'cl2',
+                    name: 'Checklist 2',
+                    checkItems: [
+                        { id: 'item2', name: 'Item 2', state: 'complete' },
+                    ],
+                },
+            ];
+
+            mockT.card = jest.fn(async () => ({
+                checklists: mockChecklists,
+            }));
+
+            const result = await getChecklists(mockT);
+            expect(result).toEqual(mockChecklists);
+            expect(mockT.card).toHaveBeenCalledWith('checklists');
+        });
+
+        test('returns empty array when checklists property is undefined', async () => {
+            mockT.card = jest.fn(async () => ({}));
+
+            const result = await getChecklists(mockT);
+            expect(result).toEqual([]);
+        });
+
+        test('returns empty array on error', async () => {
+            mockT.card = createErrorMock('Failed to fetch card');
+
+            const result = await getChecklists(mockT);
+            expect(result).toEqual([]);
+        });
+    });
+
     describe('getAllCheckItems', () => {
         test('returns empty array for invalid input', () => {
             expect(getAllCheckItems(null)).toEqual([]);
