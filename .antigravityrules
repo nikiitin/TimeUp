@@ -302,3 +302,280 @@ const safeData = {
 3. Add new CSS variables to `variables.css` before using them
 4. Create a corresponding `.css` file in `styles/views/` for each new view
 5. Export pure functions from utils, service objects from services
+
+---
+
+## TypeScript-Style Type Definitions
+
+### Timer Data Models
+```typescript
+/**
+ * TimerData - stored per card at 'card', 'shared', 'timerData'
+ */
+interface TimerData {
+  entries: TimeEntry[];
+  state: 'idle' | 'running' | 'paused';
+  currentEntry: CurrentEntry | null;
+  estimatedTime: number | null; // milliseconds, null if not set
+}
+
+/**
+ * TimeEntry - a completed timing session
+ */
+interface TimeEntry {
+  id: string;           // Format: "entry_{Date.now()}_{random9chars}"
+  startTime: number;    // Unix timestamp in milliseconds
+  endTime: number;      // Unix timestamp in milliseconds
+  duration: number;     // Calculated: endTime - startTime - pausedDuration
+  description: string;  // User-provided description (can be empty)
+  createdAt: number;    // Unix timestamp when entry was created
+}
+
+/**
+ * CurrentEntry - active timer session (exists only when state === 'running')
+ */
+interface CurrentEntry {
+  startTime: number;         // When timer was started
+  pausedDuration: number;    // Accumulated pause time in ms
+  elapsedBeforePause?: number; // Used when paused
+}
+
+/**
+ * BoardSettings - stored at 'board', 'shared', 'boardSettings'
+ */
+interface BoardSettings {
+  hourlyRate: number | null;
+  currency: string;     // Default: 'USD'
+  categories: string[];
+}
+
+/**
+ * UserPreferences - stored at 'member', 'private', 'userPreferences'
+ */
+interface UserPreferences {
+  showSeconds: boolean;      // Default: true
+  use24HourFormat: boolean;  // Default: true
+  autoStartOnOpen: boolean;  // Default: false
+}
+
+/**
+ * Service return pattern for all async operations
+ */
+interface ServiceResult<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  entry?: TimeEntry; // Only for stopTimer
+}
+```
+
+---
+
+## Service API Quick Reference
+
+### StorageService (`src/services/StorageService.js`)
+```javascript
+// Low-level operations
+getData(t, scope, visibility, key, defaultValue?) → Promise<any>
+setData(t, scope, visibility, key, value) → Promise<boolean>
+removeData(t, scope, visibility, key) → Promise<boolean>
+
+// Card-scoped shortcuts
+getTimerData(t) → Promise<TimerData>
+setTimerData(t, timerData) → Promise<boolean>
+
+// Board-scoped shortcuts
+getBoardSettings(t) → Promise<BoardSettings>
+setBoardSettings(t, settings) → Promise<boolean>
+
+// User-scoped shortcuts
+getUserPreferences(t) → Promise<UserPreferences>
+setUserPreferences(t, preferences) → Promise<boolean>
+```
+
+### TimerService (`src/services/TimerService.js`)
+```javascript
+startTimer(t) → Promise<ServiceResult<TimerData>>
+stopTimer(t, description?) → Promise<ServiceResult<TimerData> & { entry?: TimeEntry }>
+getCurrentElapsed(timerData) → number // milliseconds
+setEstimate(t, estimatedTimeMs | null) → Promise<ServiceResult<TimerData>>
+deleteEntry(t, entryId) → Promise<ServiceResult<TimerData>>
+```
+
+### Utility Functions (`src/utils/formatTime.js`)
+```javascript
+formatDuration(ms, options?) → string
+// options: { showSeconds?: boolean, compact?: boolean, showDays?: boolean }
+// Examples: "02:15:30" or "2h 15m 30s" (compact)
+
+formatTimestamp(timestamp, options?) → string
+// options: { use24Hour?: boolean, showDate?: boolean }
+
+getElapsedTime(startTime) → number
+sumDurations(entries) → number
+getRemainingTime(entries, estimatedTime) → { remaining, isOverBudget, percentComplete } | null
+parseTimeString(timeStr) → number | null
+// Accepts: "1h 30m", "2h", "45m", "1.5h", "90" (minutes)
+```
+
+### Constants (`src/utils/constants.js`)
+```javascript
+TIMER_STATE.IDLE | RUNNING | PAUSED
+STORAGE_KEYS.TIMER_DATA | BOARD_SETTINGS | USER_PREFERENCES
+STORAGE_SCOPES.CARD_SHARED | CARD_PRIVATE
+TIME.SECOND | MINUTE | HOUR | DAY // in milliseconds
+BADGE_COLORS.DEFAULT | RUNNING | WARNING | OVER_BUDGET
+DEFAULTS.TIMER_DATA | BOARD_SETTINGS | USER_PREFERENCES
+APP_INFO.NAME | VERSION | POWER_UP_NAME
+```
+
+---
+
+## Trello Power-Up SDK Patterns & Gotchas
+
+### 1. The `t` Object
+The `t` object is the Trello client. It's different in each context:
+- **Connector (index.html)**: `TrelloPowerUp.initialize({...})` returns `t`
+- **Iframe views**: `TrelloPowerUp.iframe()` creates `t`
+- **Callbacks**: `t` is passed as first argument
+
+### 2. Storage Scope Selection
+```javascript
+// ✅ Card-specific data (timer, entries) → visible to all
+t.set('card', 'shared', 'timerData', data);
+
+// ✅ Board-wide settings → visible to all
+t.set('board', 'shared', 'boardSettings', settings);
+
+// ✅ User preferences → only current user
+t.set('member', 'private', 'userPreferences', prefs);
+
+// ❌ WRONG: Using 'private' for shared data
+t.set('card', 'private', 'timerData', data); // Other users won't see!
+```
+
+### 3. Dynamic Badges (Auto-Refresh)
+```javascript
+// ✅ For real-time updates, use dynamic function
+badges.push({
+    dynamic: async () => ({
+        text: formatDuration(getCurrentElapsed()),
+        color: 'green',
+        refresh: 30, // seconds between refreshes
+    }),
+});
+
+// ❌ Static badge won't update
+badges.push({ text: formatDuration(elapsed), color: 'green' });
+```
+
+### 4. Popup Height Management
+```javascript
+// ✅ Resize popup after content changes
+t.sizeTo('#container'); // Or specific element
+t.sizeTo(350); // Fixed height in pixels
+
+// ❌ Fixed height may cut off content
+t.popup({ url: '...', height: 300 }); // May be too small
+```
+
+### 5. Card Refresh After Changes
+```javascript
+// ✅ Force card to re-render badges/buttons after data change
+await t.set('card', 'shared', 'timerData', newData);
+await t.cards('id'); // Triggers re-render
+
+// ❌ Badge/button state may be stale without refresh
+```
+
+### 6. URL Signing for Iframes
+```javascript
+// ✅ Always sign URLs for iframe content
+url: t.signUrl('./views/card-section.html')
+
+// ❌ Unsigned URLs may fail in some contexts
+url: './views/card-section.html'
+```
+
+---
+
+## Production Checklist
+
+Before any code is considered production-ready, verify:
+
+### Code Quality
+- [ ] All async operations wrapped in try/catch with error logging
+- [ ] Console logs use `[ServiceName]` prefix: `console.error('[TimerService] ...:', error);`
+- [ ] JSDoc comments on ALL exported functions
+- [ ] No hardcoded strings—use `constants.js`
+- [ ] No magic numbers—define in constants or explain in comments
+
+### Data Safety
+- [ ] Timer data validated with `validateTimerData()` before use
+- [ ] Default values provided for all `t.get()` calls
+- [ ] Arrays validated with `Array.isArray()` before iteration
+- [ ] Null checks before accessing nested properties
+
+### CSS/UI
+- [ ] All colors use CSS variables from `variables.css`
+- [ ] All class names follow BEM: `block__element--modifier`
+- [ ] No inline styles in HTML
+- [ ] Responsive design works at different popup sizes
+
+### Testing
+- [ ] Tested with timer running and stopped states
+- [ ] Tested with zero entries and multiple entries
+- [ ] Tested with estimate set and not set
+- [ ] Tested across different cards on the same board
+- [ ] Browser console shows no errors
+
+---
+
+## Browser Testing Patterns
+
+### Testing in Trello
+1. Open browser DevTools (F12)
+2. Go to Console tab
+3. Look for `[ServiceName]` prefixed logs
+4. Filter by "TimeUp" or specific service names
+
+### Common Debug Checks
+```javascript
+// In browser console, get current timer data:
+// 1. Click on a card with the Power-Up
+// 2. Open DevTools → Console
+// 3. The Power-Up iframe doesn't share console, so check Network tab instead
+
+// Check storage via Trello API:
+// In card popup iframe, type in console:
+TrelloPowerUp.iframe().get('card', 'shared', 'timerData').then(console.log);
+```
+
+### Performance Monitoring
+- Watch for excessive re-renders (multiple setTimerData calls)
+- Check Network tab for API rate limiting
+- Verify update intervals are reasonable (1s for display, 30s for badges)
+
+---
+
+## Common Error Patterns
+
+### "Timer already running"
+**Cause**: `startTimer()` called when state is already `RUNNING`
+**Fix**: Check `timerData.state` before calling
+
+### "No active timer"
+**Cause**: `stopTimer()` called when no timer is running
+**Fix**: UI should hide stop button when state is `IDLE`
+
+### Badge not updating
+**Cause**: Using static badge instead of dynamic
+**Fix**: Use `dynamic: async () => ({...})` pattern with `refresh` property
+
+### Data not syncing across users
+**Cause**: Using `'private'` scope for shared data
+**Fix**: Use `'shared'` scope for timer data
+
+### UI shows stale state after action
+**Cause**: Not refreshing display after service call
+**Fix**: Always update UI with returned `result.data` after service calls
