@@ -122,7 +122,7 @@ TrelloPowerUp.initialize({
             content: {
                 type: 'iframe',
                 url: t.signUrl('./views/card-section.html'),
-                height: 120,
+                height: 200,
             },
         };
     },

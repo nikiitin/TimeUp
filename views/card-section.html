@@ -10,103 +10,146 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 14px;
       color: #172b4d;
-      padding: 8px 0;
+      padding: 4px 0;
     }
     .timer-section {
       display: flex;
-      align-items: center;
-      gap: 16px;
+      flex-direction: column;
+      gap: 8px;
     }
+    .timer-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-toggle {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.15s, transform 0.1s;
+    }
+    .btn-toggle:hover { transform: scale(1.05); }
+    .btn-toggle:active { transform: scale(0.95); }
+    .btn-toggle--start {
+      background: #61bd4f;
+      color: white;
+    }
+    .btn-toggle--start:hover { background: #519839; }
+    .btn-toggle--stop {
+      background: #eb5a46;
+      color: white;
+    }
+    .btn-toggle--stop:hover { background: #cf513d; }
     .timer-display {
       font-family: 'SFMono-Regular', Consolas, monospace;
       font-size: 24px;
       font-weight: 600;
-      min-width: 100px;
     }
     .timer-display--running { color: #61bd4f; }
     .timer-display--idle { color: #5e6c84; }
-    .timer-controls {
-      display: flex;
-      gap: 8px;
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      font-size: 14px;
-      font-weight: 500;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      transition: background-color 0.1s;
-    }
-    .btn--start {
-      background: #61bd4f;
-      color: white;
-    }
-    .btn--start:hover { background: #519839; }
-    .btn--stop {
-      background: #eb5a46;
-      color: white;
-    }
-    .btn--stop:hover { background: #cf513d; }
-    .btn--entries {
-      background: #f4f5f7;
-      color: #172b4d;
-    }
-    .btn--entries:hover { background: #ebecf0; }
-    .timer-info {
+    .timer-total {
       font-size: 12px;
       color: #5e6c84;
       margin-left: auto;
+    }
+    .entries-list {
+      max-height: 120px;
+      overflow-y: auto;
+      border: 1px solid #dfe1e6;
+      border-radius: 3px;
+      background: #fafbfc;
+    }
+    .entries-list:empty {
+      display: none;
+    }
+    .entry {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-bottom: 1px solid #ebecf0;
+    }
+    .entry:last-child { border-bottom: none; }
+    .entry__time {
+      color: #5e6c84;
+    }
+    .entry__duration {
+      font-weight: 500;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+    }
+    .empty-msg {
+      padding: 12px;
+      text-align: center;
+      color: #97a0af;
+      font-size: 12px;
     }
   </style>
 </head>
 <body>
   <div class="timer-section">
-    <div class="timer-display timer-display--idle" id="display">00:00:00</div>
-    <div class="timer-controls">
-      <button class="btn btn--start" id="btn-start">▶ Start</button>
-      <button class="btn btn--stop" id="btn-stop" hidden>⏹ Stop</button>
-      <button class="btn btn--entries" id="btn-entries">📋 Entries</button>
+    <div class="timer-header">
+      <button class="btn-toggle btn-toggle--start" id="btn-toggle" title="Start Timer">▶</button>
+      <div class="timer-display timer-display--idle" id="display">00:00:00</div>
+      <div class="timer-total" id="total"></div>
     </div>
-    <div class="timer-info" id="info"></div>
+    <div class="entries-list" id="entries"></div>
   </div>
 
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <script type="module">
     import { TIMER_STATE } from '../src/utils/constants.js';
-    import { formatDuration, sumDurations } from '../src/utils/formatTime.js';
+    import { formatDuration, formatTimestamp, sumDurations } from '../src/utils/formatTime.js';
     import StorageService from '../src/services/StorageService.js';
     import TimerService from '../src/services/TimerService.js';
 
     const display = document.getElementById('display');
-    const btnStart = document.getElementById('btn-start');
-    const btnStop = document.getElementById('btn-stop');
-    const btnEntries = document.getElementById('btn-entries');
-    const info = document.getElementById('info');
+    const btnToggle = document.getElementById('btn-toggle');
+    const entriesEl = document.getElementById('entries');
+    const totalEl = document.getElementById('total');
 
     let updateInterval = null;
+    let isRunning = false;
     const t = TrelloPowerUp.iframe();
 
+    const renderEntries = (entries) => {
+      if (!entries || entries.length === 0) {
+        entriesEl.innerHTML = '<div class="empty-msg">No time entries yet</div>';
+        totalEl.textContent = '';
+        return;
+      }
+
+      // Show most recent first
+      const sorted = [...entries].reverse();
+      entriesEl.innerHTML = sorted.map(entry => `
+        <div class="entry">
+          <span class="entry__time">${formatTimestamp(entry.startTime)}</span>
+          <span class="entry__duration">${formatDuration(entry.duration, { compact: true })}</span>
+        </div>
+      `).join('');
+
+      const total = sumDurations(entries);
+      totalEl.textContent = `Total: ${formatDuration(total, { compact: true, showSeconds: false })}`;
+    };
+
     const updateUI = (timerData) => {
-      const isRunning = timerData.state === TIMER_STATE.RUNNING;
+      isRunning = timerData.state === TIMER_STATE.RUNNING;
       const elapsed = TimerService.getCurrentElapsed(timerData);
 
       display.textContent = formatDuration(elapsed);
       display.className = `timer-display timer-display--${isRunning ? 'running' : 'idle'}`;
 
-      btnStart.hidden = isRunning;
-      btnStop.hidden = !isRunning;
+      btnToggle.textContent = isRunning ? '⏹' : '▶';
+      btnToggle.className = `btn-toggle btn-toggle--${isRunning ? 'stop' : 'start'}`;
+      btnToggle.title = isRunning ? 'Stop Timer' : 'Start Timer';
 
-      const total = sumDurations(timerData.entries);
-      const count = timerData.entries.length;
-      if (count > 0) {
-        info.textContent = `${count} entries • Total: ${formatDuration(total, { compact: true, showSeconds: false })}`;
-      } else {
-        info.textContent = '';
-      }
+      renderEntries(timerData.entries);
     };
 
     const refresh = async () => {
@@ -126,24 +169,15 @@
       }
     };
 
-    btnStart.addEventListener('click', async () => {
-      await TimerService.startTimer(t);
-      startLoop();
-      refresh();
-    });
-
-    btnStop.addEventListener('click', async () => {
-      stopLoop();
-      await TimerService.stopTimer(t);
-      refresh();
-    });
-
-    btnEntries.addEventListener('click', () => {
-      t.popup({
-        title: 'Time Entries',
-        url: './card-button.html',
-        height: 350,
-      });
+    btnToggle.addEventListener('click', async () => {
+      if (isRunning) {
+        stopLoop();
+        await TimerService.stopTimer(t);
+      } else {
+        await TimerService.startTimer(t);
+        startLoop();
+      }
+      await refresh();
     });
 
     t.render(async () => {
