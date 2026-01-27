@@ -144,7 +144,7 @@
       const sorted = [...entries].reverse();
       entriesEl.innerHTML = sorted.map(entry => `
         <div class="entry">
-          <span class="entry__time">${formatTimestamp(entry.startTime)}</span>
+          <span class="entry__time">${formatTimestamp(entry.startTime, { showDate: true })}</span>
           <span class="entry__duration">${formatDuration(entry.duration, { compact: true })}</span>
         </div>
       `).join('');
