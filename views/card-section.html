@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TimeUp - Card Section</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      color: #172b4d;
+      padding: 8px 0;
+    }
+    .timer-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .timer-display {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 24px;
+      font-weight: 600;
+      min-width: 100px;
+    }
+    .timer-display--running { color: #61bd4f; }
+    .timer-display--idle { color: #5e6c84; }
+    .timer-controls {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background-color 0.1s;
+    }
+    .btn--start {
+      background: #61bd4f;
+      color: white;
+    }
+    .btn--start:hover { background: #519839; }
+    .btn--stop {
+      background: #eb5a46;
+      color: white;
+    }
+    .btn--stop:hover { background: #cf513d; }
+    .btn--entries {
+      background: #f4f5f7;
+      color: #172b4d;
+    }
+    .btn--entries:hover { background: #ebecf0; }
+    .timer-info {
+      font-size: 12px;
+      color: #5e6c84;
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="timer-section">
+    <div class="timer-display timer-display--idle" id="display">00:00:00</div>
+    <div class="timer-controls">
+      <button class="btn btn--start" id="btn-start">▶ Start</button>
+      <button class="btn btn--stop" id="btn-stop" hidden>⏹ Stop</button>
+      <button class="btn btn--entries" id="btn-entries">📋 Entries</button>
+    </div>
+    <div class="timer-info" id="info"></div>
+  </div>
+
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <script type="module">
+    import { TIMER_STATE } from '../src/utils/constants.js';
+    import { formatDuration, sumDurations } from '../src/utils/formatTime.js';
+    import StorageService from '../src/services/StorageService.js';
+    import TimerService from '../src/services/TimerService.js';
+
+    const display = document.getElementById('display');
+    const btnStart = document.getElementById('btn-start');
+    const btnStop = document.getElementById('btn-stop');
+    const btnEntries = document.getElementById('btn-entries');
+    const info = document.getElementById('info');
+
+    let updateInterval = null;
+    const t = TrelloPowerUp.iframe();
+
+    const updateUI = (timerData) => {
+      const isRunning = timerData.state === TIMER_STATE.RUNNING;
+      const elapsed = TimerService.getCurrentElapsed(timerData);
+
+      display.textContent = formatDuration(elapsed);
+      display.className = `timer-display timer-display--${isRunning ? 'running' : 'idle'}`;
+
+      btnStart.hidden = isRunning;
+      btnStop.hidden = !isRunning;
+
+      const total = sumDurations(timerData.entries);
+      const count = timerData.entries.length;
+      if (count > 0) {
+        info.textContent = `${count} entries • Total: ${formatDuration(total, { compact: true, showSeconds: false })}`;
+      } else {
+        info.textContent = '';
+      }
+    };
+
+    const refresh = async () => {
+      const timerData = await StorageService.getTimerData(t);
+      updateUI(timerData);
+    };
+
+    const startLoop = () => {
+      if (updateInterval) clearInterval(updateInterval);
+      updateInterval = setInterval(refresh, 1000);
+    };
+
+    const stopLoop = () => {
+      if (updateInterval) {
+        clearInterval(updateInterval);
+        updateInterval = null;
+      }
+    };
+
+    btnStart.addEventListener('click', async () => {
+      await TimerService.startTimer(t);
+      startLoop();
+      refresh();
+    });
+
+    btnStop.addEventListener('click', async () => {
+      stopLoop();
+      await TimerService.stopTimer(t);
+      refresh();
+    });
+
+    btnEntries.addEventListener('click', () => {
+      t.popup({
+        title: 'Time Entries',
+        url: './card-button.html',
+        height: 350,
+      });
+    });
+
+    t.render(async () => {
+      await refresh();
+      const timerData = await StorageService.getTimerData(t);
+      if (timerData.state === TIMER_STATE.RUNNING) {
+        startLoop();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -113,6 +113,19 @@ TrelloPowerUp.initialize({
             return [];
         }
     },
+
+    // Embed timer section directly inside the card
+    'card-back-section': async (t) => {
+        return {
+            title: '⏱️ Time Tracker',
+            icon: ICON_TIMER,
+            content: {
+                type: 'iframe',
+                url: t.signUrl('./views/card-section.html'),
+                height: 120,
+            },
+        };
+    },
 }, {
     appKey: 'timingup',
     appName: APP_INFO.POWER_UP_NAME,
