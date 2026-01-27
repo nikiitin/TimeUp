@@ -16,15 +16,41 @@ const ICON_TIMER = 'https://cdn-icons-png.flaticon.com/512/2838/2838590.png';
 /* global TrelloPowerUp */
 TrelloPowerUp.initialize({
     'card-buttons': async (t) => {
-        return [{
-            icon: ICON_TIMER,
-            text: 'Time Tracker',
-            callback: (t) => t.popup({
-                title: 'Time Tracker',
-                url: './views/card-button.html',
-                height: 300,
-            }),
-        }];
+        const timerData = await StorageService.getTimerData(t);
+        const isRunning = timerData.state === TIMER_STATE.RUNNING;
+
+        return [
+            {
+                // Quick toggle button - one click to start/stop
+                icon: isRunning
+                    ? 'https://cdn-icons-png.flaticon.com/512/1828/1828778.png' // stop icon
+                    : 'https://cdn-icons-png.flaticon.com/512/727/727245.png',  // play icon
+                text: isRunning ? '⏹ Stop Timer' : '▶ Start Timer',
+                callback: async (t) => {
+                    try {
+                        if (isRunning) {
+                            await TimerService.stopTimer(t);
+                        } else {
+                            await TimerService.startTimer(t);
+                        }
+                        // Refresh the card to update badges and button
+                        await t.cards('id');
+                    } catch (error) {
+                        console.error('[Main] Toggle timer error:', error);
+                    }
+                },
+            },
+            {
+                // Detailed view button
+                icon: ICON_TIMER,
+                text: 'Time Entries',
+                callback: (t) => t.popup({
+                    title: 'Time Tracker',
+                    url: './views/card-button.html',
+                    height: 350,
+                }),
+            },
+        ];
     },
 
     'card-badges': async (t) => {
