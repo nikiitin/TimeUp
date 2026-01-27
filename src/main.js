@@ -8,13 +8,8 @@ import { formatDuration, sumDurations } from './utils/formatTime.js';
 import StorageService from './services/StorageService.js';
 import TimerService from './services/TimerService.js';
 
-// SVG clock icon as data URI (black with transparency)
-const ICON_TIMER = 'data:image/svg+xml,' + encodeURIComponent(`
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <circle cx="12" cy="12" r="10"/>
-  <polyline points="12 6 12 12 16 14"/>
-</svg>
-`);
+// Logo hosted on GitHub Pages
+const ICON_TIMER = 'https://nikiitin.github.io/TimeUp/assets/logo.png';
 
 /**
  * Initializes the Trello Power-Up with all capabilities.
