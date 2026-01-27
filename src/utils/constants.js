@@ -70,7 +70,15 @@ export const DEFAULTS = {
         entries: [],
         state: TIMER_STATE.IDLE,
         currentEntry: null,
-        estimatedTime: null,  // Estimated time in milliseconds
+        estimatedTime: null,  // Estimated time in milliseconds (manual override)
+        manualEstimateSet: false,  // true = user set manually, false = calculated from checklists
+        checklistItems: {},  // { [checkItemId]: ChecklistItemData }
+    },
+    CHECKLIST_ITEM_DATA: {
+        estimatedTime: null,
+        entries: [],
+        state: TIMER_STATE.IDLE,
+        currentEntry: null,
     },
     BOARD_SETTINGS: {
         hourlyRate: null,

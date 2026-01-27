@@ -197,6 +197,124 @@
       color: #626f86;
       font-size: 13px;
     }
+
+    /* Checklist UI */
+    .checklists-container {
+      margin-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 12px;
+    }
+    .checklist {
+      margin-bottom: 12px;
+    }
+    .checklist__title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #626f86;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      margin: 2px 0;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.04);
+      transition: background 0.1s;
+    }
+    .checklist-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .checklist-item--over {
+      background: rgba(248, 113, 104, 0.15);
+    }
+    .checklist-item--over:hover {
+      background: rgba(248, 113, 104, 0.25);
+    }
+    .checklist-item__name {
+      flex: 1;
+      font-size: 13px;
+      color: #b6c2cf;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .checklist-item__name--over {
+      color: #f87168;
+    }
+    .checklist-item__time {
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      color: #8c9bab;
+    }
+    .checklist-item__time--over {
+      color: #f87168;
+      font-weight: 500;
+    }
+
+    .btn-item-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      background: rgba(75, 206, 151, 0.2);
+      color: #4bce97;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.15s;
+    }
+    .checklist-item:hover .btn-item-toggle {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .btn-item-toggle:hover {
+      background: rgba(75, 206, 151, 0.35);
+    }
+    .btn-item-toggle--running {
+      background: rgba(248, 113, 104, 0.2);
+      color: #f87168;
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .btn-item-toggle--running:hover {
+      background: rgba(248, 113, 104, 0.35);
+    }
+    .btn-item-toggle svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+    .checklist-item__estimate-input {
+      width: 60px;
+      padding: 2px 4px;
+      font-size: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #b6c2cf;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
+    }
+    .checklist-item:hover .checklist-item__estimate-input {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .checklist-item__estimate-input:focus {
+      outline: none;
+      border-color: #579dff;
+    }
+    .total-row--over {
+      color: #f87168;
+    }
   </style>
 </head>
 <body>
@@ -227,6 +345,7 @@
     </div>
 
     <div class="entries-list" id="entries"></div>
+    <div class="checklists-container" id="checklists-container" hidden></div>
   </div>
 
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
@@ -235,6 +354,7 @@
     import { formatDuration, formatTimestamp, sumDurations, getRemainingTime, parseTimeString } from '../src/utils/formatTime.js';
     import StorageService from '../src/services/StorageService.js';
     import TimerService from '../src/services/TimerService.js';
+    import ChecklistService from '../src/services/ChecklistService.js';
 
     const display = document.getElementById('display');
     const btnToggle = document.getElementById('btn-toggle');
@@ -250,9 +370,11 @@
     const estimateDisplay = document.getElementById('estimate-display');
     const progressBar = document.getElementById('progress-bar');
     const progressFill = document.getElementById('progress-fill');
+    const checklistsEl = document.getElementById('checklists-container');
 
     let updateInterval = null;
     let isRunning = false;
+    let currentChecklists = [];
     const t = TrelloPowerUp.iframe();
 
     const handleDeleteEntry = async (entryId) => {
@@ -348,9 +470,99 @@
       updateEstimateUI(timerData);
     };
 
+    // Checklist item handlers
+    const handleItemToggle = async (itemId) => {
+      const timerData = await StorageService.getTimerData(t);
+      const itemData = timerData.checklistItems?.[itemId];
+      const isItemRunning = itemData?.state === TIMER_STATE.RUNNING;
+
+      if (isItemRunning) {
+        await TimerService.stopItemTimer(t, itemId);
+      } else {
+        await TimerService.startItemTimer(t, itemId);
+        startLoop();
+      }
+      await refresh();
+    };
+
+    const handleItemEstimate = async (itemId, value) => {
+      const ms = parseTimeString(value);
+      if (ms) {
+        await TimerService.setItemEstimate(t, itemId, ms);
+        await refresh();
+      } else if (value && value.trim()) {
+        alert('Invalid time format. Please use a format like "1h 30m", "90m", or "1:30".');
+      }
+    };
+
+    const renderChecklists = (timerData, checklists) => {
+      if (!checklists || checklists.length === 0) {
+        checklistsEl.hidden = true;
+        return;
+      }
+
+      checklistsEl.hidden = false;
+      const checklistItems = timerData.checklistItems || {};
+
+      let html = '';
+      for (const checklist of checklists) {
+        if (!checklist.checkItems || checklist.checkItems.length === 0) continue;
+
+        html += `<div class="checklist">
+          <div class="checklist__title">${checklist.name}</div>`;
+
+        for (const item of checklist.checkItems) {
+          const itemData = checklistItems[item.id] || {};
+          const itemIsRunning = itemData.state === TIMER_STATE.RUNNING;
+          const itemTime = sumDurations(itemData.entries || []) +
+            (itemIsRunning ? TimerService.getItemCurrentElapsed(itemData) : 0);
+          const itemEstimate = itemData.estimatedTime || 0;
+          const isOver = itemEstimate > 0 && itemTime > itemEstimate;
+
+          const itemClass = isOver ? 'checklist-item checklist-item--over' : 'checklist-item';
+          const nameClass = isOver ? 'checklist-item__name checklist-item__name--over' : 'checklist-item__name';
+          const timeClass = isOver ? 'checklist-item__time checklist-item__time--over' : 'checklist-item__time';
+          const btnClass = itemIsRunning ? 'btn-item-toggle btn-item-toggle--running' : 'btn-item-toggle';
+
+          html += `<div class="${itemClass}" data-item-id="${item.id}">
+            <button class="${btnClass}" data-item-id="${item.id}" title="${itemIsRunning ? 'Stop' : 'Start'}">
+              ${itemIsRunning
+                ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
+                : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}
+            </button>
+            <span class="${nameClass}" title="${item.name}">${item.name}</span>
+            <span class="${timeClass}">${formatDuration(itemTime, { compact: true, showSeconds: false })}</span>
+            <input type="text" class="checklist-item__estimate-input" data-item-id="${item.id}"
+              placeholder="${itemEstimate > 0 ? formatDuration(itemEstimate, { compact: true, showSeconds: false }) : 'Est'}"
+              title="Set estimate (e.g. 30m, 1h)">
+          </div>`;
+        }
+        html += '</div>';
+      }
+
+      checklistsEl.innerHTML = html;
+
+      // Attach handlers
+      checklistsEl.querySelectorAll('.btn-item-toggle').forEach(btn => {
+        btn.addEventListener('click', () => handleItemToggle(btn.dataset.itemId));
+      });
+
+      checklistsEl.querySelectorAll('.checklist-item__estimate-input').forEach(input => {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            handleItemEstimate(input.dataset.itemId, input.value);
+            input.value = '';
+            input.blur();
+          }
+        });
+      });
+    };
+
     const refresh = async () => {
       const timerData = await StorageService.getTimerData(t);
+      currentChecklists = await ChecklistService.getChecklists(t);
       updateUI(timerData);
+      renderChecklists(timerData, currentChecklists);
     };
 
     const startLoop = () => {
