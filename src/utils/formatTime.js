@@ -144,3 +144,64 @@ export const sumDurations = (entries) => {
         return total;
     }, 0);
 };
+
+/**
+ * Calculates remaining time from an estimate minus spent time.
+ * @param {Array<{duration: number}>} entries - Array of time entries
+ * @param {number|null} estimatedTime - Estimated time in milliseconds
+ * @returns {{remaining: number, isOverBudget: boolean, percentComplete: number}|null}
+ * @example
+ * getRemainingTime([{ duration: 1800000 }], 3600000) // { remaining: 1800000, isOverBudget: false, percentComplete: 50 }
+ */
+export const getRemainingTime = (entries, estimatedTime) => {
+    if (typeof estimatedTime !== 'number' || estimatedTime <= 0) {
+        return null;
+    }
+
+    const spent = sumDurations(entries);
+    const remaining = estimatedTime - spent;
+    const percentComplete = Math.min(100, Math.round((spent / estimatedTime) * 100));
+
+    return {
+        remaining,
+        isOverBudget: remaining < 0,
+        percentComplete,
+    };
+};
+
+/**
+ * Parses a time string into milliseconds.
+ * Supports formats: "1h 30m", "2h", "45m", "1.5h", "90"
+ * @param {string} timeStr - Time string to parse
+ * @returns {number|null} Duration in milliseconds, or null if invalid
+ * @example
+ * parseTimeString("1h 30m") // 5400000
+ * parseTimeString("2h") // 7200000
+ * parseTimeString("45m") // 2700000
+ * parseTimeString("90") // 5400000 (assumes minutes)
+ */
+export const parseTimeString = (timeStr) => {
+    if (typeof timeStr !== 'string' || !timeStr.trim()) {
+        return null;
+    }
+
+    const str = timeStr.trim().toLowerCase();
+
+    // Try to match hours and minutes: "1h 30m", "1h30m", "1h", "30m"
+    const hourMatch = str.match(/(\d+(?:\.\d+)?)\s*h/);
+    const minMatch = str.match(/(\d+(?:\.\d+)?)\s*m/);
+
+    if (hourMatch || minMatch) {
+        const hours = hourMatch ? parseFloat(hourMatch[1]) : 0;
+        const minutes = minMatch ? parseFloat(minMatch[1]) : 0;
+        return Math.round((hours * 60 + minutes) * 60 * 1000);
+    }
+
+    // Try plain number (assume minutes)
+    const num = parseFloat(str);
+    if (!isNaN(num) && num > 0) {
+        return Math.round(num * 60 * 1000);
+    }
+
+    return null;
+};

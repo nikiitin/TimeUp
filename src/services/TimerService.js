@@ -32,6 +32,7 @@ const validateTimerData = (data) => ({
     entries: Array.isArray(data?.entries) ? data.entries : [],
     state: Object.values(TIMER_STATE).includes(data?.state) ? data.state : TIMER_STATE.IDLE,
     currentEntry: data?.currentEntry ?? null,
+    estimatedTime: typeof data?.estimatedTime === 'number' ? data.estimatedTime : null,
 });
 
 /**
@@ -95,5 +96,53 @@ export const getCurrentElapsed = (timerData) => {
     return timerData.currentEntry.elapsedBeforePause ?? 0;
 };
 
-const TimerService = { startTimer, stopTimer, getCurrentElapsed };
+/**
+ * Sets the time estimate for a card.
+ * @param {Object} t - Trello client
+ * @param {number|null} estimatedTimeMs - Estimated time in milliseconds, or null to clear
+ * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+ */
+export const setEstimate = async (t, estimatedTimeMs) => {
+    try {
+        const timerData = validateTimerData(await StorageService.getTimerData(t));
+        const updatedData = {
+            ...timerData,
+            estimatedTime: estimatedTimeMs,
+        };
+        const saved = await StorageService.setTimerData(t, updatedData);
+        return saved ? { success: true, data: updatedData } : { success: false, error: 'Save failed' };
+    } catch (error) {
+        console.error('[TimerService] setEstimate error:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+/**
+ * Deletes a time entry by ID.
+ * @param {Object} t - Trello client
+ * @param {string} entryId - ID of the entry to delete
+ * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+ */
+export const deleteEntry = async (t, entryId) => {
+    try {
+        const timerData = validateTimerData(await StorageService.getTimerData(t));
+        const entryIndex = timerData.entries.findIndex(e => e.id === entryId);
+
+        if (entryIndex === -1) {
+            return { success: false, error: 'Entry not found', data: timerData };
+        }
+
+        const updatedData = {
+            ...timerData,
+            entries: timerData.entries.filter(e => e.id !== entryId),
+        };
+        const saved = await StorageService.setTimerData(t, updatedData);
+        return saved ? { success: true, data: updatedData } : { success: false, error: 'Save failed' };
+    } catch (error) {
+        console.error('[TimerService] deleteEntry error:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+const TimerService = { startTimer, stopTimer, getCurrentElapsed, setEstimate, deleteEntry };
 export default TimerService;

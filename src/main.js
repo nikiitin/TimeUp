@@ -4,7 +4,7 @@
  */
 
 import { TIMER_STATE, APP_INFO, BADGE_COLORS } from './utils/constants.js';
-import { formatDuration, sumDurations } from './utils/formatTime.js';
+import { formatDuration, sumDurations, getRemainingTime } from './utils/formatTime.js';
 import StorageService from './services/StorageService.js';
 import TimerService from './services/TimerService.js';
 
@@ -81,6 +81,23 @@ TrelloPowerUp.initialize({
                     color: BADGE_COLORS.DEFAULT,
                     icon: ICON_TIMER,
                 });
+            }
+
+            // Show remaining time if estimate is set
+            const remainingInfo = getRemainingTime(timerData.entries, timerData.estimatedTime);
+            if (remainingInfo) {
+                let color = BADGE_COLORS.DEFAULT;
+                let text = '';
+                if (remainingInfo.isOverBudget) {
+                    color = BADGE_COLORS.OVER_BUDGET;
+                    text = `${formatDuration(Math.abs(remainingInfo.remaining), { compact: true, showSeconds: false })} over`;
+                } else if (remainingInfo.percentComplete >= 80) {
+                    color = BADGE_COLORS.WARNING;
+                    text = `${formatDuration(remainingInfo.remaining, { compact: true, showSeconds: false })} left`;
+                } else {
+                    text = `${formatDuration(remainingInfo.remaining, { compact: true, showSeconds: false })} left`;
+                }
+                badges.push({ text, color });
             }
 
             return badges;

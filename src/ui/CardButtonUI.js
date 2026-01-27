@@ -4,7 +4,7 @@
  */
 
 import { TIMER_STATE } from '../utils/constants.js';
-import { formatDuration, sumDurations } from '../utils/formatTime.js';
+import { formatDuration, sumDurations, getRemainingTime, parseTimeString } from '../utils/formatTime.js';
 import StorageService from '../services/StorageService.js';
 import TimerService from '../services/TimerService.js';
 
@@ -15,6 +15,11 @@ const btnStop = document.getElementById('btn-stop');
 const entriesList = document.getElementById('entries-list');
 const totalTime = document.getElementById('total-time');
 const totalValue = document.getElementById('total-value');
+const estimateInput = document.getElementById('estimate-input');
+const btnSetEstimate = document.getElementById('btn-set-estimate');
+const btnClearEstimate = document.getElementById('btn-clear-estimate');
+const estimateDisplay = document.getElementById('estimate-display');
+const remainingText = document.getElementById('remaining-text');
 
 let updateInterval = null;
 
@@ -33,6 +38,59 @@ const updateDisplay = (timerData) => {
 };
 
 /**
+ * Updates the estimate UI elements.
+ * @param {Object} timerData - Current timer data
+ */
+const updateEstimateUI = (timerData) => {
+    const hasEstimate = timerData.estimatedTime && timerData.estimatedTime > 0;
+
+    if (hasEstimate) {
+        estimateInput.hidden = true;
+        btnSetEstimate.hidden = true;
+        estimateDisplay.hidden = false;
+        estimateDisplay.textContent = formatDuration(timerData.estimatedTime, { compact: true, showSeconds: false });
+        btnClearEstimate.hidden = false;
+
+        // Show remaining time
+        const remainingInfo = getRemainingTime(timerData.entries, timerData.estimatedTime);
+        if (remainingInfo) {
+            remainingText.hidden = false;
+            remainingText.className = 'remaining-text';
+
+            if (remainingInfo.isOverBudget) {
+                remainingText.classList.add('remaining-text--over');
+                remainingText.textContent = `${formatDuration(Math.abs(remainingInfo.remaining), { compact: true, showSeconds: false })} over`;
+            } else if (remainingInfo.percentComplete >= 80) {
+                remainingText.classList.add('remaining-text--warning');
+                remainingText.textContent = `${formatDuration(remainingInfo.remaining, { compact: true, showSeconds: false })} left`;
+            } else {
+                remainingText.classList.add('remaining-text--normal');
+                remainingText.textContent = `${formatDuration(remainingInfo.remaining, { compact: true, showSeconds: false })} left`;
+            }
+        }
+    } else {
+        estimateInput.hidden = false;
+        btnSetEstimate.hidden = false;
+        estimateDisplay.hidden = true;
+        btnClearEstimate.hidden = true;
+        remainingText.hidden = true;
+    }
+};
+
+/**
+ * Handles deleting a time entry.
+ * @param {string} entryId - ID of entry to delete
+ */
+const handleDeleteEntry = async (entryId) => {
+    if (!confirm('Delete this time entry?')) return;
+    const result = await TimerService.deleteEntry(t, entryId);
+    if (result.success) {
+        renderEntries(result.data.entries);
+        updateEstimateUI(result.data);
+    }
+};
+
+/**
  * Renders the list of time entries.
  * @param {Array} entries - Time entries
  */
@@ -45,10 +103,20 @@ const renderEntries = (entries) => {
 
     entriesList.innerHTML = entries.map((entry) => `
     <div class="timer__entry">
-      <span class="timer__entry-time">${new Date(entry.startTime).toLocaleTimeString()}</span>
-      <span class="timer__entry-duration">${formatDuration(entry.duration, { compact: true })}</span>
+      <div class="timer__entry-left">
+        <span class="timer__entry-time">${new Date(entry.startTime).toLocaleTimeString()}</span>
+      </div>
+      <div class="timer__entry-right">
+        <span class="timer__entry-duration">${formatDuration(entry.duration, { compact: true })}</span>
+        <button class="btn-delete-entry" data-id="${entry.id}" title="Delete entry">×</button>
+      </div>
     </div>
   `).join('');
+
+    // Attach delete handlers
+    entriesList.querySelectorAll('.btn-delete-entry').forEach(btn => {
+        btn.addEventListener('click', () => handleDeleteEntry(btn.dataset.id));
+    });
 
     const total = sumDurations(entries);
     totalValue.textContent = formatDuration(total, { compact: true });
@@ -64,6 +132,7 @@ const init = async (t) => {
         const timerData = await StorageService.getTimerData(t);
         updateDisplay(timerData);
         renderEntries(timerData.entries);
+        updateEstimateUI(timerData);
 
         if (timerData.state === TIMER_STATE.RUNNING) {
             startUpdateLoop(t);
@@ -82,6 +151,7 @@ const startUpdateLoop = (t) => {
     updateInterval = setInterval(async () => {
         const timerData = await StorageService.getTimerData(t);
         updateDisplay(timerData);
+        updateEstimateUI(timerData);
     }, 1000);
 };
 
@@ -116,5 +186,33 @@ btnStop.addEventListener('click', async () => {
     if (result.success) {
         updateDisplay(result.data);
         renderEntries(result.data.entries);
+        updateEstimateUI(result.data);
+    }
+});
+
+btnSetEstimate.addEventListener('click', async () => {
+    const value = estimateInput.value.trim();
+    const ms = parseTimeString(value);
+    if (ms) {
+        const result = await TimerService.setEstimate(t, ms);
+        if (result.success) {
+            estimateInput.value = '';
+            updateEstimateUI(result.data);
+        }
+    } else {
+        alert('Invalid time format. Try: 2h 30m, 1.5h, or 90 (minutes)');
+    }
+});
+
+estimateInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        btnSetEstimate.click();
+    }
+});
+
+btnClearEstimate.addEventListener('click', async () => {
+    const result = await TimerService.setEstimate(t, null);
+    if (result.success) {
+        updateEstimateUI(result.data);
     }
 });
