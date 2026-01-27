@@ -121,7 +121,7 @@ TrelloPowerUp.initialize({
             icon: ICON_TIMER,
             content: {
                 type: 'iframe',
-                url: t.signUrl('./views/card-section.html'),
+                url: t.signUrl('./views/card-section.html?v=2'),
                 height: 200,
             },
         };
