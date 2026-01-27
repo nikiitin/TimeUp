@@ -179,7 +179,13 @@
       color: #626f86;
       font-size: 14px;
       line-height: 1;
-      transition: all 0.1s;
+      transition: all 0.15s;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .entry:hover .btn-delete {
+      opacity: 1;
+      pointer-events: auto;
     }
     .btn-delete:hover {
       background: rgba(248, 113, 104, 0.2);

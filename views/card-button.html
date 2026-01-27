@@ -39,7 +39,13 @@
             color: var(--color-text-muted, #626f86);
             font-size: 16px;
             line-height: 1;
-            transition: all 0.1s;
+            transition: all 0.15s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .timer__entry:hover .btn-delete-entry {
+            opacity: 1;
+            pointer-events: auto;
         }
         .btn-delete-entry:hover {
             background: rgba(248, 113, 104, 0.2);
