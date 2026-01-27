@@ -132,6 +132,19 @@ TrelloPowerUp.initialize({
             },
         };
     },
+
+    // Board-level report button
+    'board-buttons': async (t) => {
+        return [{
+            icon: ICON_TIMER,
+            text: 'Time Report',
+            callback: (t) => t.popup({
+                title: 'Time Report',
+                url: './views/report.html',
+                height: 500,
+            }),
+        }];
+    },
 }, {
     appKey: 'timingup',
     appName: APP_INFO.POWER_UP_NAME,
