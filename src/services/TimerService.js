@@ -100,8 +100,10 @@ export const getCurrentElapsed = (timerData) => {
 
 /**
  * Sets the time estimate for a card (manual override).
+ * When set, this value overrides the calculated checklist estimate.
+ * When cleared (null), the estimate falls back to the sum of checklist item estimates if any exist.
  * @param {Object} t - Trello client
- * @param {number|null} estimatedTimeMs - Estimated time in milliseconds, or null to clear
+ * @param {number|null} estimatedTimeMs - Estimated time in milliseconds, or null to clear and use checklist-based estimate
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
 export const setEstimate = async (t, estimatedTimeMs) => {
@@ -158,12 +160,7 @@ export const deleteEntry = async (t, entryId) => {
  * @returns {Object} Checklist item data
  */
 const getOrInitItemData = (checklistItems, itemId) => {
-    return checklistItems[itemId] || {
-        entries: [],
-        state: TIMER_STATE.IDLE,
-        currentEntry: null,
-        estimatedTime: null,
-    };
+    return checklistItems[itemId] || { ...DEFAULTS.CHECKLIST_ITEM_DATA };
 };
 
 /**

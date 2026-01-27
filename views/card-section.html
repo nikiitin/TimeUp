@@ -254,10 +254,7 @@
       color: #f87168;
       font-weight: 500;
     }
-    .checklist-item__estimate {
-      font-size: 11px;
-      color: #626f86;
-    }
+
     .btn-item-toggle {
       display: flex;
       align-items: center;
@@ -493,6 +490,8 @@
       if (ms) {
         await TimerService.setItemEstimate(t, itemId, ms);
         await refresh();
+      } else if (value && value.trim()) {
+        alert('Invalid time format. Please use a format like "1h 30m", "90m", or "1:30".');
       }
     };
 
