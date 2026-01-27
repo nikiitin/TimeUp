@@ -131,7 +131,6 @@ TrelloPowerUp.initialize({
     // Board-level report button
     'board-buttons': async (t) => {
         return [{
-            icon: ICON_TIMER,
             text: 'Time Report',
             callback: (t) => t.popup({
                 title: 'Time Report',
