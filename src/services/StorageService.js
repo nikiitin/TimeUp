@@ -78,18 +78,11 @@ export const removeData = async (t, scope, visibility, key) => {
 
 /**
  * Gets all timer-related data, merging metadata and entries.
- * Handles migration from old single-key format.
  */
 export const getTimerData = async (t) => {
     const allData = await t.get('card', STORAGE_SCOPES.CARD_SHARED);
     let timerData = { ...(allData?.[STORAGE_KEYS.TIMER_DATA] || DEFAULTS.TIMER_DATA) };
     let entries = allData?.[STORAGE_KEYS.ENTRIES] || [];
-
-    // Migration: if entries are still in timerData, move them
-    if (timerData.entries && timerData.entries.length > 0 && entries.length === 0) {
-        entries = timerData.entries;
-        delete timerData.entries;
-    }
 
     return { ...timerData, entries };
 };

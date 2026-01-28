@@ -102,18 +102,6 @@ describe('StorageService', () => {
             expect(result).toEqual({ ...metadata, entries });
         });
 
-        test('migrates entries from timerData key if found', async () => {
-            const oldData = {
-                entries: [{ id: 'old', duration: 500 }],
-                state: 'idle'
-            };
-            mockT._setStorage('card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.TIMER_DATA, oldData);
-
-            const result = await StorageService.getTimerData(mockT);
-            expect(result.entries).toEqual(oldData.entries);
-            expect(result.state).toBe('idle');
-        });
-
         test('returns defaults when no data exists', async () => {
             const result = await StorageService.getTimerData(mockT);
             expect(result).toEqual(DEFAULTS.TIMER_DATA);

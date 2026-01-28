@@ -53,6 +53,11 @@ Before committing any code changes, VERIFY all of the following:
 - [ ] **Test coverage above 90%** - run `npm run test:coverage`
 - [ ] **Manual testing in Trello** - verify UI works with `/test-in-trello` workflow
 
+### 7. Development Phase Rules
+- [ ] **No Legacy Bridges**: Since the code is not in production yet, avoid adding migration logic or compatibility layers for old data formats.
+  - Assume the developer can reinstall or clear storage whenever a breaking change occurs.
+  - Prioritize clean, modern code over backward compatibility during this phase.
+
 ---
 
 ## Common Patterns
