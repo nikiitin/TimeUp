@@ -227,5 +227,53 @@ describe('ReportService', () => {
         });
     });
 
+    describe('Error Handling Coverage', () => {
+        test('fetchAllCardTimers should handle card data fetch errors', async () => {
+            const mockT = {
+                cards: jest.fn().mockResolvedValue([
+                    { id: 'card1', name: 'Test Card' },
+                ]),
+                get: jest.fn().mockRejectedValue(new Error('Card data error')),
+            };
+
+            const results = await ReportService.fetchAllCardTimers(mockT);
+
+            // Should return empty array for failed card
+            expect(results).toHaveLength(0);
+            expect(mockT.get).toHaveBeenCalled();
+        });
+
+        test('fetchAllCardTimers should handle network errors', async () => {
+            const mockT = {
+                cards: jest.fn().mockRejectedValue(new Error('Network error')),
+            };
+
+            const results = await ReportService.fetchAllCardTimers(mockT);
+
+            // Should return empty array on error
+            expect(results).toEqual([]);
+        });
+
+        test('fetchAllCardTimers should handle partial failures', async () => {
+            const mockT = {
+                cards: jest.fn().mockResolvedValue([
+                    { id: 'card1', name: 'Card 1' },
+                    { id: 'card2', name: 'Card 2' },
+                ]),
+                get: jest.fn()
+                    .mockResolvedValueOnce({
+                        entries: [{ id: 'e1', startTime: 1000, endTime: 2000 }],
+                    })
+                    .mockRejectedValueOnce(new Error('Card 2 failed')),
+            };
+
+            const results = await ReportService.fetchAllCardTimers(mockT);
+
+            // Should return only successful results
+            expect(results).toHaveLength(1);
+            expect(results[0].cardId).toBe('card1');
+        });
+    });
+
     // Note: downloadCSV is not tested as it requires DOM APIs
 });

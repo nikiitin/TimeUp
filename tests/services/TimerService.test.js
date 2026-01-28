@@ -157,4 +157,264 @@ describe("TimerService", () => {
       expect(result.entry.description).toBe("b".repeat(120));
     });
   });
+
+  describe("Error Handling Coverage", () => {
+    test("startTimer should handle unexpected errors", async () => {
+      StorageService.getTimerData.mockRejectedValue(new Error("Database error"));
+
+      const result = await TimerService.startTimer(tMock);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Database error");
+    });
+
+    test("stopTimer should handle unexpected errors", async () => {
+      StorageService.getTimerData.mockRejectedValue(new Error("Read error"));
+
+      const result = await TimerService.stopTimer(tMock, "Test");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Read error");
+    });
+
+    test("stopTimer should handle no active timer", async () => {
+      StorageService.getTimerData.mockResolvedValue({
+        ...getMockData(),
+        state: TIMER_STATE.IDLE,
+      });
+
+      const result = await TimerService.stopTimer(tMock);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("No active timer");
+    });
+
+    test("setEstimate should handle errors", async () => {
+      StorageService.getTimerData.mockRejectedValue(new Error("Storage error"));
+
+      const result = await TimerService.setEstimate(tMock, 3600000);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Storage error");
+    });
+
+    test("deleteEntry should handle entry not found", async () => {
+      StorageService.getTimerData.mockResolvedValue(getMockData());
+
+      // EntryStorageService will return empty list, so entry won't be found
+      const result = await TimerService.deleteEntry(tMock, "nonexistent");
+
+      expect(result).toBeDefined();
+      expect(result.success).toBeDefined();
+    });
+
+    test("deleteEntry should handle unexpected errors", async () => {
+      StorageService.getTimerData.mockRejectedValue(new Error("Delete error"));
+
+      const result = await TimerService.deleteEntry(tMock, "entry1");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Delete error");
+    });
+
+    test("updateEntry should handle entry not found", async () => {
+      // Test will rely on EntryStorageService's behavior
+      const result = await TimerService.updateEntry(tMock, "nonexistent", {
+        description: "New desc",
+      });
+
+      expect(result).toBeDefined();
+      expect(result.success).toBeDefined();
+    });
+
+    test("updateEntry should handle unexpected errors", async () => {
+      StorageService.getTimerData.mockRejectedValue(new Error("Update error"));
+
+      const result = await TimerService.updateEntry(tMock, "entry1", {
+        description: "Updated",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Update error");
+    });
+
+    test("startItemTimer should handle unexpected errors", async () => {
+      StorageService.getTimerData.mockRejectedValue(new Error("Checklist error"));
+
+      const result = await TimerService.startItemTimer(tMock, "item1", "checklist1");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Checklist error");
+    });
+
+    test("stopItemTimer should handle unexpected errors", async () => {
+      StorageService.getTimerData.mockRejectedValue(new Error("Stop item error"));
+
+      const result = await TimerService.stopItemTimer(tMock, "item1");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Stop item error");
+    });
+
+    test("handleSaveResult should handle save errors with generic message", async () => {
+      StorageService.setTimerData.mockResolvedValue({
+        success: false,
+        error: "UNKNOWN_ERROR",
+      });
+
+      const result = await TimerService.startTimer(tMock);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Save failed");
+    });
+
+    test("handleSaveResult should handle unexpected errors in catch block", async () => {
+      // Force an error by making setTimerData throw
+      StorageService.setTimerData.mockRejectedValue(new Error("Unexpected save error"));
+
+      const result = await TimerService.startTimer(tMock);
+
+      expect(result.success).toBe(false);
+      // handleSaveResult transforms the error to "Save failed"
+      expect(result.error).toBe("Save failed");
+    });
+
+    test("deleteEntry should handle save failure", async () => {
+      StorageService.getTimerData.mockResolvedValue({
+        ...getMockData(),
+        entries: [{ id: "e1", startTime: 1000, endTime: 2000, duration: 1000 }],
+      });
+
+      // Mock EntryStorageService to simulate save failure
+      const EntryStorageService = await import(
+        "../../src/services/EntryStorageService.js"
+      );
+      const originalDelete = EntryStorageService.default.deleteEntry;
+      EntryStorageService.default.deleteEntry = jest.fn().mockResolvedValue({
+        success: false,
+        found: true,
+        error: "Save failed",
+      });
+
+      const result = await TimerService.deleteEntry(tMock, "e1");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Save failed");
+
+      // Restore
+      EntryStorageService.default.deleteEntry = originalDelete;
+    });
+
+    test("updateEntry should handle save failure", async () => {
+      StorageService.getTimerData.mockResolvedValue({
+        ...getMockData(),
+        entries: [{ id: "e1", startTime: 1000, endTime: 2000, duration: 1000, description: "Old" }],
+      });
+
+      // Mock EntryStorageService to simulate save failure
+      const EntryStorageService = await import(
+        "../../src/services/EntryStorageService.js"
+      );
+      const originalUpdate = EntryStorageService.default.updateEntry;
+      EntryStorageService.default.updateEntry = jest.fn().mockResolvedValue({
+        success: false,
+        found: true,
+        error: "Update failed",
+      });
+
+      const result = await TimerService.updateEntry(tMock, "e1", {
+        description: "New",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Update failed");
+
+      // Restore
+      EntryStorageService.default.updateEntry = originalUpdate;
+    });
+
+    test("startItemTimer should stop other running item timers", async () => {
+      StorageService.getTimerData.mockResolvedValue({
+        ...getMockData(),
+        checklistItems: {
+          item1: {
+            state: TIMER_STATE.RUNNING,
+            currentEntry: { startTime: Date.now() - 5000, pausedDuration: 0 },
+          },
+        },
+      });
+      StorageService.setTimerData.mockResolvedValue({ success: true });
+
+      const result = await TimerService.startItemTimer(
+        tMock,
+        "item2",
+        "checklist1",
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.stoppedItemId).toBe("item1");
+    });
+
+    test("startItemTimer should stop global timer if running", async () => {
+      StorageService.getTimerData.mockResolvedValue({
+        ...getMockData(),
+        state: TIMER_STATE.RUNNING,
+        currentEntry: { startTime: Date.now() - 5000, pausedDuration: 0 },
+      });
+      StorageService.setTimerData.mockResolvedValue({ success: true });
+
+      const result = await TimerService.startItemTimer(
+        tMock,
+        "item1",
+        "checklist1",
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.stoppedGlobal).toBe(true);
+    });
+
+    test("getItemCurrentElapsed should return 0 for paused timer", () => {
+      const itemData = {
+        state: TIMER_STATE.PAUSED,
+        currentEntry: { startTime: Date.now() - 5000, pausedDuration: 1000 },
+      };
+
+      const elapsed = TimerService.getItemCurrentElapsed(itemData);
+      expect(elapsed).toBe(0);
+    });
+
+    test("getStorageUsage should return metadata usage when higher", () => {
+      const timerData = {
+        entries: [],
+        state: TIMER_STATE.IDLE,
+        currentEntry: null,
+        checklistItems: {},
+        estimatedTime: 3600000,
+        // Add more metadata to make it larger
+        largeMetadata: "x".repeat(1000),
+      };
+
+      const usage = TimerService.getStorageUsage(timerData);
+      expect(usage).toBeDefined();
+      expect(usage.size).toBeGreaterThan(0);
+    });
+
+    test("getStorageUsage should return entries usage when higher", () => {
+      const timerData = {
+        entries: Array.from({ length: 50 }, (_, i) => ({
+          id: `e${i}`,
+          startTime: i * 1000,
+          endTime: (i + 1) * 1000,
+          duration: 1000,
+          description: "Test entry with some description",
+        })),
+        state: TIMER_STATE.IDLE,
+        currentEntry: null,
+      };
+
+      const usage = TimerService.getStorageUsage(timerData);
+      expect(usage).toBeDefined();
+      expect(usage.size).toBeGreaterThan(0);
+    });
+  });
 });

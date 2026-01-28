@@ -15,7 +15,6 @@ import StorageService from "./StorageService.js";
 
 const ENTRIES_PER_MAIN_STORAGE = 15; // Recent entries in timerData (reduced to fit in 4KB)
 const ENTRIES_PER_ARCHIVE_PAGE = 30; // Entries per archive key (reduced to fit compressed in 4KB)
-const STORAGE_LIMIT = 4096;
 
 /**
  * Compresses entry to reduce storage size by ~40%.
@@ -179,9 +178,9 @@ const archiveOldEntries = async (t, oldEntries) => {
       const pageData = pages[i];
       const jsonString = JSON.stringify(pageData);
 
-      if (jsonString.length > STORAGE_LIMIT) {
+      if (jsonString.length > 4096) {
         console.warn(
-          `[EntryStorageService] Page ${i} exceeds limit: ${jsonString.length}/${STORAGE_LIMIT}`,
+          `[EntryStorageService] Page ${i} exceeds limit: ${jsonString.length}/4096`,
         );
         // Continue anyway - some data is better than none
       }
@@ -324,10 +323,10 @@ export const getStorageStats = async (t) => {
       recentEntries: recentCount,
       archivedEntries: archivedCount,
       mainStorageSize: mainSize,
-      mainStoragePercent: Math.round((mainSize / STORAGE_LIMIT) * 100),
+      mainStoragePercent: Math.round((mainSize / 4096) * 100),
       archiveStorageSize: archiveSize,
       archivePages: pageIndex,
-      estimatedCapacity: Math.floor((STORAGE_LIMIT * 10) / 130), // ~130 bytes per compressed entry
+      estimatedCapacity: Math.floor((4096 * 10) / 130), // ~130 bytes per compressed entry
     };
   } catch (error) {
     console.error("[EntryStorageService] getStorageStats error:", error);

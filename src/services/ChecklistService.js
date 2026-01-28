@@ -21,7 +21,7 @@ export const getChecklists = async (t) => {
     const isAuthorized = await restApi.isAuthorized();
 
     if (!isAuthorized) {
-      console.log("[ChecklistService] Not authorized for REST API.");
+      console.warn("[ChecklistService] Not authorized for REST API.");
       return null;
     }
 

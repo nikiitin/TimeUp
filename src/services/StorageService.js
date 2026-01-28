@@ -230,6 +230,7 @@ const StorageService = {
   removeData,
   getTimerData,
   setTimerData,
+  setTimerMetadata,
   calculateUsage,
   getBoardSettings,
   setBoardSettings,
