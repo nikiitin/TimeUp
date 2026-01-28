@@ -71,6 +71,25 @@
     .timer-remaining { color: #579dff; }
     .timer-remaining--warning { color: #f5cd47; }
     .timer-remaining--over { color: #f87168; }
+    .timer-description {
+      flex: 1;
+      min-width: 120px;
+      max-width: 200px;
+      padding: 4px 8px;
+      font-size: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #b6c2cf;
+    }
+    .timer-description:focus {
+      outline: none;
+      border-color: #579dff;
+    }
+    .timer-description::placeholder {
+      color: #626f86;
+      font-style: italic;
+    }
 
     /* Estimate row */
     .estimate-row {
@@ -167,6 +186,15 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       max-width: 140px;
+    }
+    .entry__desc {
+      font-size: 11px;
+      color: #9fadbc;
+      font-style: italic;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 160px;
     }
     .entry--linked {
       background: rgba(87, 157, 255, 0.05);
@@ -316,13 +344,6 @@
       border-radius: 2px;
       background: rgba(255, 255, 255, 0.08);
       color: #b6c2cf;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s;
-    }
-    .checklist-item:hover .checklist-item__estimate-input {
-      opacity: 1;
-      pointer-events: auto;
     }
     .checklist-item__estimate-input:focus {
       outline: none;
@@ -342,6 +363,7 @@
         <span id="btn-text">Start</span>
       </button>
       <div class="timer-display timer-display--idle" id="display">00:00:00</div>
+      <input type="text" class="timer-description" id="timer-description" placeholder="What are you working on?" hidden>
       <div class="timer-info">
         <span class="timer-total" id="total"></span>
         <span class="timer-remaining" id="remaining" hidden></span>
@@ -387,6 +409,7 @@
     const progressBar = document.getElementById('progress-bar');
     const progressFill = document.getElementById('progress-fill');
     const checklistsEl = document.getElementById('checklists-container');
+    const timerDescription = document.getElementById('timer-description');
 
     let updateInterval = null;
     let isRunning = false;
@@ -403,7 +426,11 @@
 
     const handleDeleteEntry = async (entryId) => {
       if (!confirm('Delete this time entry?')) return;
-      await TimerService.deleteEntry(t, entryId);
+      const result = await TimerService.deleteEntry(t, entryId);
+      if (!result.success) {
+        alert(`Failed to delete entry: ${result.error}`);
+        return;
+      }
       await refresh();
     };
 
@@ -429,11 +456,13 @@
       entriesEl.innerHTML = sorted.map(entry => {
         const itemName = getCheckItemName(entry.checklistItemId);
         const labelHtml = itemName ? `<span class="entry__label" title="${escapeHtml(itemName)}">☑ ${escapeHtml(itemName)}</span>` : '';
+        const descHtml = entry.description ? `<span class="entry__desc" title="${escapeHtml(entry.description)}">${escapeHtml(entry.description)}</span>` : '';
 
         return `<div class="entry${itemName ? ' entry--linked' : ''}">
           <div class="entry__info">
             <span class="entry__time">${formatTimestamp(entry.startTime, { showDate: true })}</span>
             ${labelHtml}
+            ${descHtml}
           </div>
           <div class="entry__right">
             <span class="entry__duration">${formatDuration(entry.duration, { compact: true })}</span>
@@ -509,6 +538,7 @@
       btnToggle.title = isRunning ? 'Stop Timer' : 'Start Timer';
       iconPlay.hidden = isRunning;
       iconStop.hidden = !isRunning;
+      timerDescription.hidden = !isRunning;
 
       renderEntries(timerData.entries);
       updateEstimateUI(timerData);
@@ -707,11 +737,25 @@
     };
 
     btnToggle.addEventListener('click', async () => {
+      let result;
       if (isRunning) {
         stopLoop();
-        await TimerService.stopTimer(t);
+        const description = timerDescription.value.trim();
+        result = await TimerService.stopTimer(t, description);
+        if (!result.success) {
+          alert(`Failed to stop timer: ${result.error}`);
+          startLoop();
+          return;
+        }
+        timerDescription.value = '';
+        timerDescription.hidden = true;
       } else {
-        await TimerService.startTimer(t);
+        result = await TimerService.startTimer(t);
+        if (!result.success) {
+          alert(`Failed to start timer: ${result.error}`);
+          return;
+        }
+        timerDescription.hidden = false;
         startLoop();
       }
       await refresh();
@@ -721,7 +765,11 @@
       const value = estimateInput.value.trim();
       const ms = parseTimeString(value);
       if (ms) {
-        await TimerService.setEstimate(t, ms);
+        const result = await TimerService.setEstimate(t, ms);
+        if (!result.success) {
+          alert(`Failed to set estimate: ${result.error}`);
+          return;
+        }
         estimateInput.value = '';
         await refresh();
       } else {
@@ -736,7 +784,11 @@
     });
 
     btnClearEstimate.addEventListener('click', async () => {
-      await TimerService.setEstimate(t, null);
+      const result = await TimerService.setEstimate(t, null);
+      if (!result.success) {
+        alert(`Failed to clear estimate: ${result.error}`);
+        return;
+      }
       await refresh();
     });
 
