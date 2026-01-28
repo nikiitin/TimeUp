@@ -24,6 +24,14 @@ export class EstimateUI {
         if (this.elements.btnClear) {
             this.elements.btnClear.addEventListener('click', () => this._handleClear());
         }
+        if (this.elements.input) {
+            this.elements.input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this._handleSet();
+                }
+            });
+        }
     }
 
     setChecklists(checklists) {
@@ -34,15 +42,20 @@ export class EstimateUI {
         const value = this.elements.input.value.trim();
         const ms = parseTimeString(value);
         if (ms) {
-            await TimerService.setManualEstimate(this.t, ms);
-            // Parent refresh triggers update
+            const result = await TimerService.setManualEstimate(this.t, ms);
+            if (!result.success) {
+                alert(`Failed to set estimate: ${result.error}`);
+            }
         } else if (value) {
             alert('Invalid time format. Try "2h" or "30m".');
         }
     }
 
     async _handleClear() {
-        await TimerService.setManualEstimate(this.t, null); // Clear manual override
+        const result = await TimerService.setManualEstimate(this.t, null); // Clear manual override
+        if (!result.success) {
+            alert(`Failed to clear estimate: ${result.error}`);
+        }
     }
 
     update(timerData) {

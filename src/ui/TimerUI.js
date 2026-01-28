@@ -27,7 +27,8 @@ export class TimerUI {
         const isRunning = this.elements.btnToggle.classList.contains('btn-toggle--running');
         try {
             if (isRunning) {
-                await TimerService.stopTimer(this.t);
+                const description = this.elements.description.value.trim();
+                await TimerService.stopTimer(this.t, description);
             } else {
                 await TimerService.startTimer(this.t);
             }

@@ -3,8 +3,6 @@
  * Handles the Trello Authorization UI state and interactions
  */
 
-import ChecklistService from '../services/ChecklistService.js';
-
 export class AuthUI {
     constructor(t, { authContainerId, btnAuthorizeId, onAuthorized }) {
         this.t = t;
@@ -38,13 +36,8 @@ export class AuthUI {
     }
 
     /**
-     * Checks checks auth status via service and updates UI
+     * Checks the auth status via service and updates UI
      * @returns {Promise<boolean>} isAuthorized
      */
-    async checkAndRender() {
-        // We use ChecklistService's probe or just check if previous calls failed (passed in state)
-        // But here we might just want to check strictly if we need to show it.
-        // For simplicity, the main controller usually decides when to show AuthUI based on service result.
-        return true;
-    }
+
 }

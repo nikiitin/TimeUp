@@ -106,10 +106,20 @@ export const getCheckItemData = (timerData, checkItemId) => {
     return (timerData?.checklistItems?.[checkItemId]) || { ...DEFAULTS.CHECKLIST_ITEM_DATA };
 };
 
+/**
+ * Calculates total time spent on a checklist item.
+ * @param {Object} itemData - Checklist item data
+ * @returns {number} Total time in milliseconds
+ */
 export const getCheckItemTotalTime = (itemData) => {
     return sumDurations(itemData?.entries || []);
 };
 
+/**
+ * Checks if any checklist item has a running timer.
+ * @param {Object} timerData - Timer data
+ * @returns {{isRunning: boolean, itemId: string|null}}
+ */
 export const getRunningCheckItem = (timerData) => {
     const checklistItems = timerData?.checklistItems || {};
     // Object.entries + find is cleaner

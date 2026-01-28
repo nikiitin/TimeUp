@@ -3,7 +3,7 @@
  * Handles rendering time entries and editing logic
  */
 
-import { formatDuration, formatTimestamp, parseTimeString, sumDurations } from '../utils/formatTime.js';
+import { formatDuration, formatTimestamp, parseTimeString } from '../utils/formatTime.js';
 import TimerService from '../services/TimerService.js';
 
 export class EntryListUI {
