@@ -50,7 +50,7 @@ Before committing any code changes, VERIFY all of the following:
 ### 6. Functionality Verification
 - [ ] **All new features are tested** - add unit tests for new service functions
 - [ ] **Existing tests still pass** - run `npm test` before committing
-- [ ] **Test coverage above 85%** - run `npm run coverage`
+- [ ] **Test coverage above 90%** - run `npm run test:coverage`
 - [ ] **Manual testing in Trello** - verify UI works with `/test-in-trello` workflow
 
 ---

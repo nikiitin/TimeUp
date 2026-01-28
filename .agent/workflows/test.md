@@ -26,7 +26,7 @@ npm test
 // turbo
 3. Run tests with coverage report:
 ```bash
-npm test -- --coverage
+npm run test:coverage
 ```
 
 // turbo
@@ -37,17 +37,17 @@ npm run test:watch
 
 ## Coverage Requirements
 
-Tests must meet 85% threshold for:
+Tests must meet **90% threshold** for:
 - Statements
 - Branches
 - Functions
 - Lines
 
-If coverage drops below 85%, the test suite will fail.
+If coverage drops below 90%, the test suite will fail.
 
 ## Coverage Report
 
-After running with `--coverage`, view the HTML report:
+After running with coverage, view the HTML report:
 ```bash
 open coverage/index.html
 ```
@@ -65,5 +65,26 @@ tests/
     ├── StorageService.test.js
     ├── TimerService.test.js
     ├── ReportService.test.js
+    ├── ChecklistService.test.js
     └── TrelloService.test.js
 ```
+
+---
+
+# Pre-Task Completion Checklist
+
+**IMPORTANT**: Run these checks before completing any task:
+
+// turbo
+5. Run tests and verify all pass:
+```bash
+npm test
+```
+
+// turbo
+6. Check coverage meets 90% threshold:
+```bash
+npm run test:coverage
+```
+
+If either fails, fix the issues before marking the task complete.

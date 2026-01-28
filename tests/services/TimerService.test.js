@@ -5,6 +5,7 @@
 import { jest } from '@jest/globals';
 import { createTrelloMock } from '../mocks/trelloMock.js';
 import TimerService from '../../src/services/TimerService.js';
+import StorageService from '../../src/services/StorageService.js';
 import { TIMER_STATE, STORAGE_KEYS, STORAGE_SCOPES, DEFAULTS } from '../../src/utils/constants.js';
 
 describe('TimerService', () => {
@@ -13,6 +14,10 @@ describe('TimerService', () => {
     beforeEach(() => {
         mockT = createTrelloMock();
         jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     const setTimerData = (data) => {
@@ -48,6 +53,16 @@ describe('TimerService', () => {
             expect(result.error).toBe('Timer already running');
         });
 
+        test('handles exceptions gracefully', async () => {
+            setTimerData({ ...DEFAULTS.TIMER_DATA });
+            jest.spyOn(StorageService, 'setTimerData').mockRejectedValue(new Error('Storage error'));
+
+            const result = await TimerService.startTimer(mockT);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Storage error');
+        });
+
         test('handles save errors gracefully', async () => {
             setTimerData({ ...DEFAULTS.TIMER_DATA });
             // Mock setData to fail
@@ -59,6 +74,28 @@ describe('TimerService', () => {
 
             expect(result.success).toBe(false);
             expect(result.error).toBe('Save failed');
+        });
+
+        test('stops running checklist item timer when starting main timer', async () => {
+            const itemStartTime = Date.now() - 30000;
+            setTimerData({
+                ...DEFAULTS.TIMER_DATA,
+                checklistItems: {
+                    item1: {
+                        state: TIMER_STATE.RUNNING,
+                        currentEntry: { startTime: itemStartTime, pausedDuration: 0 },
+                        entries: [],
+                        estimatedTime: null,
+                    },
+                },
+            });
+
+            const result = await TimerService.startTimer(mockT);
+
+            expect(result.success).toBe(true);
+            expect(result.stoppedItemId).toBe('item1');
+            expect(result.data.checklistItems.item1.state).toBe(TIMER_STATE.IDLE);
+            expect(result.data.checklistItems.item1.entries).toHaveLength(1);
         });
     });
 
@@ -105,6 +142,34 @@ describe('TimerService', () => {
             expect(result.data.entries).toHaveLength(2);
             expect(result.data.entries[0]).toEqual(existingEntry);
         });
+
+        test('handles exceptions gracefully', async () => {
+            setTimerData({
+                entries: [],
+                state: TIMER_STATE.RUNNING,
+                currentEntry: { startTime: Date.now() - 1000, pausedDuration: 0 },
+            });
+            jest.spyOn(StorageService, 'setTimerData').mockRejectedValue(new Error('Network error'));
+
+            const result = await TimerService.stopTimer(mockT);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Network error');
+        });
+
+        test('handles save failure gracefully', async () => {
+            setTimerData({
+                entries: [],
+                state: TIMER_STATE.RUNNING,
+                currentEntry: { startTime: Date.now() - 1000, pausedDuration: 0 },
+            });
+            jest.spyOn(StorageService, 'setTimerData').mockResolvedValue(false);
+
+            const result = await TimerService.stopTimer(mockT);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Save failed');
+        });
     });
 
     describe('getCurrentElapsed', () => {
@@ -139,6 +204,26 @@ describe('TimerService', () => {
             const elapsed = TimerService.getCurrentElapsed(timerData);
             expect(elapsed).toBeGreaterThanOrEqual(5000);
             expect(elapsed).toBeLessThan(6000);
+        });
+
+        test('returns elapsedBeforePause when timer is paused', () => {
+            const timerData = {
+                state: TIMER_STATE.PAUSED,
+                currentEntry: { startTime: Date.now() - 10000, elapsedBeforePause: 7500 },
+            };
+
+            const elapsed = TimerService.getCurrentElapsed(timerData);
+            expect(elapsed).toBe(7500);
+        });
+
+        test('returns 0 when paused without elapsedBeforePause', () => {
+            const timerData = {
+                state: TIMER_STATE.PAUSED,
+                currentEntry: { startTime: Date.now() - 10000 },
+            };
+
+            const elapsed = TimerService.getCurrentElapsed(timerData);
+            expect(elapsed).toBe(0);
         });
     });
 
@@ -175,6 +260,26 @@ describe('TimerService', () => {
             expect(result.data.entries).toEqual(entries);
             expect(result.data.state).toBe(TIMER_STATE.IDLE);
         });
+
+        test('handles exceptions gracefully', async () => {
+            setTimerData({ ...DEFAULTS.TIMER_DATA });
+            jest.spyOn(StorageService, 'setTimerData').mockRejectedValue(new Error('Quota exceeded'));
+
+            const result = await TimerService.setEstimate(mockT, 3600000);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Quota exceeded');
+        });
+
+        test('handles save failure gracefully', async () => {
+            setTimerData({ ...DEFAULTS.TIMER_DATA });
+            jest.spyOn(StorageService, 'setTimerData').mockResolvedValue(false);
+
+            const result = await TimerService.setEstimate(mockT, 3600000);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Save failed');
+        });
     });
 
     describe('deleteEntry', () => {
@@ -208,6 +313,28 @@ describe('TimerService', () => {
 
             expect(result.success).toBe(false);
             expect(result.error).toBe('Entry not found');
+        });
+
+        test('handles exceptions gracefully', async () => {
+            setTimerData({ ...DEFAULTS.TIMER_DATA, entries: [{ id: 'entry1', duration: 1000 }] });
+            // For deleteEntry, it could fail at getTimerData or setTimerData.
+            // Let's mock setTimerData failure as it's common.
+            jest.spyOn(StorageService, 'setTimerData').mockRejectedValue(new Error('Storage error'));
+
+            const result = await TimerService.deleteEntry(mockT, 'entry1');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Storage error');
+        });
+
+        test('handles save failure gracefully', async () => {
+            setTimerData({ ...DEFAULTS.TIMER_DATA, entries: [{ id: 'entry1', duration: 1000 }] });
+            jest.spyOn(StorageService, 'setTimerData').mockResolvedValue(false);
+
+            const result = await TimerService.deleteEntry(mockT, 'entry1');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Save failed');
         });
     });
 
@@ -283,6 +410,26 @@ describe('TimerService', () => {
 
             expect(result.success).toBe(false);
             expect(result.error).toBe('Entry not found');
+        });
+
+        test('handles exceptions gracefully', async () => {
+            setTimerData({ ...DEFAULTS.TIMER_DATA, entries: [{ id: 'entry1', duration: 1000 }] });
+            jest.spyOn(StorageService, 'setTimerData').mockRejectedValue(new Error('Update error'));
+
+            const result = await TimerService.updateEntry(mockT, 'entry1', { duration: 2000 });
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Update error');
+        });
+
+        test('handles save failure gracefully', async () => {
+            setTimerData({ ...DEFAULTS.TIMER_DATA, entries: [{ id: 'entry1', duration: 1000 }] });
+            jest.spyOn(StorageService, 'setTimerData').mockResolvedValue(false);
+
+            const result = await TimerService.updateEntry(mockT, 'entry1', { duration: 2000 });
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Save failed');
         });
     });
 
