@@ -251,28 +251,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 400px; /* Limit height of all checklists together */
-  overflow-y: auto;
-  padding-right: 4px;
+  overflow: visible; /* Let inner tables handle scrolling */
 }
 
-/* Aura Scrollbar for Checklists */
-.checklists-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.checklists-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.checklists-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-
-.checklists-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
 
 .checklist-panel {
   background: var(--aura-surface);
@@ -280,6 +261,33 @@ body {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.checklist-table {
+  max-height: 280px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px; /* Space for scrollbar */
+}
+
+/* Aura Scrollbar for Checklist Table */
+.checklist-table::-webkit-scrollbar {
+  width: 6px;
+}
+
+.checklist-table::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.checklist-table::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.checklist-table::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .checklist-panel__header {
