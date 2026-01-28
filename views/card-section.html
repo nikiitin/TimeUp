@@ -607,7 +607,7 @@
                 : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}
             </button>
             <span class="${nameClass}" title="${escapedName}">${escapedName}</span>
-            <span class="${timeClass}" data-time-id="${escapeHtml(item.id)}">${formatDuration(itemTime, { compact: true, showSeconds: false })}</span>
+            <span class="${timeClass}" data-time-id="${escapeHtml(item.id)}">${formatDuration(itemTime, { compact: true, showSeconds: true })}</span>
             <input type="text" class="checklist-item__estimate-input" data-item-id="${escapeHtml(item.id)}"
               placeholder="${itemEstimate > 0 ? formatDuration(itemEstimate, { compact: true, showSeconds: false }) : 'Est'}"
               title="Set estimate (e.g. 30m, 1h)">
@@ -652,7 +652,7 @@
           // Update time display
           const timeEl = checklistsEl.querySelector(`[data-time-id="${item.id}"]`);
           if (timeEl) {
-            timeEl.textContent = formatDuration(itemTime, { compact: true, showSeconds: false });
+            timeEl.textContent = formatDuration(itemTime, { compact: true, showSeconds: true });
             timeEl.className = isOver ? 'checklist-item__time checklist-item__time--over' : 'checklist-item__time';
           }
 
