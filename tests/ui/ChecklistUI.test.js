@@ -56,8 +56,8 @@ describe("ChecklistUI", () => {
     expect(container.querySelector(".checklist-panel")).not.toBeNull();
     expect(container.querySelector(".checklist-table")).not.toBeNull();
     // Check headers
-    expect(container.textContent).toContain("Est");
-    expect(container.textContent).toContain("Time");
+    expect(container.textContent).toContain("Estimate");
+    expect(container.textContent).toContain("Tracked");
   });
 
   test("should highlight running items", () => {
@@ -80,7 +80,7 @@ describe("ChecklistUI", () => {
 
     const row = container.querySelector(".checklist-row");
     expect(row.classList).toContain("checklist-row--running");
-    expect(row.querySelector(".btn-icon--running")).not.toBeNull();
+    expect(row.querySelector(".btn-item-toggle--running")).not.toBeNull();
   });
 
   test("should show estimate and total time", () => {
