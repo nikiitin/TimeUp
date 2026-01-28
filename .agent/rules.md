@@ -5,6 +5,7 @@
 Before committing any code changes, VERIFY all of the following:
 
 ### 1. Security Review
+
 - [ ] **XSS Prevention**: All user or external data inserted into HTML must be escaped
   - Use `textContent` instead of `innerHTML` when possible
   - If `innerHTML` is required, escape HTML entities: `"<>&` → `&lt;&gt;&amp;`
@@ -13,6 +14,7 @@ Before committing any code changes, VERIFY all of the following:
 - [ ] **Input validation**: All user inputs are validated before processing
 
 ### 2. Error Handling - No Silent Failures
+
 - [ ] **All async operations must handle errors explicitly**
   - Services should return `{ success, error, data }` pattern
   - UI code must check `success` and display errors to user
@@ -22,6 +24,7 @@ Before committing any code changes, VERIFY all of the following:
 - [ ] **Check for silent catch blocks**: `catch(e) { return []; }` is NOT acceptable in UI code
 
 ### 3. Performance Review
+
 - [ ] **Avoid redundant API calls in refresh loops**
   - `getChecklists()` should NOT be called on every 1-second refresh
   - Cache expensive data and only refresh when user interacts
@@ -34,6 +37,7 @@ Before committing any code changes, VERIFY all of the following:
   - Intervals must be cleared when leaving the view
 
 ### 4. Code Quality & Dead Code
+
 - [ ] **No trailing whitespace**
 - [ ] **Consistent error message format**
 - [ ] **JSDoc for all public functions**
@@ -42,22 +46,27 @@ Before committing any code changes, VERIFY all of the following:
 - [ ] **No duplicate code** - extract common patterns into reusable functions
 
 ### 5. Code Duplication Check
+
 - [ ] **Entry creation logic**: Should only exist in `createEntry()` helper
 - [ ] **Timer stop logic**: Should be consolidated, avoid duplicating entry creation
 - [ ] **Formatting functions**: Use existing `formatDuration`, `formatTimestamp`, `escapeHtml`
 - [ ] **CSS**: Check if similar styles already exist before adding new ones
 
 ### 6. Functionality Verification
+
 - [ ] **All new features are tested** - add unit tests for new service functions
 - [ ] **Existing tests still pass** - run `npm test` before committing
 - [ ] **Test coverage above 90%** - run `npm run test:coverage`
 - [ ] **Manual testing in Trello** - verify UI works with `/test-in-trello` workflow
 
 ### 7. Development Phase Rules
+
 - [ ] **No Legacy Bridges**: Since the code is not in production yet, avoid adding migration logic or compatibility layers for old data formats.
   - Assume the developer can reinstall or clear storage whenever a breaking change occurs.
   - Prioritize clean, modern code over backward compatibility during this phase.
+
 ### 8. Lightweight & Compact Storage
+
 - [ ] **Minimize Storage Footprint**: Trello has a 4,096 character limit per key. The app must be as lightweight as possible.
   - Avoid redundant fields (e.g., don't store both `duration` and `startTime/endTime` if one can be calculated).
   - Use concise key names in JSON if necessary.
@@ -69,6 +78,7 @@ Before committing any code changes, VERIFY all of the following:
 ## Common Patterns
 
 ### Proper Error Handling in UI
+
 ```javascript
 // ❌ WRONG - Silent failure
 const handleAction = async () => {
@@ -88,18 +98,28 @@ const handleAction = async () => {
 ```
 
 ### XSS Prevention
+
 ```javascript
 // ❌ WRONG - XSS vulnerability
 html += `<span>${item.name}</span>`;
 
 // ✅ CORRECT - Escape HTML
-const escapeHtml = (str) => str.replace(/[<>&"]/g, c => ({
-  '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'
-})[c]);
+const escapeHtml = (str) =>
+  str.replace(
+    /[<>&"]/g,
+    (c) =>
+      ({
+        "<": "&lt;",
+        ">": "&gt;",
+        "&": "&amp;",
+        '"': "&quot;",
+      })[c],
+  );
 html += `<span>${escapeHtml(item.name)}</span>`;
 ```
 
 ### Efficient Refresh
+
 ```javascript
 // ❌ WRONG - API call on every refresh
 const refresh = async () => {
@@ -121,6 +141,7 @@ const fullRefresh = async () => {
 ```
 
 ### DOM Update Optimization
+
 ```javascript
 // ❌ WRONG - Full DOM rebuild loses focus
 const update = () => {
@@ -138,6 +159,7 @@ const update = () => {
 ```
 
 ### Avoiding Code Duplication
+
 ```javascript
 // ❌ WRONG - Duplicate entry creation logic
 const stopTimer = () => {

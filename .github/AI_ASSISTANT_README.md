@@ -45,6 +45,7 @@ This directory contains configuration files for AI assistants (GitHub Copilot, C
    - Copilot will read `.github/copilot-instructions.md`
 
 3. **Use Copilot Chat**:
+
    ```
    @workspace How do I add a new timer feature?
    @workspace Use the add-feature skill to create a pause function
@@ -83,7 +84,9 @@ This directory contains configuration files for AI assistants (GitHub Copilot, C
 ## 📚 What Each File Does
 
 ### `.github/copilot-instructions.md`
+
 **Primary instructions for GitHub Copilot in VSCode.**
+
 - Core architecture rules
 - Code style guidelines
 - CSS patterns
@@ -93,7 +96,9 @@ This directory contains configuration files for AI assistants (GitHub Copilot, C
 - Quick reference
 
 ### `.vscode/settings.json`
+
 **VSCode workspace configuration.**
+
 - Copilot settings
 - Editor preferences
 - File associations
@@ -101,7 +106,9 @@ This directory contains configuration files for AI assistants (GitHub Copilot, C
 - Extension-specific settings
 
 ### `.vscode/tasks.json`
+
 **Predefined tasks you can run:**
+
 - `Test All` - Run all tests (Ctrl+Shift+B)
 - `Test with Coverage` - Run tests with coverage report
 - `Test Watch Mode` - Run tests in watch mode
@@ -109,7 +116,9 @@ This directory contains configuration files for AI assistants (GitHub Copilot, C
 - `Deploy to GitHub Pages` - Push to production
 
 ### `.vscode/project-knowledge.md`
+
 **High-level project context for AI assistants.**
+
 - Project overview
 - Architecture principles
 - File patterns
@@ -118,7 +127,9 @@ This directory contains configuration files for AI assistants (GitHub Copilot, C
 - Development workflow
 
 ### `.copilot/*.skill.md`
+
 **Reusable workflows (skills) that Copilot can execute:**
+
 - `add-feature.skill.md` - Step-by-step feature development
 - `debug.skill.md` - Debugging patterns and solutions
 - `test.skill.md` - Testing and coverage workflow
@@ -129,6 +140,7 @@ This directory contains configuration files for AI assistants (GitHub Copilot, C
 ## 🎯 How to Use Skills
 
 ### In GitHub Copilot Chat:
+
 ```
 @workspace Use the add-feature skill to create a timer pause button
 @workspace Run the debug skill to help with badge not updating
@@ -136,6 +148,7 @@ This directory contains configuration files for AI assistants (GitHub Copilot, C
 ```
 
 ### In Cursor:
+
 ```
 @Workflow /add-feature
 @Workflow /debug
@@ -145,31 +158,38 @@ This directory contains configuration files for AI assistants (GitHub Copilot, C
 ## 🔧 Customization
 
 ### Add New Skill
+
 1. Create `.copilot/your-skill.skill.md`
 2. Follow the format:
+
    ```markdown
    ---
    skill: your-skill-name
    description: What this skill does
    tags: [category, keywords]
    ---
-   
+
    # Your Skill Name
-   
+
    ## Purpose
+
    What problem this solves
-   
+
    ## Steps
+
    1. First step
    2. Second step
-   ...
+      ...
    ```
 
 ### Update Rules
+
 Edit `.github/copilot-instructions.md` for project-wide rules that apply to all code generation.
 
 ### Add Task
+
 Edit `.vscode/tasks.json` to add new tasks:
+
 ```json
 {
   "label": "Your Task",
@@ -186,6 +206,7 @@ Edit `.vscode/tasks.json` to add new tasks:
 This project is configured for **autonomous AI operation**:
 
 **✅ Agent Can Do Autonomously (No Permission Needed):**
+
 - Create, edit, and delete files
 - Run terminal commands (npm, serve, tests)
 - Install packages
@@ -196,18 +217,21 @@ This project is configured for **autonomous AI operation**:
 - Execute any non-git commands
 
 **⛔ Agent Must Ask First (User Control):**
+
 - **ALL git commands** (commit, push, pull, merge, etc.)
 - Git repository operations
 - Branch operations
 - Anything starting with `git`
 
 **Why This Setup?**
+
 - Faster development - no micro-approvals needed
 - Agent can iterate and test autonomously
 - You maintain full control over version control
 - Changes are tested before you commit
 
 ### GitHub Copilot (VSCode)
+
 - ✅ Code completion
 - ✅ Chat interface with @workspace
 - ✅ Reads copilot-instructions.md
@@ -216,6 +240,7 @@ This project is configured for **autonomous AI operation**:
 - ✅ **Autonomous execution enabled**
 
 ### Cursor
+
 - ✅ Code completion
 - ✅ Chat with @Rules and @Workflow
 - ✅ Reads .cursorrules
@@ -223,6 +248,7 @@ This project is configured for **autonomous AI operation**:
 - ✅ Multi-file editing
 
 ### Antigravity
+
 - ✅ Code completion
 - ✅ Reads .antigravityrules
 - ✅ Uses .agent/ directory
@@ -231,12 +257,15 @@ This project is configured for **autonomous AI operation**:
 ## 📖 Learning More
 
 ### For New Contributors
+
 1. Read `.github/copilot-instructions.md` - Learn the coding style
 2. Review `.copilot/add-feature.skill.md` - Understand the development workflow
 3. Check `.agent/rules.md` - See the pre-commit checklist
 
 ### For AI Assistants
+
 When generating code:
+
 1. Follow `.github/copilot-instructions.md` rules strictly
 2. Use skills as step-by-step guides
 3. Check pre-commit checklist in `.agent/rules.md`
@@ -246,28 +275,31 @@ When generating code:
 
 This project is configured to work with multiple AI-powered IDEs:
 
-| Feature | VSCode + Copilot | Cursor | Antigravity |
-|---------|------------------|--------|-------------|
-| Rules | ✅ copilot-instructions.md | ✅ .cursorrules | ✅ .antigravityrules |
-| Workflows | ✅ .copilot/*.skill.md | ✅ .agent/workflows/ | ✅ .agent/workflows/ |
-| Chat | ✅ @workspace | ✅ @Rules, @Workflow | ✅ Built-in |
-| Tasks | ✅ tasks.json | ✅ tasks.json | ✅ Custom |
-| Settings | ✅ settings.json | ✅ settings.json | ✅ Shared |
+| Feature   | VSCode + Copilot           | Cursor               | Antigravity          |
+| --------- | -------------------------- | -------------------- | -------------------- |
+| Rules     | ✅ copilot-instructions.md | ✅ .cursorrules      | ✅ .antigravityrules |
+| Workflows | ✅ .copilot/\*.skill.md    | ✅ .agent/workflows/ | ✅ .agent/workflows/ |
+| Chat      | ✅ @workspace              | ✅ @Rules, @Workflow | ✅ Built-in          |
+| Tasks     | ✅ tasks.json              | ✅ tasks.json        | ✅ Custom            |
+| Settings  | ✅ settings.json           | ✅ settings.json     | ✅ Shared            |
 
 ## 🆘 Troubleshooting
 
 ### Copilot Not Using Instructions
+
 1. Verify `.github/copilot-instructions.md` exists
 2. Reload VSCode window: `Ctrl+Shift+P` → "Reload Window"
 3. Check Copilot status in bottom status bar
 4. Try: `@workspace explain the project rules`
 
 ### Skills Not Working
+
 1. Ensure files are in `.copilot/` directory
 2. Check YAML frontmatter is correct
 3. Reference skills with exact name: `@workspace use add-feature skill`
 
 ### Tasks Not Appearing
+
 1. Open Command Palette: `Ctrl+Shift+P`
 2. Type "Tasks: Run Task"
 3. If empty, check `.vscode/tasks.json` is valid JSON
@@ -275,6 +307,7 @@ This project is configured to work with multiple AI-powered IDEs:
 ## 📝 Contributing
 
 When adding new rules or skills:
+
 1. Keep them concise and actionable
 2. Use examples (✅ correct vs ❌ wrong)
 3. Add JSDoc-style documentation

@@ -10,6 +10,7 @@
 ## Core Architecture Rules
 
 ### Directory Structure (Mandatory)
+
 - `src/services/` - Business logic & API interactions ONLY
 - `src/ui/` - DOM manipulation ONLY (imports services)
 - `src/utils/` - Pure functions, stateless utilities
@@ -17,6 +18,7 @@
 - `styles/` - CSS with variables, BEM naming, view-specific styles
 
 ### Separation of Concerns (Critical)
+
 - **Services**: Handle ALL business logic and data operations
   - `TrelloService.js` - Wraps ALL Trello API calls
   - `TimerService.js` - Timer state machine (start/stop/pause)
@@ -30,12 +32,17 @@
 - **Utils**: Pure functions, no side effects, testable in isolation
 
 ### Module Pattern (ES6 Only)
+
 ```javascript
 // ✅ Named exports for utilities
-export const formatDuration = (ms) => { /* ... */ };
+export const formatDuration = (ms) => {
+  /* ... */
+};
 
 // ✅ Default export for services (singleton)
-const TimerService = { /* methods */ };
+const TimerService = {
+  /* methods */
+};
 export default TimerService;
 
 // ❌ FORBIDDEN: No IIFE, no global namespace
@@ -46,6 +53,7 @@ export default TimerService;
 ## Code Style (Mandatory)
 
 ### JavaScript Standards
+
 - Use `const` by default, `let` only when reassignment needed
 - NEVER use `var`
 - Prefer arrow functions for callbacks/utilities
@@ -53,14 +61,15 @@ export default TimerService;
 - All modules are strict mode by default
 
 ### Error Handling (Critical for Trello API)
+
 ```javascript
 // ✅ ALL Trello API calls MUST be wrapped in try/catch
 export const getTimerData = async (t, cardId) => {
   try {
-    const data = await t.get('card', 'shared', 'timerData');
+    const data = await t.get("card", "shared", "timerData");
     return data ?? { entries: [], isRunning: false };
   } catch (error) {
-    console.error('[TimerService] Failed to get timer data:', error);
+    console.error("[TimerService] Failed to get timer data:", error);
     return { entries: [], isRunning: false, error: true };
   }
 };
@@ -69,7 +78,9 @@ export const getTimerData = async (t, cardId) => {
 ```
 
 ### Service Return Pattern
+
 ALL async service operations MUST return:
+
 ```typescript
 {
   success: boolean;
@@ -79,6 +90,7 @@ ALL async service operations MUST return:
 ```
 
 ### JSDoc (Required for All Exports)
+
 ```javascript
 /**
  * Formats milliseconds into human-readable duration.
@@ -89,10 +101,13 @@ ALL async service operations MUST return:
  * @example
  * formatDuration(8130000) // "2h 15m 30s"
  */
-export const formatDuration = (ms, options = {}) => { /* ... */ };
+export const formatDuration = (ms, options = {}) => {
+  /* ... */
+};
 ```
 
 ### Naming Conventions
+
 - **Files**: `PascalCase.js` for services/classes, `camelCase.js` for utils
 - **Functions**: `camelCase` (verbs: `getTimerData`, `startTimer`)
 - **Constants**: `SCREAMING_SNAKE_CASE` (`MAX_TIMER_DURATION`)
@@ -103,7 +118,9 @@ export const formatDuration = (ms, options = {}) => { /* ... */ };
 ## CSS Architecture
 
 ### CSS Variables (Mandatory)
+
 ALWAYS use CSS custom properties from `styles/variables.css`:
+
 ```css
 :root {
   /* Trello Atlas-inspired palette */
@@ -111,14 +128,14 @@ ALWAYS use CSS custom properties from `styles/variables.css`:
   --color-success: #61bd4f;
   --color-warning: #f2d600;
   --color-danger: #eb5a46;
-  
+
   /* Typography */
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
   --font-size-md: 14px;
-  
+
   /* Spacing */
   --spacing-md: 16px;
-  
+
   /* Borders & Shadows */
   --border-radius: 3px;
   --shadow-sm: 0 1px 2px rgba(9, 30, 66, 0.25);
@@ -126,13 +143,18 @@ ALWAYS use CSS custom properties from `styles/variables.css`:
 ```
 
 ### BEM Naming (Mandatory)
+
 ```css
-.timer { }                      /* Block */
-.timer__display { }             /* Element */
-.timer__button--active { }      /* Modifier */
+.timer {
+} /* Block */
+.timer__display {
+} /* Element */
+.timer__button--active {
+} /* Modifier */
 ```
 
 ### No Inline Styles (Strict)
+
 ```html
 <!-- ❌ FORBIDDEN -->
 <div style="color: red;">...</div>
@@ -146,6 +168,7 @@ ALWAYS use CSS custom properties from `styles/variables.css`:
 ## Pre-Commit Review Checklist
 
 ### 1. Security
+
 - [ ] **XSS Prevention**: All external data escaped before HTML insertion
   - Use `textContent` instead of `innerHTML` when possible
   - If `innerHTML` required, escape: `"<>&` → `&lt;&gt;&amp;`
@@ -153,6 +176,7 @@ ALWAYS use CSS custom properties from `styles/variables.css`:
 - [ ] All user inputs validated
 
 ### 2. Error Handling
+
 - [ ] **No silent failures** - All async operations handle errors
 - [ ] **User notification required** - Failures must be communicated
   - Use `alert()` or better UI notification
@@ -160,6 +184,7 @@ ALWAYS use CSS custom properties from `styles/variables.css`:
 - [ ] Check for silent catch blocks: `catch(e) { return []; }` NOT acceptable
 
 ### 3. Performance
+
 - [ ] **No redundant API calls in refresh loops**
   - Cache expensive data
   - Don't call `getChecklists()` every second
@@ -171,6 +196,7 @@ ALWAYS use CSS custom properties from `styles/variables.css`:
   - Intervals cleared when leaving view
 
 ### 4. Code Quality
+
 - [ ] No trailing whitespace
 - [ ] JSDoc for all public functions
 - [ ] No unused CSS classes or dead JavaScript
@@ -179,11 +205,13 @@ ALWAYS use CSS custom properties from `styles/variables.css`:
 - [ ] Coverage above 90%: `npm run test:coverage`
 
 ### 5. Development Phase Rules
+
 - [ ] **No legacy bridges** - No migration logic for old data formats
   - Can reinstall/clear storage during development
   - Prioritize clean code over backward compatibility
 
 ### 6. Storage Optimization
+
 - [ ] **Minimize storage footprint** - Trello has 4,096 char limit per key
   - Avoid redundant fields
   - Use concise key names
@@ -194,6 +222,7 @@ ALWAYS use CSS custom properties from `styles/variables.css`:
 ## Common Patterns
 
 ### Proper Error Handling in UI
+
 ```javascript
 // ❌ WRONG - Silent failure
 const handleAction = async () => {
@@ -213,18 +242,28 @@ const handleAction = async () => {
 ```
 
 ### XSS Prevention
+
 ```javascript
 // ❌ WRONG - XSS vulnerability
 html += `<span>${item.name}</span>`;
 
 // ✅ CORRECT - Escape HTML
-const escapeHtml = (str) => str.replace(/[<>&"]/g, c => ({
-  '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'
-})[c]);
+const escapeHtml = (str) =>
+  str.replace(
+    /[<>&"]/g,
+    (c) =>
+      ({
+        "<": "&lt;",
+        ">": "&gt;",
+        "&": "&amp;",
+        '"': "&quot;",
+      })[c],
+  );
 html += `<span>${escapeHtml(item.name)}</span>`;
 ```
 
 ### Efficient Refresh
+
 ```javascript
 // ❌ WRONG - API call every second
 const refresh = async () => {
@@ -244,6 +283,7 @@ const fullRefresh = async () => {
 ```
 
 ### DOM Update Optimization
+
 ```javascript
 // ❌ WRONG - Full rebuild loses focus
 container.innerHTML = buildHTML(); // Destroys input focus!
@@ -260,28 +300,41 @@ if (document.activeElement !== inputEl) {
 ## Trello Power-Up Specifics
 
 ### Storage Scopes
+
 - `'card', 'shared'` - Data visible to all users on a card (timer entries)
 - `'card', 'private'` - Data visible only to current user on a card
 - `'board', 'shared'` - Board-wide settings (hourly rate, categories)
 - `'member', 'private'` - User preferences (display format)
 
 ### Power-Up Initialization
+
 ```javascript
 // index.html connector (src/main.js)
 const t = TrelloPowerUp.initialize({
-  'card-buttons': async (t) => [{ /* config */ }],
-  'card-badges': async (t) => [{ /* config */ }],
-  'card-back-section': async (t) => ({ /* config */ }),
+  "card-buttons": async (t) => [
+    {
+      /* config */
+    },
+  ],
+  "card-badges": async (t) => [
+    {
+      /* config */
+    },
+  ],
+  "card-back-section": async (t) => ({
+    /* config */
+  }),
 });
 ```
 
 ### Dynamic Badges for Auto-Refresh
+
 ```javascript
 // ✅ For real-time updates
 badges.push({
   dynamic: async () => ({
     text: formatDuration(getCurrentElapsed()),
-    color: 'green',
+    color: "green",
     refresh: 30, // seconds between refreshes
   }),
 });
@@ -294,16 +347,16 @@ badges.push({
 ```typescript
 interface TimerData {
   entries: TimeEntry[];
-  state: 'idle' | 'running' | 'paused';
+  state: "idle" | "running" | "paused";
   currentEntry: CurrentEntry | null;
   estimatedTime: number | null; // milliseconds
 }
 
 interface TimeEntry {
-  id: string;           // "entry_{Date.now()}_{random9chars}"
-  startTime: number;    // Unix timestamp (ms)
-  endTime: number;      // Unix timestamp (ms)
-  duration: number;     // endTime - startTime - pausedDuration
+  id: string; // "entry_{Date.now()}_{random9chars}"
+  startTime: number; // Unix timestamp (ms)
+  endTime: number; // Unix timestamp (ms)
+  duration: number; // endTime - startTime - pausedDuration
   description: string;
   createdAt: number;
 }
@@ -345,6 +398,7 @@ interface UserPreferences {
 ---
 
 ## Git Commit Guidelines
+
 Use conventional commits: `feat:`, `fix:`, `docs:`, `style:`, `refactor:`
 
 Example: `feat(card-badge): add time display`
@@ -352,6 +406,7 @@ Example: `feat(card-badge): add time display`
 ---
 
 ## Testing Requirements
+
 - All tests must pass: `npm test`
 - Coverage must be ≥90%: `npm run test:coverage`
 - Test files in `tests/` mirror `src/` structure
@@ -362,6 +417,7 @@ Example: `feat(card-badge): add time display`
 ## Quick Reference
 
 ### Service APIs
+
 ```javascript
 // StorageService
 getData(t, scope, visibility, key, defaultValue?)
@@ -382,11 +438,12 @@ parseTimeString(timeStr) → number | null
 ```
 
 ### Constants
+
 ```javascript
-TIMER_STATE.IDLE | RUNNING | PAUSED
-STORAGE_KEYS.TIMER_DATA | BOARD_SETTINGS
-TIME.SECOND | MINUTE | HOUR | DAY
-DEFAULTS.TIMER_DATA | BOARD_SETTINGS
+TIMER_STATE.IDLE | RUNNING | PAUSED;
+STORAGE_KEYS.TIMER_DATA | BOARD_SETTINGS;
+TIME.SECOND | MINUTE | HOUR | DAY;
+DEFAULTS.TIMER_DATA | BOARD_SETTINGS;
 ```
 
 ---
@@ -394,7 +451,9 @@ DEFAULTS.TIMER_DATA | BOARD_SETTINGS
 ## Autonomous Operation Mode
 
 ### Allowed Actions (No Approval Required)
+
 The AI agent is authorized to perform these actions autonomously:
+
 - ✅ Create, read, edit, and delete files
 - ✅ Run terminal commands (npm, serve, tests, etc.)
 - ✅ Install npm packages
@@ -408,13 +467,16 @@ The AI agent is authorized to perform these actions autonomously:
 - ✅ Update documentation
 
 ### Restricted Actions (User Approval Required)
+
 These actions REQUIRE explicit user approval:
+
 - ⛔ **ALL git commands** (commit, push, pull, merge, rebase, etc.)
 - ⛔ **Git repository operations** (init, clone, remote, etc.)
 - ⛔ **Branch operations** (checkout, branch, switch)
 - ⛔ **ANY command starting with `git`**
 
 ### Operating Guidelines
+
 1. **Be proactive**: Execute file operations, tests, and commands as needed
 2. **Work autonomously**: Complete tasks without asking for permission at each step
 3. **Stop before git**: Always pause and inform user before ANY git operation
@@ -422,6 +484,7 @@ These actions REQUIRE explicit user approval:
 5. **Handle errors**: Retry failed operations automatically when reasonable
 
 ### Example Autonomous Workflow
+
 ```
 User: "Add a pause timer feature"
 

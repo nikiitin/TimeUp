@@ -9,7 +9,6 @@ import TimerService from "../services/TimerService.js";
 
 export class TimerUI {
   constructor(t, elements, options = {}) {
-    console.log("[TimerUI] Initializing with elements:", Object.keys(elements));
     this.t = t;
     this.elements = elements;
     this.onRefresh = options.onRefresh;
@@ -29,11 +28,9 @@ export class TimerUI {
   }
 
   async _handleToggle() {
-    console.log("[TimerUI] Toggle clicked");
     const isRunning = this.elements.btnToggle.classList.contains(
       "btn-toggle--running",
     );
-    console.log("[TimerUI] isRunning:", isRunning);
     try {
       let result;
       if (isRunning) {
@@ -99,7 +96,10 @@ export class TimerUI {
 
       if (this.elements.storageFill) {
         this.elements.storageFill.style.width = `${usage.percent}%`;
-        this.elements.storageFill.classList.toggle('storage-status__fill--danger', usage.percent > 90);
+        this.elements.storageFill.classList.toggle(
+          "storage-status__fill--danger",
+          usage.percent > 90,
+        );
       }
 
       if (this.elements.storageText) {

@@ -15,7 +15,10 @@ import StorageService from "./StorageService.js";
  * @returns {Object} Time entry
  */
 const createEntry = (startTime, endTime, description = "") => {
-  const truncatedDescription = (description || "").substring(0, VALIDATION.MAX_DESCRIPTION_LENGTH);
+  const truncatedDescription = (description || "").substring(
+    0,
+    VALIDATION.MAX_DESCRIPTION_LENGTH,
+  );
 
   return {
     id: `e_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`,
@@ -70,14 +73,14 @@ const stopItemAndCreateEntry = (
     timerData: {
       ...timerData,
       entries: [...timerData.entries, newEntry],
-    checklistItems: {
-      ...timerData.checklistItems,
-      [itemId]: {
-        ...itemData,
-        state: TIMER_STATE.IDLE,
-        currentEntry: null,
+      checklistItems: {
+        ...timerData.checklistItems,
+        [itemId]: {
+          ...itemData,
+          state: TIMER_STATE.IDLE,
+          currentEntry: null,
+        },
       },
-    },
     },
   };
 };
@@ -106,9 +109,7 @@ const validateTimerData = (data) => ({
  */
 export const startTimer = async (t) => {
   try {
-    console.log("[TimerService] startTimer called");
     let timerData = validateTimerData(await StorageService.getTimerData(t));
-    console.log("[TimerService] Current data:", timerData);
     let stoppedItemId = null;
 
     if (timerData.state === TIMER_STATE.RUNNING) {
@@ -150,10 +151,6 @@ export const startTimer = async (t) => {
  */
 export const stopTimer = async (t, description = "") => {
   try {
-    console.log(
-      "[TimerService] stopTimer called with description:",
-      description,
-    );
     const timerData = validateTimerData(await StorageService.getTimerData(t));
     if (timerData.state === TIMER_STATE.IDLE || !timerData.currentEntry) {
       console.warn("[TimerService] Cannot stop: No active timer");

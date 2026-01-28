@@ -22,7 +22,9 @@ describe("TimerService", () => {
 
     // Mock methods on the default export object
     StorageService.getTimerData = jest.fn().mockResolvedValue(getMockData());
-    StorageService.setTimerData = jest.fn().mockResolvedValue({ success: true });
+    StorageService.setTimerData = jest
+      .fn()
+      .mockResolvedValue({ success: true });
 
     jest.clearAllMocks();
   });
@@ -105,7 +107,7 @@ describe("TimerService", () => {
         entries: [entry],
         checklistItems: {
           [itemId]: {
-            state: TIMER_STATE.IDLE
+            state: TIMER_STATE.IDLE,
           },
         },
       };
@@ -139,12 +141,16 @@ describe("TimerService", () => {
     test("should truncate long descriptions in updateEntry", async () => {
       const dataWithEntry = {
         ...getMockData(),
-        entries: [{ id: "e1", startTime: 1000, duration: 500, description: "old" }],
+        entries: [
+          { id: "e1", startTime: 1000, duration: 500, description: "old" },
+        ],
       };
       StorageService.getTimerData.mockResolvedValue(dataWithEntry);
 
       const longDesc = "b".repeat(200);
-      const result = await TimerService.updateEntry(tMock, "e1", { description: longDesc });
+      const result = await TimerService.updateEntry(tMock, "e1", {
+        description: longDesc,
+      });
 
       expect(result.success).toBe(true);
       expect(result.entry.description.length).toBe(120);

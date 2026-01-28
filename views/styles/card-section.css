@@ -75,7 +75,9 @@ body {
   height: 100%;
   background: var(--aura-warning);
   width: 0%;
-  transition: width 0.3s, background 0.3s;
+  transition:
+    width 0.3s,
+    background 0.3s;
 }
 
 .storage-status__fill--danger {
@@ -303,7 +305,6 @@ body {
   gap: 12px;
   overflow: visible; /* Let inner tables handle scrolling */
 }
-
 
 .checklist-panel {
   background: var(--aura-surface);

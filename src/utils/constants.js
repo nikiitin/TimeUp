@@ -9,14 +9,14 @@
  * @enum {string}
  */
 export const STORAGE_KEYS = {
-    /** Timer data stored on each card (entries, running state) */
-    TIMER_DATA: 'timerData',
-    /** List of time entries stored separately to bypass 4KB limit */
-    ENTRIES: 'timerEntries',
-    /** Board-wide settings (hourly rate, categories) */
-    BOARD_SETTINGS: 'boardSettings',
-    /** User preferences (display format, notifications) */
-    USER_PREFERENCES: 'userPreferences',
+  /** Timer data stored on each card (entries, running state) */
+  TIMER_DATA: "timerData",
+  /** List of time entries stored separately to bypass 4KB limit */
+  ENTRIES: "timerEntries",
+  /** Board-wide settings (hourly rate, categories) */
+  BOARD_SETTINGS: "boardSettings",
+  /** User preferences (display format, notifications) */
+  USER_PREFERENCES: "userPreferences",
 };
 
 /**
@@ -25,10 +25,10 @@ export const STORAGE_KEYS = {
  * @enum {string}
  */
 export const STORAGE_SCOPES = {
-    /** Visible to all users on the card */
-    CARD_SHARED: 'shared',
-    /** Visible only to current user on the card */
-    CARD_PRIVATE: 'private',
+  /** Visible to all users on the card */
+  CARD_SHARED: "shared",
+  /** Visible only to current user on the card */
+  CARD_PRIVATE: "private",
 };
 
 /**
@@ -37,9 +37,9 @@ export const STORAGE_SCOPES = {
  * @enum {string}
  */
 export const TIMER_STATE = {
-    IDLE: 'idle',
-    RUNNING: 'running',
-    PAUSED: 'paused',
+  IDLE: "idle",
+  RUNNING: "running",
+  PAUSED: "paused",
 };
 
 /**
@@ -47,10 +47,10 @@ export const TIMER_STATE = {
  * @readonly
  */
 export const TIME = {
-    SECOND: 1000,
-    MINUTE: 60 * 1000,
-    HOUR: 60 * 60 * 1000,
-    DAY: 24 * 60 * 60 * 1000,
+  SECOND: 1000,
+  MINUTE: 60 * 1000,
+  HOUR: 60 * 60 * 1000,
+  DAY: 24 * 60 * 60 * 1000,
 };
 
 /**
@@ -58,9 +58,9 @@ export const TIME = {
  * @readonly
  */
 export const APP_INFO = {
-    NAME: 'TimeUp',
-    VERSION: '1.0.0',
-    POWER_UP_NAME: 'TimeUp - Time Tracker',
+  NAME: "TimeUp",
+  VERSION: "1.0.0",
+  POWER_UP_NAME: "TimeUp - Time Tracker",
 };
 
 /**
@@ -68,29 +68,29 @@ export const APP_INFO = {
  * @readonly
  */
 export const DEFAULTS = {
-    TIMER_DATA: {
-        entries: [],
-        state: TIMER_STATE.IDLE,
-        currentEntry: null,
-        estimatedTime: null,  // Estimated time in milliseconds (manual override)
-        manualEstimateSet: false,  // true = user set manually, false = calculated from checklists
-        checklistItems: {},  // { [checkItemId]: ChecklistItemData }
-    },
-    CHECKLIST_ITEM_DATA: {
-        estimatedTime: null,
-        state: TIMER_STATE.IDLE,
-        currentEntry: null,
-    },
-    BOARD_SETTINGS: {
-        hourlyRate: null,
-        currency: 'USD',
-        categories: [],
-    },
-    USER_PREFERENCES: {
-        showSeconds: true,
-        use24HourFormat: true,
-        autoStartOnOpen: false,
-    },
+  TIMER_DATA: {
+    entries: [],
+    state: TIMER_STATE.IDLE,
+    currentEntry: null,
+    estimatedTime: null, // Estimated time in milliseconds (manual override)
+    manualEstimateSet: false, // true = user set manually, false = calculated from checklists
+    checklistItems: {}, // { [checkItemId]: ChecklistItemData }
+  },
+  CHECKLIST_ITEM_DATA: {
+    estimatedTime: null,
+    state: TIMER_STATE.IDLE,
+    currentEntry: null,
+  },
+  BOARD_SETTINGS: {
+    hourlyRate: null,
+    currency: "USD",
+    categories: [],
+  },
+  USER_PREFERENCES: {
+    showSeconds: true,
+    use24HourFormat: true,
+    autoStartOnOpen: false,
+  },
 };
 
 /**
@@ -98,10 +98,10 @@ export const DEFAULTS = {
  * @readonly
  */
 export const BADGE_COLORS = {
-    DEFAULT: 'light-gray',
-    RUNNING: 'green',
-    WARNING: 'yellow',
-    OVER_BUDGET: 'red',
+  DEFAULT: "light-gray",
+  RUNNING: "green",
+  WARNING: "yellow",
+  OVER_BUDGET: "red",
 };
 
 /**
@@ -109,5 +109,5 @@ export const BADGE_COLORS = {
  * @readonly
  */
 export const VALIDATION = {
-    MAX_DESCRIPTION_LENGTH: 120,
+  MAX_DESCRIPTION_LENGTH: 120,
 };
