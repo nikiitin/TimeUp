@@ -43,9 +43,17 @@ export class ChecklistUI {
         if (!itemsHtml) return '';
 
         return `
-            <div class="checklist">
-                <div class="checklist__title">${this._escape(checklist.name)}</div>
-                ${itemsHtml}
+            <div class="checklist-panel">
+                <div class="checklist-panel__header">
+                    <div class="checklist-panel__title">${this._escape(checklist.name)}</div>
+                    <div class="checklist-panel__cols">
+                        <span class="col-header col-est">Est</span>
+                        <span class="col-header col-time">Time</span>
+                    </div>
+                </div>
+                <div class="checklist-table">
+                    ${itemsHtml}
+                </div>
             </div>
         `;
     }
@@ -61,30 +69,34 @@ export class ChecklistUI {
         
         // Progress
         const estimate = itemData?.estimatedTime || 0;
-        const progress = (estimate > 0) ? Math.min(totalTime / estimate, 1) : 0;
         const isOver = (estimate > 0 && totalTime > estimate);
 
-        const classes = ['checklist-item'];
-        if (isOver) classes.push('checklist-item--over');
+        const rowClasses = ['checklist-row'];
+        if (isRunning) rowClasses.push('checklist-row--running');
+        if (isOver) rowClasses.push('checklist-row--over');
 
-        const btnClass = isRunning ? 'btn-item-toggle btn-item-toggle--running' : 'btn-item-toggle';
         const icon = isRunning 
             ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>' // stop
             : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; // play
 
         return `
-            <div class="${classes.join(' ')}" style="--progress: ${progress}">
-                <button class="${btnClass}" data-action="toggle" data-id="${item.id}">
-                    ${icon}
-                </button>
-                <div class="checklist-item__name ${isOver ? 'checklist-item__name--over' : ''}" title="${this._escape(item.name)}">
-                   ${this._escape(item.name)}
+            <div class="${rowClasses.join(' ')}">
+                <div class="col-action">
+                    <button class="btn-icon ${isRunning ? 'btn-icon--running' : ''}" 
+                            data-action="toggle" data-id="${item.id}" title="${isRunning ? 'Stop' : 'Start'}">
+                        ${icon}
+                    </button>
                 </div>
-                <input type="text" class="checklist-item__estimate-input" 
-                       value="${estimate > 0 ? formatDuration(estimate, {compact:true}) : ''}"
-                       placeholder="Est"
-                       data-action="estimate" data-id="${item.id}">
-                <div class="checklist-item__time ${isOver ? 'checklist-item__time--over' : ''}">
+                <div class="col-task" title="${this._escape(item.name)}">
+                    ${this._escape(item.name)}
+                </div>
+                <div class="col-est">
+                    <input type="text" class="input-tiny" 
+                           value="${estimate > 0 ? formatDuration(estimate, {compact:true}) : ''}"
+                           placeholder="-"
+                           data-action="estimate" data-id="${item.id}">
+                </div>
+                <div class="col-time ${isOver ? 'text-over' : ''}">
                     ${formatDuration(totalTime, {compact:true})}
                 </div>
             </div>

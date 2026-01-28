@@ -557,3 +557,156 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* --- New Control Panel Styles --- */
+
+.checklist-panel {
+  margin-top: 16px;
+  background: rgba(0,0,0,0.1); /* Subtle container bg */
+  border-radius: 4px;
+  padding: 4px 0;
+}
+
+.checklist-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 4px;
+}
+
+.checklist-panel__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #8c9bab;
+  letter-spacing: 0.5px;
+}
+
+.checklist-panel__cols {
+  display: flex;
+  gap: 8px;
+}
+
+.col-header {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #626f86;
+  width: 50px;
+  text-align: right;
+}
+.col-header.col-time { width: 50px; }
+
+.checklist-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.checklist-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  transition: background 0.15s;
+  border-left: 2px solid transparent;
+}
+
+.checklist-row:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.checklist-row--running {
+  background: rgba(75, 191, 115, 0.08); /* Green tint */
+  border-left-color: #4bce97;
+}
+
+.checklist-row--over {
+  border-left-color: #f87168; /* Red indicator */
+}
+
+/* Columns */
+.col-action {
+  width: 24px;
+  margin-right: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.col-task {
+  flex: 1;
+  font-size: 13px;
+  color: #b6c2cf;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 8px;
+}
+
+.col-est {
+  width: 50px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.col-time {
+  width: 50px;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: #8c9bab;
+}
+
+.text-over {
+  color: #f87168;
+  font-weight: 600;
+}
+
+/* Controls */
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #4bce97;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  opacity: 0.8;
+}
+
+.btn-icon:hover {
+  background: rgba(75, 206, 151, 0.15);
+  opacity: 1;
+}
+
+.btn-icon--running {
+  color: #f87168;
+}
+
+.btn-icon--running:hover {
+  background: rgba(248, 113, 104, 0.15);
+}
+
+.btn-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.input-tiny {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #9fadbc;
+  font-size: 12px;
+  text-align: right;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.input-tiny:focus, .input-tiny:hover {
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.2);
+}
