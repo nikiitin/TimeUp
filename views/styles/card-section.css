@@ -236,6 +236,33 @@ body {
 /* =============================================================================
    CONTROL PANEL (CHECKLISTS)
    ============================================================================= */
+.checklists-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px; /* Limit height of all checklists together */
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Aura Scrollbar for Checklists */
+.checklists-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.checklists-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.checklists-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.checklists-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .checklist-panel {
   background: var(--aura-surface);
   border: 1px solid var(--aura-border);
