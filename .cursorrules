@@ -1,0 +1,185 @@
+# TimeUp - Cursor IDE Rules
+
+> **Compatible with**: Cursor, Windsurf, and other AI-powered IDEs
+> **Cross-reference**: See `.github/copilot-instructions.md` for complete guidelines
+
+## Autonomous Operation Mode
+
+**✅ Execute Autonomously (No Approval Needed):**
+- Create/edit/delete files
+- Run terminal commands (npm, tests, serve, etc.)
+- Install packages, start servers, run tests
+- Fix bugs, refactor, update docs
+- ANY non-git operations
+
+**⛔ Require User Approval:**
+- **ALL git commands** (commit, push, pull, merge, etc.)
+- ALWAYS stop and inform user before git operations
+
+**Operating Mode:** Work proactively and autonomously, but STOP before any git command.
+
+---
+
+## Quick Reference
+
+**Project**: TimeUp - Trello Power-Up for Time Tracking  
+**Stack**: Vanilla JavaScript (ES6+ modules), HTML5, CSS3  
+**Hosting**: GitHub Pages (static, client-side only)  
+**Storage**: Trello API (`t.set()` / `t.get()`)
+
+## Core Rules
+
+### Architecture (Mandatory)
+- `src/services/` - Business logic ONLY
+- `src/ui/` - DOM manipulation ONLY
+- `src/utils/` - Pure functions ONLY
+- Services import nothing from UI
+- UI imports services, never contains business logic
+
+### Code Style (Strict)
+- Use `const` by default, `let` when needed, NEVER `var`
+- Always `async/await`, never `.then()` chains
+- ALL Trello API calls wrapped in try/catch
+- Service methods return `{ success: boolean, data?: any, error?: string }`
+- JSDoc required for all exports
+
+### Error Handling (Critical)
+```javascript
+// ✅ REQUIRED
+export const method = async (t) => {
+  try {
+    const data = await t.get('card', 'shared', 'key');
+    return { success: true, data };
+  } catch (error) {
+    console.error('[ServiceName] error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// ❌ FORBIDDEN - No unhandled promises
+```
+
+### CSS Rules (Mandatory)
+- BEM naming: `.block__element--modifier`
+- Use CSS variables from `styles/variables.css`
+- No inline styles
+- No hardcoded colors
+
+### Security (Critical)
+- Escape ALL external data before HTML insertion
+- Use `textContent` instead of `innerHTML` when possible
+- Validate all user inputs
+
+### Performance (Critical)
+- Cache expensive API calls (don't call every second)
+- Minimize DOM operations in loops
+- Use in-place updates to preserve input focus
+- Clean up event listeners and intervals
+
+## Pre-Commit Checklist
+
+Before committing ANY code:
+- [ ] All async operations have try/catch
+- [ ] Users notified of errors (not just console.error)
+- [ ] No redundant API calls in refresh loops
+- [ ] JSDoc on all public functions
+- [ ] Tests pass: `npm test`
+- [ ] Coverage ≥90%: `npm run test:coverage`
+- [ ] No trailing whitespace
+- [ ] No unused CSS/JS
+
+## Forbidden Practices
+
+1. ❌ No `var` keyword
+2. ❌ No inline `<script>` or `style`
+3. ❌ No unhandled promises
+4. ❌ No global variables
+5. ❌ No jQuery or libraries
+6. ❌ No build tools for core functionality
+7. ❌ No hardcoded colors
+8. ❌ No generic CSS classes
+9. ❌ No functions without JSDoc
+10. ❌ No silent failures
+
+## Common Patterns
+
+### Service Pattern
+```javascript
+const TimerService = {
+  startTimer: async (t) => {
+    try {
+      // Business logic
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('[TimerService] startTimer:', error);
+      return { success: false, error: error.message };
+    }
+  }
+};
+export default TimerService;
+```
+
+### UI Pattern
+```javascript
+import TimerService from '../services/TimerService.js';
+
+button.addEventListener('click', async () => {
+  const result = await TimerService.startTimer(t);
+  if (result.success) {
+    updateUI(result.data);
+  } else {
+    alert(`Error: ${result.error}`);
+  }
+});
+```
+
+### XSS Prevention
+```javascript
+const escapeHtml = (str) => str.replace(/[<>&"]/g, c => ({
+  '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'
+})[c]);
+html += `<span>${escapeHtml(item.name)}</span>`;
+```
+
+## Data Models
+
+```typescript
+interface TimerData {
+  entries: TimeEntry[];
+  state: 'idle' | 'running' | 'paused';
+  currentEntry: CurrentEntry | null;
+  estimatedTime: number | null;
+}
+
+interface TimeEntry {
+  id: string;
+  startTime: number;
+  endTime: number;
+  duration: number;
+  description: string;
+  createdAt: number;
+}
+```
+
+## Workflows
+
+Available in `.agent/workflows/`:
+- `add-feature.md` - Add new features
+- `debug.md` - Debug issues
+- `test.md` - Run tests
+- `serve-locally.md` - Start dev server
+- `test-in-trello.md` - Test in Trello
+- `deploy.md` - Deploy to GitHub Pages
+
+## Quick Commands
+
+```bash
+npm test                    # Run all tests
+npm run test:coverage       # Coverage report
+npx -y serve . -l 8080     # Start local server
+git push origin main        # Deploy to GitHub Pages
+```
+
+## Full Documentation
+
+See `.github/copilot-instructions.md` for complete guidelines.
