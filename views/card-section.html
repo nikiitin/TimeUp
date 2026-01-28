@@ -51,6 +51,7 @@
   <script type="module">
     import StorageService from '../src/services/StorageService.js';
     import ChecklistService from '../src/services/ChecklistService.js';
+    import { AppConfig } from '../src/config/AppConfig.js';
     
     // UI Controllers
     import { TimerUI } from '../src/ui/TimerUI.js';
@@ -59,7 +60,10 @@
     import { EntryListUI } from '../src/ui/EntryListUI.js';
     import { AuthUI } from '../src/ui/AuthUI.js';
 
-    const t = TrelloPowerUp.iframe();
+    const t = TrelloPowerUp.iframe({
+      appKey: AppConfig.APP_KEY,
+      appName: AppConfig.APP_NAME
+    });
 
     // -- State --
     let cachedChecklists = []; 

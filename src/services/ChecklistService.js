@@ -5,6 +5,7 @@
 
 import { DEFAULTS, TIMER_STATE } from '../utils/constants.js';
 import { sumDurations } from '../utils/formatTime.js';
+import { AppConfig } from '../config/AppConfig.js';
 
 /**
  * Fetches all checklists for the current card.
@@ -30,10 +31,13 @@ export const getChecklists = async (t) => {
             return [];
         }
 
+        if (!cardId) {
+             console.error('[ChecklistService] No card ID found in context.');
+             return [];
+        }
+
         // Fetch directly from Trello API
-        // Use AppConfig for the key if passed, but RestApi object has it internally too.
-        // We'll trust the RestApi object's property for now as it's bound to the init.
-        const response = await fetch(`https://api.trello.com/1/cards/${cardId}/checklists?key=${restApi.appKey}&token=${token}`);
+        const response = await fetch(`https://api.trello.com/1/cards/${cardId}/checklists?key=${AppConfig.APP_KEY}&token=${token}`);
         
         if (!response.ok) {
             throw new Error(`API Error ${response.status}: ${response.statusText}`);
