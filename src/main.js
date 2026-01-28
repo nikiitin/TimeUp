@@ -35,8 +35,6 @@ TrelloPowerUp.initialize({
                         } else {
                             await TimerService.startTimer(t);
                         }
-                        // Refresh the card to update badges and button
-                        await t.cards('id');
                     } catch (error) {
                         console.error('[Main] Toggle timer error:', error);
                     }
