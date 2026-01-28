@@ -8,9 +8,11 @@ import { formatDuration } from '../utils/formatTime.js';
 import TimerService from '../services/TimerService.js';
 
 export class TimerUI {
-    constructor(t, elements) {
+    constructor(t, elements, options = {}) {
+        console.log('[TimerUI] Initializing with elements:', Object.keys(elements));
         this.t = t;
         this.elements = elements;
+        this.onRefresh = options.onRefresh;
         // Expected elements:
         // display, btnToggle, btnText, iconPlay, iconStop, description, total
         
@@ -24,7 +26,9 @@ export class TimerUI {
     }
 
     async _handleToggle() {
+        console.log('[TimerUI] Toggle clicked');
         const isRunning = this.elements.btnToggle.classList.contains('btn-toggle--running');
+        console.log('[TimerUI] isRunning:', isRunning);
         try {
             let result;
             if (isRunning) {
@@ -37,11 +41,12 @@ export class TimerUI {
                 result = await TimerService.startTimer(this.t);
             }
             
-            if (!result.success) {
+            if (result.success && this.onRefresh) {
+                this.onRefresh();
+            } else if (!result.success) {
+                console.error('[TimerUI] Action failed:', result.error);
                 alert(`Timer action failed: ${result.error}`);
             }
-            // Trigger a refresh call (passed via callback usually, or main loop picks it up)
-            // For now, we rely on the main loop in the parent to detect the state change
         } catch (error) {
             console.error('Timer operation failed:', error);
             alert(`Timer error: ${error.message}`);
@@ -55,6 +60,12 @@ export class TimerUI {
         // Update Display
         this.elements.display.textContent = formatDuration(elapsed);
         this.elements.display.className = `timer-display timer-display--${isRunning ? 'running' : 'idle'}`;
+
+        // Update Total
+        if (this.elements.total) {
+            const totalMs = (timerData.entries || []).reduce((acc, e) => acc + (e.duration || 0), 0);
+            this.elements.total.textContent = `Total: ${formatDuration(totalMs + (isRunning ? elapsed : 0), { compact: true })}`;
+        }
 
         // Update Buttons
         this.elements.btnText.textContent = isRunning ? 'Stop' : 'Start';

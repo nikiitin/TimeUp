@@ -78,7 +78,9 @@ const validateTimerData = (data) => ({
  */
 export const startTimer = async (t) => {
     try {
+        console.log('[TimerService] startTimer called');
         let timerData = validateTimerData(await StorageService.getTimerData(t));
+        console.log('[TimerService] Current data:', timerData);
         let stoppedItemId = null;
 
         if (timerData.state === TIMER_STATE.RUNNING) {
@@ -101,6 +103,7 @@ export const startTimer = async (t) => {
             currentEntry: { startTime: Date.now(), pausedDuration: 0 },
         };
         const saved = await StorageService.setTimerData(t, updatedData);
+        console.log('[TimerService] startTimer save result:', saved);
         return saved ? { success: true, data: updatedData, stoppedItemId } : { success: false, error: 'Save failed' };
     } catch (error) {
         console.error('[TimerService] startTimer error:', error);
@@ -116,15 +119,22 @@ export const startTimer = async (t) => {
  */
 export const stopTimer = async (t, description = '') => {
     try {
+        console.log('[TimerService] stopTimer called with description:', description);
         const timerData = validateTimerData(await StorageService.getTimerData(t));
         if (timerData.state === TIMER_STATE.IDLE || !timerData.currentEntry) {
+            console.warn('[TimerService] Cannot stop: No active timer');
             return { success: false, error: 'No active timer', data: timerData };
         }
         const now = Date.now();
         const { startTime, pausedDuration = 0 } = timerData.currentEntry;
         const newEntry = createEntry(startTime, now, description);
         newEntry.duration = now - startTime - pausedDuration;
-        const updatedData = { entries: [...timerData.entries, newEntry], state: TIMER_STATE.IDLE, currentEntry: null };
+        const updatedData = {
+            ...timerData,
+            entries: [...timerData.entries, newEntry],
+            state: TIMER_STATE.IDLE,
+            currentEntry: null
+        };
         const saved = await StorageService.setTimerData(t, updatedData);
         return saved ? { success: true, data: updatedData, entry: newEntry } : { success: false, error: 'Save failed' };
     } catch (error) {
@@ -244,6 +254,7 @@ export const updateEntry = async (t, entryId, updates) => {
             ...(updates.checklistItemId !== undefined && { checklistItemId: newChecklistItemId }),
             ...(updates.description !== undefined && { description: updates.description }),
         };
+
 
         // Update global entries
         const updatedEntries = [...timerData.entries];

@@ -58,6 +58,7 @@
     import StorageService from '../src/services/StorageService.js';
     import ChecklistService from '../src/services/ChecklistService.js';
     import { AppConfig } from '../src/config/AppConfig.js';
+    import { TIMER_STATE } from '../src/utils/constants.js';
     
     // UI Controllers
     import { TimerUI } from '../src/ui/TimerUI.js';
@@ -75,6 +76,7 @@
     let cachedChecklists = []; 
     let updateInterval = null;
 
+    console.log('[App] Initializing controllers...');
     // -- Initialize Controllers --
     
     // 1. Timer Header
@@ -86,8 +88,10 @@
         iconStop: document.getElementById('icon-stop'),
         description: document.getElementById('timer-description'),
         total: document.getElementById('total')
+    }, {
+        onRefresh: () => refresh()
     });
-
+    
     // 2. Estimation & Progress
     const estimateUI = new EstimateUI(t, {
         row: document.getElementById('estimate-row'),
@@ -98,6 +102,8 @@
         progressBar: document.getElementById('progress-bar'),
         progressFill: document.getElementById('progress-fill'),
         remaining: document.getElementById('remaining')
+    }, {
+        onRefresh: () => refresh()
     });
 
     // 3. Entry List
@@ -134,16 +140,15 @@
             checklistUI.render(timerData, cachedChecklists);
 
             // Conditional Interval Management
-            const isGlobalRunning = timerData.state === 'RUNNING'; // TIMER_STATE.RUNNING
+            const isGlobalRunning = timerData.state === TIMER_STATE.RUNNING;
             const { isRunning: isAnyItemRunning } = ChecklistService.getRunningCheckItem(timerData);
             
             if (isGlobalRunning || isAnyItemRunning) {
-                if (!updateInterval) {
-                   updateInterval = setInterval(refresh, 1000);
-                }
+                if (updateInterval) clearTimeout(updateInterval);
+                updateInterval = setTimeout(refresh, 1000);
             } else {
                 if (updateInterval) {
-                    clearInterval(updateInterval);
+                    clearTimeout(updateInterval);
                     updateInterval = null;
                 }
             }

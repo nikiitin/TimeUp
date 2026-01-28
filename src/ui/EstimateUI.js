@@ -13,9 +13,10 @@ import ChecklistService from "../services/ChecklistService.js";
 import { TimePickerUI } from "./TimePickerUI.js";
 
 export class EstimateUI {
-  constructor(t, elements) {
+  constructor(t, elements, options = {}) {
     this.t = t;
     this.elements = elements;
+    this.onRefresh = options.onRefresh;
     // Expected: row, input, btnSet, btnClear, display, progressBar, progressFill, remaining
 
     this.cachedChecklists = [];
@@ -62,7 +63,9 @@ export class EstimateUI {
     const ms = parseTimeString(value);
     if (ms) {
       const result = await TimerService.setEstimate(this.t, ms);
-      if (!result.success) {
+      if (result.success && this.onRefresh) {
+        this.onRefresh();
+      } else if (!result.success) {
         alert(`Failed to set estimate: ${result.error}`);
       }
     } else if (value) {
@@ -72,7 +75,9 @@ export class EstimateUI {
 
   async _handleClear() {
     const result = await TimerService.setEstimate(this.t, null); // Clear manual override
-    if (!result.success) {
+    if (result.success && this.onRefresh) {
+      this.onRefresh();
+    } else if (!result.success) {
       alert(`Failed to clear estimate: ${result.error}`);
     }
   }
