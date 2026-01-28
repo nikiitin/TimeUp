@@ -221,31 +221,37 @@ describe('TimerService', () => {
             expect(result.data.checklistItems.item1.state).toBe(TIMER_STATE.RUNNING);
         });
 
-        test('fails when card timer is running', async () => {
+        test('switches when card timer is running (stops global, starts item)', async () => {
             setTimerData({
                 ...DEFAULTS.TIMER_DATA,
                 state: TIMER_STATE.RUNNING,
-                currentEntry: { startTime: Date.now() },
+                currentEntry: { startTime: Date.now() - 5000, pausedDuration: 0 },
             });
 
             const result = await TimerService.startItemTimer(mockT, 'item1');
 
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Card timer already running');
+            expect(result.success).toBe(true);
+            expect(result.stoppedGlobal).toBe(true);
+            expect(result.data.state).toBe(TIMER_STATE.IDLE);  // Global timer stopped
+            expect(result.data.checklistItems.item1.state).toBe(TIMER_STATE.RUNNING);  // Item started
+            expect(result.data.entries.length).toBe(1);  // Entry created for global
         });
 
-        test('fails when another item timer is running', async () => {
+        test('switches when another item timer is running (stops other, starts new)', async () => {
             setTimerData({
                 ...DEFAULTS.TIMER_DATA,
                 checklistItems: {
-                    item1: { state: TIMER_STATE.RUNNING, currentEntry: { startTime: Date.now() } },
+                    item1: { entries: [], state: TIMER_STATE.RUNNING, currentEntry: { startTime: Date.now() - 5000, pausedDuration: 0 } },
                 },
             });
 
             const result = await TimerService.startItemTimer(mockT, 'item2');
 
-            expect(result.success).toBe(false);
-            expect(result.error).toContain('Item already running');
+            expect(result.success).toBe(true);
+            expect(result.stoppedItemId).toBe('item1');
+            expect(result.data.checklistItems.item1.state).toBe(TIMER_STATE.IDLE);  // item1 stopped
+            expect(result.data.checklistItems.item2.state).toBe(TIMER_STATE.RUNNING);  // item2 started
+            expect(result.data.checklistItems.item1.entries.length).toBe(1);  // Entry created for item1
         });
     });
 

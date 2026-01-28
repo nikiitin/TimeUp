@@ -2,7 +2,7 @@
 
 ## Pre-Commit Review Checklist
 
-Before committing any code changes, verify the following:
+Before committing any code changes, VERIFY all of the following:
 
 ### 1. Security Review
 - [ ] **XSS Prevention**: All user or external data inserted into HTML must be escaped
@@ -28,14 +28,30 @@ Before committing any code changes, verify the following:
 - [ ] **DOM operations should be minimized in loops**
   - Batch DOM updates where possible
   - Avoid re-rendering entire sections when small updates suffice
+  - Use in-place updates to avoid losing input focus
 - [ ] **Check for memory leaks**
   - Event listeners must be removed when elements are destroyed
   - Intervals must be cleared when leaving the view
 
-### 4. Code Quality
+### 4. Code Quality & Dead Code
 - [ ] **No trailing whitespace**
 - [ ] **Consistent error message format**
 - [ ] **JSDoc for all public functions**
+- [ ] **No unused CSS classes** - search for class names in HTML/JS before removing
+- [ ] **No dead JavaScript functions** - ensure all defined functions are called
+- [ ] **No duplicate code** - extract common patterns into reusable functions
+
+### 5. Code Duplication Check
+- [ ] **Entry creation logic**: Should only exist in `createEntry()` helper
+- [ ] **Timer stop logic**: Should be consolidated, avoid duplicating entry creation
+- [ ] **Formatting functions**: Use existing `formatDuration`, `formatTimestamp`, `escapeHtml`
+- [ ] **CSS**: Check if similar styles already exist before adding new ones
+
+### 6. Functionality Verification
+- [ ] **All new features are tested** - add unit tests for new service functions
+- [ ] **Existing tests still pass** - run `npm test` before committing
+- [ ] **Test coverage above 85%** - run `npm run coverage`
+- [ ] **Manual testing in Trello** - verify UI works with `/test-in-trello` workflow
 
 ---
 
@@ -90,5 +106,44 @@ const refresh = async () => {
 const fullRefresh = async () => {
   cachedChecklists = await ChecklistService.getChecklists(t);
   await refresh();
+};
+```
+
+### DOM Update Optimization
+```javascript
+// ❌ WRONG - Full DOM rebuild loses focus
+const update = () => {
+  container.innerHTML = buildHTML(); // Destroys input focus!
+};
+
+// ✅ CORRECT - In-place updates preserve focus
+const update = () => {
+  // Only update specific elements, not entire container
+  timeEl.textContent = newValue;
+  if (document.activeElement !== inputEl) {
+    inputEl.placeholder = newPlaceholder;
+  }
+};
+```
+
+### Avoiding Code Duplication
+```javascript
+// ❌ WRONG - Duplicate entry creation logic
+const stopTimer = () => {
+  const entry = { id: uuid(), startTime, endTime: Date.now(), duration: ... };
+  // ...
+};
+const stopItemTimer = () => {
+  const entry = { id: uuid(), startTime, endTime: Date.now(), duration: ... };
+  // ...
+};
+
+// ✅ CORRECT - Extract common logic
+const createEntry = (startTime, endTime, description) => ({
+  id: uuid(), startTime, endTime, description, duration: endTime - startTime
+});
+const stopTimer = () => {
+  const entry = createEntry(startTime, Date.now(), desc);
+  // ...
 };
 ```

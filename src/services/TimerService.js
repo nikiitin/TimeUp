@@ -24,6 +24,40 @@ const createEntry = (startTime, endTime, description = '') => ({
 });
 
 /**
+ * Stops a checklist item timer and creates linked entries.
+ * Helper to reduce duplication in timer switching logic.
+ * @param {Object} timerData - Current timer data
+ * @param {string} itemId - Checklist item ID to stop
+ * @param {Object} itemData - Current item data
+ * @param {string} [description=''] - Entry description
+ * @returns {{timerData: Object, entry: Object}} Updated timer data and created entry
+ */
+const stopItemAndCreateEntry = (timerData, itemId, itemData, description = '') => {
+    const now = Date.now();
+    const { startTime, pausedDuration = 0 } = itemData.currentEntry;
+    const newEntry = createEntry(startTime, now, description);
+    newEntry.duration = now - startTime - pausedDuration;
+    newEntry.checklistItemId = itemId;
+
+    return {
+        entry: newEntry,
+        timerData: {
+            ...timerData,
+            entries: [...timerData.entries, newEntry],
+            checklistItems: {
+                ...timerData.checklistItems,
+                [itemId]: {
+                    ...itemData,
+                    entries: [...itemData.entries, newEntry],
+                    state: TIMER_STATE.IDLE,
+                    currentEntry: null,
+                },
+            },
+        },
+    };
+};
+
+/**
  * Validates timer data structure.
  * @param {Object} data - Timer data
  * @returns {Object} Validated timer data
@@ -38,23 +72,36 @@ const validateTimerData = (data) => ({
 });
 
 /**
- * Starts the timer.
+ * Starts the global timer. If a checklist item timer is running, stops it first (switch behavior).
  * @param {Object} t - Trello client
- * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+ * @returns {Promise<{success: boolean, data?: Object, stoppedItemId?: string, error?: string}>}
  */
 export const startTimer = async (t) => {
     try {
-        const timerData = validateTimerData(await StorageService.getTimerData(t));
+        let timerData = validateTimerData(await StorageService.getTimerData(t));
+        let stoppedItemId = null;
+
         if (timerData.state === TIMER_STATE.RUNNING) {
             return { success: false, error: 'Timer already running', data: timerData };
         }
+
+        // Switch behavior: stop any running checklist timer first
+        for (const [id, item] of Object.entries(timerData.checklistItems)) {
+            if (item.state === TIMER_STATE.RUNNING && item.currentEntry) {
+                stoppedItemId = id;
+                const result = stopItemAndCreateEntry(timerData, id, item, '');
+                timerData = result.timerData;
+                break;
+            }
+        }
+
         const updatedData = {
             ...timerData,
             state: TIMER_STATE.RUNNING,
             currentEntry: { startTime: Date.now(), pausedDuration: 0 },
         };
         const saved = await StorageService.setTimerData(t, updatedData);
-        return saved ? { success: true, data: updatedData } : { success: false, error: 'Save failed' };
+        return saved ? { success: true, data: updatedData, stoppedItemId } : { success: false, error: 'Save failed' };
     } catch (error) {
         console.error('[TimerService] startTimer error:', error);
         return { success: false, error: error.message };
@@ -165,24 +212,41 @@ const getOrInitItemData = (checklistItems, itemId) => {
 
 /**
  * Starts timer for a specific checklist item.
+ * Switch behavior: stops global timer or other checklist timer first.
  * @param {Object} t - Trello client
  * @param {string} checkItemId - Checklist item ID
- * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+ * @returns {Promise<{success: boolean, data?: Object, stoppedItemId?: string, stoppedGlobal?: boolean, error?: string}>}
  */
 export const startItemTimer = async (t, checkItemId) => {
     try {
-        const timerData = validateTimerData(await StorageService.getTimerData(t));
+        let timerData = validateTimerData(await StorageService.getTimerData(t));
+        let stoppedItemId = null;
+        let stoppedGlobal = false;
 
-        // Check if any item already has a running timer
+        // Switch behavior: stop any other running checklist timer first
         for (const [id, item] of Object.entries(timerData.checklistItems)) {
-            if (item.state === TIMER_STATE.RUNNING) {
-                return { success: false, error: `Item already running: ${id}`, data: timerData };
+            if (item.state === TIMER_STATE.RUNNING && item.currentEntry && id !== checkItemId) {
+                stoppedItemId = id;
+                const result = stopItemAndCreateEntry(timerData, id, item, '');
+                timerData = result.timerData;
+                break;
             }
         }
 
-        // Also check if card-level timer is running
-        if (timerData.state === TIMER_STATE.RUNNING) {
-            return { success: false, error: 'Card timer already running', data: timerData };
+        // Switch behavior: stop global timer if running
+        if (timerData.state === TIMER_STATE.RUNNING && timerData.currentEntry) {
+            stoppedGlobal = true;
+            const now = Date.now();
+            const { startTime, pausedDuration = 0 } = timerData.currentEntry;
+            const newEntry = createEntry(startTime, now, '');
+            newEntry.duration = now - startTime - pausedDuration;
+
+            timerData = {
+                ...timerData,
+                entries: [...timerData.entries, newEntry],
+                state: TIMER_STATE.IDLE,
+                currentEntry: null,
+            };
         }
 
         const itemData = getOrInitItemData(timerData.checklistItems, checkItemId);
@@ -200,7 +264,7 @@ export const startItemTimer = async (t, checkItemId) => {
         };
 
         const saved = await StorageService.setTimerData(t, updatedData);
-        return saved ? { success: true, data: updatedData } : { success: false, error: 'Save failed' };
+        return saved ? { success: true, data: updatedData, stoppedItemId, stoppedGlobal } : { success: false, error: 'Save failed' };
     } catch (error) {
         console.error('[TimerService] startItemTimer error:', error);
         return { success: false, error: error.message };
@@ -227,9 +291,12 @@ export const stopItemTimer = async (t, checkItemId, description = '') => {
         const { startTime, pausedDuration = 0 } = itemData.currentEntry;
         const newEntry = createEntry(startTime, now, description);
         newEntry.duration = now - startTime - pausedDuration;
+        newEntry.checklistItemId = checkItemId;  // Link to checklist item
 
         const updatedData = {
             ...timerData,
+            // Also add to global entries (linked entry)
+            entries: [...timerData.entries, newEntry],
             checklistItems: {
                 ...timerData.checklistItems,
                 [checkItemId]: {
