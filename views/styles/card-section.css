@@ -429,3 +429,20 @@
     .total-row--over {
       color: #f87168;
     }
+
+    /* Auth UI */
+    .auth-container {
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(87, 157, 255, 0.1);
+      border-radius: 3px;
+      text-align: center;
+    }
+    .auth-text {
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .auth-container .btn-small {
+      width: 100%;
+      padding: 6px;
+    }

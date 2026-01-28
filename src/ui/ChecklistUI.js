@@ -96,8 +96,7 @@ export class ChecklistUI {
         this.container.querySelectorAll('[data-action="estimate"]').forEach(input => {
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
-                    e.target.blur(); // Trigger logic via blur or call directly
-                    this._handleEstimate(e.target.dataset.id, e.target.value);
+                    e.target.blur(); 
                 }
             });
             // Keep blur for when user clicks away

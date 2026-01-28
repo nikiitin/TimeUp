@@ -34,10 +34,4 @@ export class AuthUI {
     hide() {
         if (this.authContainer) this.authContainer.hidden = true;
     }
-
-    /**
-     * Checks the auth status via service and updates UI
-     * @returns {Promise<boolean>} isAuthorized
-     */
-
 }

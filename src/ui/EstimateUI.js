@@ -28,6 +28,7 @@ export class EstimateUI {
             this.elements.input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
+                    e.target.blur();
                     this._handleSet();
                 }
             });
@@ -42,7 +43,7 @@ export class EstimateUI {
         const value = this.elements.input.value.trim();
         const ms = parseTimeString(value);
         if (ms) {
-            const result = await TimerService.setManualEstimate(this.t, ms);
+            const result = await TimerService.setEstimate(this.t, ms);
             if (!result.success) {
                 alert(`Failed to set estimate: ${result.error}`);
             }
@@ -52,7 +53,7 @@ export class EstimateUI {
     }
 
     async _handleClear() {
-        const result = await TimerService.setManualEstimate(this.t, null); // Clear manual override
+        const result = await TimerService.setEstimate(this.t, null); // Clear manual override
         if (!result.success) {
             alert(`Failed to clear estimate: ${result.error}`);
         }

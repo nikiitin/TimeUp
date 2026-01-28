@@ -30,6 +30,9 @@ export class TimerUI {
             if (isRunning) {
                 const description = this.elements.description.value.trim();
                 result = await TimerService.stopTimer(this.t, description);
+                if (result.success) {
+                    this.elements.description.value = '';
+                }
             } else {
                 result = await TimerService.startTimer(this.t);
             }

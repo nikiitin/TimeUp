@@ -5,12 +5,11 @@
 
 import { DEFAULTS, TIMER_STATE } from '../utils/constants.js';
 import { sumDurations } from '../utils/formatTime.js';
-import { AppConfig } from '../config/AppConfig.js';
 
 /**
  * Fetches all checklists for the current card.
  * @param {Object} t - Trello Power-Up client
- * @returns {Promise<Array>} Array of checklists with checkItems
+ * @returns {Promise<Array|null>} Array of checklists if successful/empty, or null if not authorized
  */
 export const getChecklists = async (t) => {
     try {

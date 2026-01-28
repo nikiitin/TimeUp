@@ -41,9 +41,9 @@
     <div class="checklists-container" id="checklists-container" hidden></div>
 
     <!-- Auth UI -->
-    <div class="auth-container" id="auth-container" hidden style="margin-top: 12px; padding: 12px; background: rgba(87, 157, 255, 0.1); border-radius: 3px; text-align: center;">
-      <p style="margin-bottom: 8px; font-size: 13px;">Allow access to load checklists correctly.</p>
-      <button class="btn-small" id="btn-authorize" style="width: 100%; padding: 6px;">Authorize Trello</button>
+    <div class="auth-container" id="auth-container" hidden>
+      <p class="auth-text">Allow access to load checklists correctly.</p>
+      <button class="btn-small" id="btn-authorize">Authorize Trello</button>
     </div>
   </div>
 
@@ -123,6 +123,21 @@
             entryListUI.render(timerData.entries);
             checklistUI.render(timerData, cachedChecklists);
 
+            // Conditional Interval Management
+            const isGlobalRunning = timerData.state === 'RUNNING'; // TIMER_STATE.RUNNING
+            const { isRunning: isAnyItemRunning } = ChecklistService.getRunningCheckItem(timerData);
+            
+            if (isGlobalRunning || isAnyItemRunning) {
+                if (!updateInterval) {
+                   updateInterval = setInterval(refresh, 1000);
+                }
+            } else {
+                if (updateInterval) {
+                    clearInterval(updateInterval);
+                    updateInterval = null;
+                }
+            }
+
         } catch (error) {
             console.error('Refresh loop error:', error);
         }
@@ -146,11 +161,6 @@
             
             // Resize (safe approach)
             t.sizeTo('body').catch(() => {});
-        }
-        
-        // Start Loop if not running
-        if (!updateInterval) {
-            updateInterval = setInterval(refresh, 1000);
         }
     };
 
