@@ -6,6 +6,7 @@
 import { formatDuration, parseTimeString, getRemainingTime } from '../utils/formatTime.js';
 import TimerService from '../services/TimerService.js';
 import ChecklistService from '../services/ChecklistService.js';
+import { TimePickerUI } from './TimePickerUI.js';
 
 export class EstimateUI {
     constructor(t, elements) {
@@ -14,6 +15,14 @@ export class EstimateUI {
         // Expected: row, input, btnSet, btnClear, display, progressBar, progressFill, remaining
         
         this.cachedChecklists = [];
+        this.timePicker = new TimePickerUI({
+            containerId: 'time-picker-container',
+            onSelect: (ms) => {
+                this.elements.input.value = formatDuration(ms, { compact: true });
+            },
+            onClose: () => {}
+        });
+
         this._initListeners();
     }
 
@@ -25,10 +34,13 @@ export class EstimateUI {
             this.elements.btnClear.addEventListener('click', () => this._handleClear());
         }
         if (this.elements.input) {
+            this.elements.input.addEventListener('click', () => {
+                this.timePicker.show(this.elements.input);
+            });
             this.elements.input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
+                    e.target.blur(); // Let blur/click actions handle it or just set
                     e.preventDefault();
-                    e.target.blur();
                     this._handleSet();
                 }
             });

@@ -187,17 +187,20 @@ export const parseTimeString = (timeStr) => {
 
     const str = timeStr.trim().toLowerCase();
 
-    // Try to match hours and minutes: "1h 30m", "1h30m", "1h", "30m"
+    // Try to match hours, minutes, and seconds
     const hourMatch = str.match(/(\d+(?:\.\d+)?)\s*h/);
     const minMatch = str.match(/(\d+(?:\.\d+)?)\s*m/);
+    const secMatch = str.match(/(\d+(?:\.\d+)?)\s*s/);
 
-    if (hourMatch || minMatch) {
+    if (hourMatch || minMatch || secMatch) {
         const hours = hourMatch ? parseFloat(hourMatch[1]) : 0;
         const minutes = minMatch ? parseFloat(minMatch[1]) : 0;
-        return Math.round((hours * 60 + minutes) * 60 * 1000);
+        const seconds = secMatch ? parseFloat(secMatch[1]) : 0;
+        return Math.round(((hours * 60 + minutes) * 60 + seconds) * 1000);
     }
 
-    // Try plain number (assume minutes)
+    // Try plain number (default to minutes)
+    // Only if it doesn't look like it has other units handled above logic
     const num = parseFloat(str);
     if (!isNaN(num) && num > 0) {
         return Math.round(num * 60 * 1000);
