@@ -513,13 +513,34 @@
       }
     };
 
+    // Track currently rendered item IDs to detect changes
+    let renderedItemIds = new Set();
+
+    // Initial render - builds DOM and attaches event handlers (called once per checklist change)
     const renderChecklists = (timerData, checklists) => {
       if (!checklists || checklists.length === 0) {
         checklistsEl.hidden = true;
+        renderedItemIds = new Set();
         return;
       }
 
+      // Get new item IDs
+      const newItemIds = new Set();
+      checklists.forEach(cl => (cl.checkItems || []).forEach(item => newItemIds.add(item.id)));
+
+      // Check if structure changed - if not, just update values
+      const structureChanged = newItemIds.size !== renderedItemIds.size ||
+        [...newItemIds].some(id => !renderedItemIds.has(id));
+
+      if (!structureChanged && checklistsEl.innerHTML !== '') {
+        // Structure same, just update values in-place
+        updateChecklists(timerData, checklists);
+        return;
+      }
+
+      // Structure changed - full DOM rebuild
       checklistsEl.hidden = false;
+      renderedItemIds = newItemIds;
       const checklistItems = timerData.checklistItems || {};
 
       let html = '';
@@ -550,7 +571,7 @@
                 : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}
             </button>
             <span class="${nameClass}" title="${escapedName}">${escapedName}</span>
-            <span class="${timeClass}">${formatDuration(itemTime, { compact: true, showSeconds: false })}</span>
+            <span class="${timeClass}" data-time-id="${escapeHtml(item.id)}">${formatDuration(itemTime, { compact: true, showSeconds: false })}</span>
             <input type="text" class="checklist-item__estimate-input" data-item-id="${escapeHtml(item.id)}"
               placeholder="${itemEstimate > 0 ? formatDuration(itemEstimate, { compact: true, showSeconds: false }) : 'Est'}"
               title="Set estimate (e.g. 30m, 1h)">
@@ -577,11 +598,58 @@
       });
     };
 
+    // In-place update - updates values without replacing DOM (preserves focus)
+    const updateChecklists = (timerData, checklists) => {
+      const checklistItems = timerData.checklistItems || {};
+
+      for (const checklist of checklists) {
+        if (!checklist.checkItems) continue;
+
+        for (const item of checklist.checkItems) {
+          const itemData = checklistItems[item.id] || {};
+          const itemIsRunning = itemData.state === TIMER_STATE.RUNNING;
+          const itemTime = sumDurations(itemData.entries || []) +
+            (itemIsRunning ? TimerService.getItemCurrentElapsed(itemData) : 0);
+          const itemEstimate = itemData.estimatedTime || 0;
+          const isOver = itemEstimate > 0 && itemTime > itemEstimate;
+
+          // Update time display
+          const timeEl = checklistsEl.querySelector(`[data-time-id="${item.id}"]`);
+          if (timeEl) {
+            timeEl.textContent = formatDuration(itemTime, { compact: true, showSeconds: false });
+            timeEl.className = isOver ? 'checklist-item__time checklist-item__time--over' : 'checklist-item__time';
+          }
+
+          // Update item container class for over-budget styling
+          const itemEl = checklistsEl.querySelector(`[data-item-id="${item.id}"]`);
+          if (itemEl && itemEl.classList.contains('checklist-item')) {
+            itemEl.className = isOver ? 'checklist-item checklist-item--over' : 'checklist-item';
+          }
+
+          // Update button state
+          const btn = checklistsEl.querySelector(`button[data-item-id="${item.id}"]`);
+          if (btn) {
+            btn.className = itemIsRunning ? 'btn-item-toggle btn-item-toggle--running' : 'btn-item-toggle';
+            btn.title = itemIsRunning ? 'Stop' : 'Start';
+            btn.innerHTML = itemIsRunning
+              ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
+              : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+          }
+
+          // Update placeholder (only if input is empty and not focused)
+          const input = checklistsEl.querySelector(`input[data-item-id="${item.id}"]`);
+          if (input && document.activeElement !== input) {
+            input.placeholder = itemEstimate > 0 ? formatDuration(itemEstimate, { compact: true, showSeconds: false }) : 'Est';
+          }
+        }
+      }
+    };
+
     // Lightweight refresh - only updates timer state (called every second)
     const refresh = async () => {
       const timerData = await StorageService.getTimerData(t);
       updateUI(timerData);
-      renderChecklists(timerData, cachedChecklists);  // Use cached checklists
+      renderChecklists(timerData, cachedChecklists);  // Will use updateChecklists if structure unchanged
     };
 
     // Full refresh - includes fetching checklists (called on user actions)
