@@ -20,13 +20,7 @@ export class EstimateUI {
     // Expected: row, input, btnSet, btnClear, display, progressBar, progressFill, remaining
 
     this.cachedChecklists = [];
-    this.timePicker = new TimePickerUI({
-      containerId: "time-picker-container",
-      onSelect: (ms) => {
-        this.elements.input.value = formatDuration(ms, { compact: true });
-      },
-      onClose: () => {},
-    });
+    this.timePicker = options.timePicker;
 
     this._initListeners();
   }
@@ -42,15 +36,18 @@ export class EstimateUI {
     }
     if (this.elements.input) {
       this.elements.input.addEventListener("click", (e) => {
-        this.timePicker.show(this.elements.input);
+        this.timePicker.show(this.elements.input, (ms) => {
+          this.elements.input.value = formatDuration(ms, { compact: true });
+          this._handleSet(); // Auto-save after picker
+        });
       });
       this.elements.input.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           e.target.blur(); // Let blur/click actions handle it or just set
           e.preventDefault();
-          this._handleSet();
         }
       });
+      this.elements.input.addEventListener("blur", () => this._handleSet());
     }
   }
 

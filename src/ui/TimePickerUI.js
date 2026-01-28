@@ -104,9 +104,11 @@ export class TimePickerUI {
   }
 
   _handleApply() {
-    if (this.onSelect) {
-      const ms = this.state.hours * 3600000 + this.state.minutes * 60000;
-      this.onSelect(ms);
+    const ms = this.state.hours * 3600000 + this.state.minutes * 60000;
+    if (this.currentSelectCallback) {
+      this.currentSelectCallback(ms, this.targetInput);
+    } else if (this.onSelect) {
+      this.onSelect(ms, this.targetInput);
     }
     this.hide();
   }
@@ -128,10 +130,10 @@ export class TimePickerUI {
     if (hRange) hRange.value = this.state.hours;
     if (mRange) mRange.value = this.state.minutes;
 
-    this.container.querySelector("#tp-hours-val").textContent =
-      `${this.state.hours}h`;
-    this.container.querySelector("#tp-mins-val").textContent =
-      `${this.state.minutes}m`;
+    const hVal = this.container.querySelector("#tp-hours-val");
+    const mVal = this.container.querySelector("#tp-mins-val");
+    if (hVal) hVal.textContent = `${this.state.hours}h`;
+    if (mVal) mVal.textContent = `${this.state.minutes}m`;
   }
 
   _updateInput() {
@@ -141,8 +143,9 @@ export class TimePickerUI {
     this.targetInput.value = (h + m).trim();
   }
 
-  show(targetInput) {
+  show(targetInput, onSelect) {
     this.targetInput = targetInput;
+    this.currentSelectCallback = onSelect;
     this.container.style.display = "flex";
     this.container.hidden = false;
 

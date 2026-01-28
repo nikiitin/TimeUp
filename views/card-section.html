@@ -66,10 +66,16 @@
     import { ChecklistUI } from '../src/ui/ChecklistUI.js';
     import { EntryListUI } from '../src/ui/EntryListUI.js';
     import { AuthUI } from '../src/ui/AuthUI.js';
+    import { TimePickerUI } from '../src/ui/TimePickerUI.js';
 
     const t = TrelloPowerUp.iframe({
       appKey: AppConfig.APP_KEY,
       appName: AppConfig.APP_NAME
+    });
+
+    // -- Shared Components --
+    const timePicker = new TimePickerUI({
+        containerId: "time-picker-container"
     });
 
     // -- State --
@@ -103,7 +109,8 @@
         progressFill: document.getElementById('progress-fill'),
         remaining: document.getElementById('remaining')
     }, {
-        onRefresh: () => refresh()
+        onRefresh: () => refresh(),
+        timePicker: timePicker
     });
 
     // 3. Entry List
@@ -114,7 +121,8 @@
 
     // 4. Checklist Controls
     const checklistUI = new ChecklistUI(t, 'checklists-container', {
-        onRefresh: () => refresh()
+        onRefresh: () => refresh(),
+        timePicker: timePicker
     });
 
     // 5. Auth

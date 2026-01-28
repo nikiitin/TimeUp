@@ -379,12 +379,19 @@ body {
 }
 
 .task-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--aura-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.progress-bar--item {
+  height: 4px;
+  margin: 2px 0;
+  width: 100%;
+  max-width: 200px;
 }
 
 .status-badge {
