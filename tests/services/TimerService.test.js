@@ -55,7 +55,6 @@ describe("TimerService", () => {
           item1: {
             state: TIMER_STATE.RUNNING,
             currentEntry: { startTime: Date.now() - 1000 },
-            entries: [],
           },
         },
       };
@@ -69,8 +68,8 @@ describe("TimerService", () => {
       expect(result.data.state).toBe(TIMER_STATE.RUNNING);
       // Item should be idle
       expect(result.data.checklistItems["item1"].state).toBe(TIMER_STATE.IDLE);
-      // Entry should have been created for item
-      expect(result.data.checklistItems["item1"].entries.length).toBe(1);
+      // Entry should have been created in global entries
+      expect(result.data.entries.length).toBe(1);
     });
   });
 
@@ -106,7 +105,7 @@ describe("TimerService", () => {
         entries: [entry],
         checklistItems: {
           [itemId]: {
-            entries: [entry],
+            state: TIMER_STATE.IDLE
           },
         },
       };
@@ -116,7 +115,7 @@ describe("TimerService", () => {
 
       expect(result.success).toBe(true);
       expect(result.data.entries.length).toBe(0); // Removed from global
-      expect(result.data.checklistItems[itemId].entries.length).toBe(0); // Removed from item
+      expect(result.data.entries.length).toBe(0); // Removed from global
     });
   });
 });

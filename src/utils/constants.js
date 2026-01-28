@@ -76,7 +76,6 @@ export const DEFAULTS = {
     },
     CHECKLIST_ITEM_DATA: {
         estimatedTime: null,
-        entries: [],
         state: TIMER_STATE.IDLE,
         currentEntry: null,
     },

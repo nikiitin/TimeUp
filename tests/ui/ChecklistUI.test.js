@@ -71,10 +71,12 @@ describe("ChecklistUI", () => {
       },
     ];
     const timerData1 = {
-      checklistItems: { item1: { entries: [{ duration: 0 }] } },
+      entries: [{ checklistItemId: "item1", duration: 0 }],
+      checklistItems: { item1: { state: TIMER_STATE.IDLE } },
     };
     const timerData2 = {
-      checklistItems: { item1: { entries: [{ duration: 60000 }] } },
+      entries: [{ checklistItemId: "item1", duration: 60000 }],
+      checklistItems: { item1: { state: TIMER_STATE.IDLE } },
     };
 
     checklistUI.render(timerData1, checklists);
@@ -123,8 +125,9 @@ describe("ChecklistUI", () => {
     ];
 
     const timerData = {
+      entries: [],
       checklistItems: {
-        item1: { state: TIMER_STATE.RUNNING, entries: [] },
+        item1: { state: TIMER_STATE.RUNNING },
       },
     };
 
@@ -146,10 +149,10 @@ describe("ChecklistUI", () => {
     ];
 
     const timerData = {
+      entries: [{ checklistItemId: "item1", duration: 1800000 }], // 30m
       checklistItems: {
         item1: {
           estimatedTime: 3600000, // 1h
-          entries: [{ duration: 1800000 }], // 30m
         },
       },
     };
@@ -174,10 +177,10 @@ describe("ChecklistUI", () => {
     ];
 
     const timerData = {
+      entries: [{ checklistItemId: "item1", duration: 120000 }],
       checklistItems: {
         item1: {
           estimatedTime: 60000,
-          entries: [{ duration: 120000 }],
         },
       },
     };

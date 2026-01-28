@@ -111,11 +111,13 @@ export const getCheckItemData = (timerData, checkItemId) => {
 
 /**
  * Calculates total time spent on a checklist item.
- * @param {Object} itemData - Checklist item data
+ * @param {Object} timerData - Global timer data
+ * @param {string} itemId - Checklist item ID
  * @returns {number} Total time in milliseconds
  */
-export const getCheckItemTotalTime = (itemData) => {
-    return sumDurations(itemData?.entries || []);
+export const getCheckItemTotalTime = (timerData, itemId) => {
+    const entries = (timerData?.entries || []).filter(e => e.checklistItemId === itemId);
+    return sumDurations(entries);
 };
 
 /**

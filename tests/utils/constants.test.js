@@ -68,7 +68,6 @@ describe('Constants exports', () => {
         test('CHECKLIST_ITEM_DATA has correct structure', () => {
             expect(DEFAULTS.CHECKLIST_ITEM_DATA).toEqual({
                 estimatedTime: null,
-                entries: [],
                 state: TIMER_STATE.IDLE,
                 currentEntry: null,
             });

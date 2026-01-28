@@ -221,23 +221,23 @@ describe('ChecklistService', () => {
         test('returns default for missing item', () => {
             const data = getCheckItemData({}, 'missing');
             expect(data.state).toBe(TIMER_STATE.IDLE);
-            expect(data.entries).toEqual([]);
         });
     });
 
     describe('getCheckItemTotalTime', () => {
         test('returns 0 for empty entries', () => {
-            expect(getCheckItemTotalTime({ entries: [] })).toBe(0);
+            expect(getCheckItemTotalTime({ entries: [] }, 'item1')).toBe(0);
         });
 
-        test('sums entry durations', () => {
-            const itemData = {
+        test('sums entry durations for specific item', () => {
+            const timerData = {
                 entries: [
-                    { duration: 1000 },
-                    { duration: 2000 },
+                    { checklistItemId: 'item1', duration: 1000 },
+                    { checklistItemId: 'item2', duration: 5000 },
+                    { checklistItemId: 'item1', duration: 2000 },
                 ],
             };
-            expect(getCheckItemTotalTime(itemData)).toBe(3000);
+            expect(getCheckItemTotalTime(timerData, 'item1')).toBe(3000);
         });
     });
 

@@ -15,12 +15,11 @@ import StorageService from "./StorageService.js";
  * @returns {Object} Time entry
  */
 const createEntry = (startTime, endTime, description = "") => ({
-  id: `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  id: `e_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`,
   startTime,
   endTime,
   duration: endTime - startTime,
   description,
-  createdAt: Date.now(),
 });
 
 /**
@@ -49,15 +48,14 @@ const stopItemAndCreateEntry = (
     timerData: {
       ...timerData,
       entries: [...timerData.entries, newEntry],
-      checklistItems: {
-        ...timerData.checklistItems,
-        [itemId]: {
-          ...itemData,
-          entries: [...itemData.entries, newEntry],
-          state: TIMER_STATE.IDLE,
-          currentEntry: null,
-        },
+    checklistItems: {
+      ...timerData.checklistItems,
+      [itemId]: {
+        ...itemData,
+        state: TIMER_STATE.IDLE,
+        currentEntry: null,
       },
+    },
     },
   };
 };
@@ -220,24 +218,11 @@ export const deleteEntry = async (t, entryId) => {
     const entryToDelete = timerData.entries[entryIndex];
     const { checklistItemId } = entryToDelete;
 
-    // update global entries
     const updatedEntries = timerData.entries.filter((e) => e.id !== entryId);
-
-    let updatedChecklistItems = { ...timerData.checklistItems };
-
-    // update checklist item entries if applicable
-    if (checklistItemId && updatedChecklistItems[checklistItemId]) {
-      const itemData = updatedChecklistItems[checklistItemId];
-      updatedChecklistItems[checklistItemId] = {
-        ...itemData,
-        entries: itemData.entries.filter((e) => e.id !== entryId),
-      };
-    }
 
     const updatedData = {
       ...timerData,
       entries: updatedEntries,
-      checklistItems: updatedChecklistItems,
     };
     const saved = await StorageService.setTimerData(t, updatedData);
     return saved
@@ -288,44 +273,9 @@ export const updateEntry = async (t, entryId, updates) => {
     const updatedEntries = [...timerData.entries];
     updatedEntries[entryIndex] = updatedEntry;
 
-    // Sync with checklistItems
-    let updatedChecklistItems = { ...timerData.checklistItems };
-
-    // Remove from old checklist item if it had one
-    if (oldChecklistItemId && updatedChecklistItems[oldChecklistItemId]) {
-      const oldItemData = updatedChecklistItems[oldChecklistItemId];
-      updatedChecklistItems[oldChecklistItemId] = {
-        ...oldItemData,
-        entries: oldItemData.entries.filter((e) => e.id !== entryId),
-      };
-    }
-
-    // Add/update in new checklist item if it has one
-    if (newChecklistItemId) {
-      const newItemData = updatedChecklistItems[newChecklistItemId] || {
-        ...DEFAULTS.CHECKLIST_ITEM_DATA,
-      };
-      const existingIndex = newItemData.entries.findIndex(
-        (e) => e.id === entryId,
-      );
-      const newItemEntries = [...newItemData.entries];
-
-      if (existingIndex >= 0) {
-        newItemEntries[existingIndex] = updatedEntry;
-      } else {
-        newItemEntries.push(updatedEntry);
-      }
-
-      updatedChecklistItems[newChecklistItemId] = {
-        ...newItemData,
-        entries: newItemEntries,
-      };
-    }
-
     const updatedData = {
       ...timerData,
       entries: updatedEntries,
-      checklistItems: updatedChecklistItems,
     };
 
     const saved = await StorageService.setTimerData(t, updatedData);
@@ -456,7 +406,6 @@ export const stopItemTimer = async (t, checkItemId, description = "") => {
         ...timerData.checklistItems,
         [checkItemId]: {
           ...itemData,
-          entries: [...itemData.entries, newEntry],
           state: TIMER_STATE.IDLE,
           currentEntry: null,
         },
