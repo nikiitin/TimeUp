@@ -908,6 +908,8 @@
     const fullRefresh = async () => {
       cachedChecklists = await ChecklistService.getChecklists(t);
       await refresh();
+      // Resize iframe to fit content
+      t.sizeTo('body').catch(() => {});
     };
 
     const startLoop = () => {
