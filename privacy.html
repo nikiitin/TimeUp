@@ -61,29 +61,19 @@
     <h2>Data Collection</h2>
     <p>TimeUp does not collect, store, or transmit any personal data. The Power-Up operates entirely within your browser and uses only Trello's built-in storage API.</p>
 
-    <h2>Data Storage</h2>
-    <p>All time tracking data (timer states, time entries, durations) is stored directly within Trello using their Power-Up storage API. This data:</p>
+    <h2>Authorization & Trello API Access</h2>
+    <p>To provide accurate time estimates, TimeUp requests <strong>Read Access</strong> to your Trello boards via the Trello REST API. This authorization is strictly used to:</p>
     <ul>
-      <li>Remains within your Trello account</li>
-      <li>Is governed by Trello's own privacy policy</li>
-      <li>Is never transmitted to any external servers</li>
-      <li>Is never accessed by the TimeUp developers</li>
+      <li>Fetch detailed checklist items (which are sometimes incomplete via standard Power-Up limitations)</li>
+      <li>Calculate progress based on checklist completion</li>
     </ul>
+    <p>This access is <strong>read-only</strong> for board data. We do not modify your boards or cards via the API (except for storing timer data, which uses the standard Power-Up storage).</p>
 
-    <h2>External Services</h2>
-    <p>TimeUp does not use any external services, analytics, tracking scripts, or third-party APIs. The Power-Up consists entirely of static files hosted on GitHub Pages.</p>
-
-    <h2>No Server Components</h2>
-    <p>TimeUp has no backend server, database, or any server-side processing. All functionality runs client-side in your browser.</p>
+    <h2>Data Storage</h2>
+    <p>All time tracking data (timer states, time entries, durations) is stored directly within Trello using their Power-Up storage API. TimeUp does not maintain its own database.</p>
 
     <h2>Personal Information</h2>
-    <p>TimeUp does not access, collect, or store any personal information such as:</p>
-    <ul>
-      <li>Names or email addresses</li>
-      <li>Trello usernames or account details</li>
-      <li>Card contents or board data (beyond timer information)</li>
-      <li>Browser or device information</li>
-    </ul>
+    <p>TimeUp does not access or store personal information like names or email addresses on any external server. All data remains within the Trello ecosystem.</p>
 
     <h2>Data Deletion</h2>
     <p>To remove all TimeUp data from a card, simply delete the time entries within the Power-Up interface. To remove all data from a board, disable the TimeUp Power-Up from that board.</p>

@@ -9,14 +9,39 @@ import { sumDurations } from '../utils/formatTime.js';
 /**
  * Fetches all checklists for the current card.
  * @param {Object} t - Trello Power-Up client
- * @returns {Promise<Array>} Array of checklists with checkItems
+ * @returns {Promise<Array|null>} Array of checklists if successful/empty, or null if not authorized
  */
 export const getChecklists = async (t) => {
     try {
-        const card = await t.card('checklists');
-        return card.checklists || [];
+        const context = t.getContext();
+        const cardId = context.card;
+
+        const restApi = t.getRestApi();
+        const isAuthorized = await restApi.isAuthorized();
+
+        if (!isAuthorized) {
+            console.log('[ChecklistService] Not authorized for REST API.');
+            return null;
+        }
+
+        const token = await restApi.getToken();
+        if (!token) {
+            console.warn('[ChecklistService] Authorized but no token?');
+            return [];
+        }
+
+        // Fetch directly from Trello API
+        // Use AppConfig for the key if passed, but RestApi object has it internally too.
+        // We'll trust the RestApi object's property for now as it's bound to the init.
+        const response = await fetch(`https://api.trello.com/1/cards/${cardId}/checklists?key=${restApi.appKey}&token=${token}`);
+        
+        if (!response.ok) {
+            throw new Error(`API Error ${response.status}: ${response.statusText}`);
+        }
+
+        return (await response.json()) || [];
     } catch (error) {
-        console.error('[ChecklistService] getChecklists error:', error);
+        console.error('[ChecklistService] REST API error:', error);
         return [];
     }
 };
@@ -29,20 +54,15 @@ export const getChecklists = async (t) => {
 export const getAllCheckItems = (checklists) => {
     if (!Array.isArray(checklists)) return [];
     
-    const items = [];
-    for (const checklist of checklists) {
-        if (!checklist.checkItems) continue;
-        for (const item of checklist.checkItems) {
-            items.push({
-                id: item.id,
-                name: item.name,
-                state: item.state, // 'complete' or 'incomplete'
-                checklistId: checklist.id,
-                checklistName: checklist.name,
-            });
-        }
-    }
-    return items;
+    return checklists.flatMap(checklist => 
+        (checklist.checkItems || []).map(item => ({
+            id: item.id,
+            name: item.name,
+            state: item.state,
+            checklistId: checklist.id,
+            checklistName: checklist.name,
+        }))
+    );
 };
 
 /**
@@ -55,14 +75,10 @@ export const calculateChecklistEstimate = (timerData, checklists) => {
     const allItems = getAllCheckItems(checklists);
     const checklistItems = timerData?.checklistItems || {};
     
-    let total = 0;
-    for (const item of allItems) {
-        const itemData = checklistItems[item.id];
-        if (itemData?.estimatedTime && itemData.estimatedTime > 0) {
-            total += itemData.estimatedTime;
-        }
-    }
-    return total;
+    return allItems.reduce((total, item) => {
+        const estimate = checklistItems[item.id]?.estimatedTime;
+        return total + (estimate > 0 ? estimate : 0);
+    }, 0);
 };
 
 /**
@@ -72,14 +88,11 @@ export const calculateChecklistEstimate = (timerData, checklists) => {
  * @returns {number|null} Effective estimate in milliseconds
  */
 export const getEffectiveEstimate = (timerData, checklists) => {
-    // Manual override takes precedence
     if (timerData?.manualEstimateSet && timerData.estimatedTime > 0) {
         return timerData.estimatedTime;
     }
-    
-    // Otherwise calculate from checklists
-    const checklistEstimate = calculateChecklistEstimate(timerData, checklists);
-    return checklistEstimate > 0 ? checklistEstimate : null;
+    const derived = calculateChecklistEstimate(timerData, checklists);
+    return derived > 0 ? derived : null;
 };
 
 /**
@@ -89,8 +102,7 @@ export const getEffectiveEstimate = (timerData, checklists) => {
  * @returns {Object} Checklist item data
  */
 export const getCheckItemData = (timerData, checkItemId) => {
-    const checklistItems = timerData?.checklistItems || {};
-    return checklistItems[checkItemId] || { ...DEFAULTS.CHECKLIST_ITEM_DATA };
+    return (timerData?.checklistItems?.[checkItemId]) || { ...DEFAULTS.CHECKLIST_ITEM_DATA };
 };
 
 /**
@@ -109,13 +121,12 @@ export const getCheckItemTotalTime = (itemData) => {
  */
 export const getRunningCheckItem = (timerData) => {
     const checklistItems = timerData?.checklistItems || {};
+    // Object.entries + find is cleaner
+    const found = Object.entries(checklistItems).find(([_, data]) => data.state === TIMER_STATE.RUNNING);
     
-    for (const [itemId, itemData] of Object.entries(checklistItems)) {
-        if (itemData.state === TIMER_STATE.RUNNING) {
-            return { isRunning: true, itemId };
-        }
-    }
-    return { isRunning: false, itemId: null };
+    return found 
+        ? { isRunning: true, itemId: found[0] } 
+        : { isRunning: false, itemId: null };
 };
 
 const ChecklistService = {

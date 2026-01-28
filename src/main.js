@@ -4,6 +4,7 @@
  */
 
 import { TIMER_STATE, APP_INFO, BADGE_COLORS } from './utils/constants.js';
+import { AppConfig } from './config/AppConfig.js';
 import { formatDuration, sumDurations, getRemainingTime } from './utils/formatTime.js';
 import StorageService from './services/StorageService.js';
 import TimerService from './services/TimerService.js';
@@ -40,16 +41,6 @@ TrelloPowerUp.initialize({
                         console.error('[Main] Toggle timer error:', error);
                     }
                 },
-            },
-            {
-                // Detailed view button
-                icon: ICON_TIMER,
-                text: 'Time Entries',
-                callback: (t) => t.popup({
-                    title: 'Time Tracker',
-                    url: './views/card-button.html',
-                    height: 350,
-                }),
             },
         ];
     },
@@ -120,11 +111,6 @@ TrelloPowerUp.initialize({
                 title: 'Total Time',
                 text: formatDuration(total, { compact: true }),
                 color: timerData.state === TIMER_STATE.RUNNING ? BADGE_COLORS.RUNNING : null,
-                callback: (t) => t.popup({
-                    title: 'Time Entries',
-                    url: './views/card-button.html',
-                    height: 400,
-                }),
             }];
         } catch (error) {
             console.error('[Main] card-detail-badges error:', error);
@@ -157,6 +143,7 @@ TrelloPowerUp.initialize({
         }];
     },
 }, {
-    appKey: 'timingup',
-    appName: APP_INFO.POWER_UP_NAME,
+    appKey: AppConfig.APP_KEY,
+    appName: AppConfig.APP_NAME,
 });
+

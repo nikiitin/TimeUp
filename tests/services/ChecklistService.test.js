@@ -24,45 +24,59 @@ describe('ChecklistService', () => {
     });
 
     describe('getChecklists', () => {
-        test('returns checklists from card', async () => {
-            const mockChecklists = [
-                {
-                    id: 'cl1',
-                    name: 'Checklist 1',
-                    checkItems: [
-                        { id: 'item1', name: 'Item 1', state: 'incomplete' },
-                    ],
-                },
-                {
-                    id: 'cl2',
-                    name: 'Checklist 2',
-                    checkItems: [
-                        { id: 'item2', name: 'Item 2', state: 'complete' },
-                    ],
-                },
+        beforeEach(() => {
+            // Mock Fetch
+            global.fetch = jest.fn();
+            
+            // Mock Trello Context & REST API
+            mockT.getContext = jest.fn().mockReturnValue({ card: 'card123' });
+            mockT.getRestApi = jest.fn().mockReturnValue({
+                isAuthorized: jest.fn().mockResolvedValue(true),
+                getToken: jest.fn().mockResolvedValue('test-token'),
+                appKey: 'test-key'
+            });
+        });
+
+        test('returns checklists from REST API', async () => {
+             const mockChecklists = [
+                { id: 'cl1', name: 'Checklist 1', checkItems: [] }
             ];
 
-            mockT.card = jest.fn(async () => ({
-                checklists: mockChecklists,
-            }));
+            global.fetch.mockResolvedValue({
+                ok: true,
+                json: async () => mockChecklists
+            });
 
             const result = await getChecklists(mockT);
+            
             expect(result).toEqual(mockChecklists);
-            expect(mockT.card).toHaveBeenCalledWith('checklists');
+            expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('api.trello.com'));
+            expect(mockT.getRestApi).toHaveBeenCalled();
         });
 
-        test('returns empty array when checklists property is undefined', async () => {
-            mockT.card = jest.fn(async () => ({}));
-
-            const result = await getChecklists(mockT);
-            expect(result).toEqual([]);
+        test('returns null when not authorized', async () => {
+             mockT.getRestApi().isAuthorized.mockResolvedValue(false);
+             
+             const result = await getChecklists(mockT);
+             expect(result).toBeNull();
         });
 
-        test('returns empty array on error', async () => {
-            mockT.card = createErrorMock('Failed to fetch card');
+        test('returns empty array when token missing', async () => {
+             mockT.getRestApi().getToken.mockResolvedValue(null);
+             
+             const result = await getChecklists(mockT);
+             expect(result).toEqual([]);
+        });
 
-            const result = await getChecklists(mockT);
-            expect(result).toEqual([]);
+        test('returns empty array on API error', async () => {
+             global.fetch.mockResolvedValue({
+                 ok: false,
+                 status: 500,
+                 statusText: 'Error'
+             });
+
+             const result = await getChecklists(mockT);
+             expect(result).toEqual([]);
         });
     });
 
