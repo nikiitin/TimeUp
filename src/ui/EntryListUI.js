@@ -21,7 +21,7 @@ export class EntryListUI {
 
     render(entries) {
         this.currentEntries = entries || [];
-        
+
         if (!this.currentEntries.length) {
             this.container.innerHTML = '<div class="empty-msg">No time entries yet</div>';
             return;
@@ -57,7 +57,7 @@ export class EntryListUI {
         const descHtml = entry.description ? `<span class="entry__desc">${this._escape(entry.description)}</span>` : '';
 
         return `
-            <div class="entry ${itemName ? 'entry--linked' : ''}" 
+            <div class="entry ${itemName ? 'entry--linked' : ''}"
                  data-id="${entry.id}" role="button" tabindex="0">
                 <div class="entry__info">
                     <span class="entry__time">${formatTimestamp(entry.startTime, { showDate: true })}</span>
@@ -112,7 +112,7 @@ export class EntryListUI {
         if (this.editingId) {
             const saveBtn = this.container.querySelector('#btn-save-edit');
             const cancelBtn = this.container.querySelector('#btn-cancel-edit');
-            
+
             if (saveBtn) saveBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this._handleSave();

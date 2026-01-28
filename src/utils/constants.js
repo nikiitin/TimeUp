@@ -11,6 +11,8 @@
 export const STORAGE_KEYS = {
     /** Timer data stored on each card (entries, running state) */
     TIMER_DATA: 'timerData',
+    /** List of time entries stored separately to bypass 4KB limit */
+    ENTRIES: 'timerEntries',
     /** Board-wide settings (hourly rate, categories) */
     BOARD_SETTINGS: 'boardSettings',
     /** User preferences (display format, notifications) */

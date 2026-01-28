@@ -15,8 +15,21 @@ export const createTrelloMock = (overrides = {}) => {
     const mockT = {
         // Storage methods
         get: jest.fn(async (scope, visibility, key) => {
-            const storageKey = `${scope}:${visibility}:${key}`;
-            return storage.get(storageKey) ?? null;
+            if (key) {
+                const storageKey = `${scope}:${visibility}:${key}`;
+                return storage.get(storageKey) ?? null;
+            } else {
+                // Return all keys for this scope/visibility
+                const result = {};
+                const prefix = `${scope}:${visibility}:`;
+                for (const [sKey, value] of storage.entries()) {
+                    if (sKey.startsWith(prefix)) {
+                        const actualKey = sKey.substring(prefix.length);
+                        result[actualKey] = value;
+                    }
+                }
+                return result;
+            }
         }),
 
         set: jest.fn(async (scope, visibility, key, value) => {

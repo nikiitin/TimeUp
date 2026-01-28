@@ -22,7 +22,7 @@ describe('AuthUI', () => {
             <div id="auth-container" hidden></div>
             <button id="btn-auth"></button>
         `;
-        
+
         authContainer = document.getElementById('auth-container');
         btnAuthorize = document.getElementById('btn-auth');
 
@@ -46,10 +46,10 @@ describe('AuthUI', () => {
 
     test('authorize button click triggers auth flow', async () => {
         btnAuthorize.click();
-        
+
         // Wait for async handler
         await new Promise(resolve => setTimeout(resolve, 0));
-        
+
         expect(t.getRestApi().authorize).toHaveBeenCalledWith(expect.objectContaining({ scope: 'read' }));
     });
 });

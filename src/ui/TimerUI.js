@@ -14,7 +14,8 @@ export class TimerUI {
     this.elements = elements;
     this.onRefresh = options.onRefresh;
     // Expected elements:
-    // display, btnToggle, btnText, iconPlay, iconStop, description, total
+    // display, btnToggle, btnText, iconPlay, iconStop, description, total,
+    // storageStatus, storageFill, storageText
 
     this._initListeners();
   }
@@ -85,10 +86,24 @@ export class TimerUI {
     // Update Description
     this.elements.description.hidden = !isRunning;
     if (isRunning && timerData.currentEntry) {
-      // Avoid overwriting if user is typing (document.activeElement check could be added)
       if (document.activeElement !== this.elements.description) {
         this.elements.description.value =
           timerData.currentEntry.description || "";
+      }
+    }
+    if (this.elements.storageStatus) {
+      const usage = TimerService.getStorageUsage(timerData);
+
+      // Only show if usage is significant (> 60%) to avoid clutter
+      this.elements.storageStatus.hidden = usage.percent < 60;
+
+      if (this.elements.storageFill) {
+        this.elements.storageFill.style.width = `${usage.percent}%`;
+        this.elements.storageFill.classList.toggle('storage-status__fill--danger', usage.percent > 90);
+      }
+
+      if (this.elements.storageText) {
+        this.elements.storageText.textContent = `${usage.percent}%`;
       }
     }
   }

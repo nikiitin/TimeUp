@@ -42,6 +42,56 @@ body {
 }
 
 /* =============================================================================
+   STORAGE STATUS
+   ============================================================================= */
+.storage-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background: rgba(248, 113, 104, 0.05);
+  border: 1px solid rgba(248, 113, 104, 0.1);
+  border-radius: 8px;
+  margin-bottom: -4px;
+}
+
+.storage-status__label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--aura-text-dark);
+  white-space: nowrap;
+}
+
+.storage-status__bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.storage-status__fill {
+  height: 100%;
+  background: var(--aura-warning);
+  width: 0%;
+  transition: width 0.3s, background 0.3s;
+}
+
+.storage-status__fill--danger {
+  background: var(--aura-danger);
+}
+
+.storage-status__text {
+  font-family: var(--aura-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--aura-text);
+  min-width: 35px;
+  text-align: right;
+}
+
+/* =============================================================================
    DASHBOARD HEADER
    ============================================================================= */
 .timer-header {

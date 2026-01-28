@@ -27,7 +27,7 @@ describe('ChecklistService', () => {
         beforeEach(() => {
             // Mock Fetch
             global.fetch = jest.fn();
-            
+
             // Mock Trello Context & REST API
             mockT.getContext = jest.fn().mockReturnValue({ card: 'card123' });
             mockT.getRestApi = jest.fn().mockReturnValue({
@@ -48,7 +48,7 @@ describe('ChecklistService', () => {
             });
 
             const result = await getChecklists(mockT);
-            
+
             expect(result).toEqual(mockChecklists);
             expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('api.trello.com'));
             expect(mockT.getRestApi).toHaveBeenCalled();
@@ -56,14 +56,14 @@ describe('ChecklistService', () => {
 
         test('returns null when not authorized', async () => {
              mockT.getRestApi().isAuthorized.mockResolvedValue(false);
-             
+
              const result = await getChecklists(mockT);
              expect(result).toBeNull();
         });
 
         test('returns empty array when token missing', async () => {
              mockT.getRestApi().getToken.mockResolvedValue(null);
-             
+
              const result = await getChecklists(mockT);
              expect(result).toEqual([]);
         });

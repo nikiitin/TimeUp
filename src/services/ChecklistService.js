@@ -38,7 +38,7 @@ export const getChecklists = async (t) => {
 
         // Fetch directly from Trello API
         const response = await fetch(`https://api.trello.com/1/cards/${cardId}/checklists?key=${AppConfig.APP_KEY}&token=${token}`);
-        
+
         if (!response.ok) {
             throw new Error(`API Error ${response.status}: ${response.statusText}`);
         }
@@ -57,8 +57,8 @@ export const getChecklists = async (t) => {
  */
 export const getAllCheckItems = (checklists) => {
     if (!Array.isArray(checklists)) return [];
-    
-    return checklists.flatMap(checklist => 
+
+    return checklists.flatMap(checklist =>
         (checklist.checkItems || []).map(item => ({
             id: item.id,
             name: item.name,
@@ -78,7 +78,7 @@ export const getAllCheckItems = (checklists) => {
 export const calculateChecklistEstimate = (timerData, checklists) => {
     const allItems = getAllCheckItems(checklists);
     const checklistItems = timerData?.checklistItems || {};
-    
+
     return allItems.reduce((total, item) => {
         const estimate = checklistItems[item.id]?.estimatedTime;
         return total + (estimate > 0 ? estimate : 0);
@@ -129,9 +129,9 @@ export const getRunningCheckItem = (timerData) => {
     const checklistItems = timerData?.checklistItems || {};
     // Object.entries + find is cleaner
     const found = Object.entries(checklistItems).find(([_, data]) => data.state === TIMER_STATE.RUNNING);
-    
-    return found 
-        ? { isRunning: true, itemId: found[0] } 
+
+    return found
+        ? { isRunning: true, itemId: found[0] }
         : { isRunning: false, itemId: null };
 };
 

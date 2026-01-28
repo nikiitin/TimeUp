@@ -1,10 +1,6 @@
-/**
- * TimeUp - Storage Service
- * Abstraction layer over Trello's t.set() and t.get() API
- * Provides consistent error handling and data validation
- */
-
 import { STORAGE_KEYS, STORAGE_SCOPES, DEFAULTS } from '../utils/constants.js';
+
+const STORAGE_LIMIT = 4096; // Trello's per-key character limit
 
 /**
  * Gets data from Trello storage with error handling.
@@ -27,25 +23,35 @@ export const getData = async (t, scope, visibility, key, defaultValue = null) =>
     }
 };
 
-/**
- * Sets data in Trello storage with error handling.
- * @param {Object} t - Trello Power-Up client instance
- * @param {string} scope - Storage scope ('card' | 'board' | 'member')
- * @param {string} visibility - Visibility ('shared' | 'private')
- * @param {string} key - Storage key
- * @param {*} value - Value to store
- * @returns {Promise<boolean>} True if successful, false otherwise
- * @example
- * const success = await setData(t, 'card', 'shared', STORAGE_KEYS.TIMER_DATA, timerData);
- */
 export const setData = async (t, scope, visibility, key, value) => {
     try {
+        const jsonString = JSON.stringify(value);
+        if (jsonString.length > STORAGE_LIMIT) {
+            console.error(`[StorageService] Size limit exceeded for "${key}": ${jsonString.length}/${STORAGE_LIMIT} characters.`);
+            return { success: false, error: 'LIMIT_EXCEEDED', size: jsonString.length };
+        }
+
         await t.set(scope, visibility, key, value);
-        return true;
+        return { success: true, size: jsonString.length };
     } catch (error) {
         console.error(`[StorageService] Failed to set "${key}" in ${scope}/${visibility}:`, error);
-        return false;
+        return { success: false, error: error.message };
     }
+};
+
+/**
+ * Calculates current storage usage percentage for a key.
+ * @param {*} value - The value being stored
+ * @returns {Object} { size, limit, percent, isNearLimit }
+ */
+export const calculateUsage = (value) => {
+    const size = JSON.stringify(value).length;
+    return {
+        size,
+        limit: STORAGE_LIMIT,
+        percent: Math.round((size / STORAGE_LIMIT) * 100),
+        isNearLimit: size > (STORAGE_LIMIT * 0.8) // 80% threshold
+    };
 };
 
 /**
@@ -71,34 +77,44 @@ export const removeData = async (t, scope, visibility, key) => {
 // =============================================================================
 
 /**
- * Gets timer data for the current card.
- * @param {Object} t - Trello Power-Up client instance
- * @returns {Promise<Object>} Timer data with entries, state, and currentEntry
+ * Gets all timer-related data, merging metadata and entries.
+ * Handles migration from old single-key format.
  */
 export const getTimerData = async (t) => {
-    return getData(
-        t,
-        'card',
-        STORAGE_SCOPES.CARD_SHARED,
-        STORAGE_KEYS.TIMER_DATA,
-        { ...DEFAULTS.TIMER_DATA }
-    );
+    const allData = await t.get('card', STORAGE_SCOPES.CARD_SHARED);
+    let timerData = { ...(allData?.[STORAGE_KEYS.TIMER_DATA] || DEFAULTS.TIMER_DATA) };
+    let entries = allData?.[STORAGE_KEYS.ENTRIES] || [];
+
+    // Migration: if entries are still in timerData, move them
+    if (timerData.entries && timerData.entries.length > 0 && entries.length === 0) {
+        entries = timerData.entries;
+        delete timerData.entries;
+    }
+
+    return { ...timerData, entries };
 };
 
 /**
- * Saves timer data for the current card.
- * @param {Object} t - Trello Power-Up client instance
- * @param {Object} timerData - Timer data to save
- * @returns {Promise<boolean>} True if successful
+ * Saves timer data by splitting it into metadata and entries keys.
  */
 export const setTimerData = async (t, timerData) => {
-    return setData(
-        t,
-        'card',
-        STORAGE_SCOPES.CARD_SHARED,
-        STORAGE_KEYS.TIMER_DATA,
-        timerData
-    );
+    const { entries, ...metadata } = timerData;
+
+    // Save metadata and entries in parallel
+    const p1 = setData(t, 'card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.TIMER_DATA, metadata);
+    const p2 = setData(t, 'card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.ENTRIES, entries);
+
+    const [res1, res2] = await Promise.all([p1, p2]);
+
+    if (!res1.success) return res1;
+    if (!res2.success) return res2;
+
+    return {
+        success: true,
+        size: res1.size + res2.size,
+        metadataSize: res1.size,
+        entriesSize: res2.size
+    };
 };
 
 // =============================================================================
@@ -180,6 +196,7 @@ const StorageService = {
     removeData,
     getTimerData,
     setTimerData,
+    calculateUsage,
     getBoardSettings,
     setBoardSettings,
     getUserPreferences,

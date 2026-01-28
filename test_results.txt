@@ -1,0 +1,691 @@
+
+> timeup@1.0.0 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js
+
+(node:1439855) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL tests/ui/ChecklistUI.test.js
+  ChecklistUI
+    ✓ should render nothing if no checklists provided (6 ms)
+    ✕ should render Control Panel table structure (18 ms)
+    ✕ should highlight running items (6 ms)
+    ✓ should show estimate and total time (5 ms)
+    ✓ should mark over-budget items (3 ms)
+
+  ● ChecklistUI › should render Control Panel table structure
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Time"
+    Received string:    "········································
+                Project Plan······················
+                Estimate
+                Tracked·············································································································
+              Task 1·····························································································
+              0m 0s·····································
+        "
+
+      58 |     // Check headers
+      59 |     expect(container.textContent).toContain("Est");
+    > 60 |     expect(container.textContent).toContain("Time");
+         |                                   ^
+      61 |   });
+      62 |
+      63 |   test("should highlight running items", () => {
+
+      at Object.<anonymous> (tests/ui/ChecklistUI.test.js:60:35)
+
+  ● ChecklistUI › should highlight running items
+
+    expect(received).not.toBeNull()
+
+    Received: null
+
+      81 |     const row = container.querySelector(".checklist-row");
+      82 |     expect(row.classList).toContain("checklist-row--running");
+    > 83 |     expect(row.querySelector(".btn-icon--running")).not.toBeNull();
+         |                                                         ^
+      84 |   });
+      85 |
+      86 |   test("should show estimate and total time", () => {
+
+      at Object.<anonymous> (tests/ui/ChecklistUI.test.js:83:57)
+
+  console.error
+    [ReportService] fetchAllCardTimers error: Error: Network error
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/services/ReportService.test.js:54:23)
+        at /home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:397:39
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:404:13)
+        at Object.mockConstructor [as cards] (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:148:19)
+        at Object.fetchAllCardTimers (/home/vnicolas/workspace/repos/TimeUp/src/services/ReportService.js:17:31)
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/services/ReportService.test.js:57:48)
+        at Promise.then.completed (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:298:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:231:10)
+        at _callCircusTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:316:40)
+        at _runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:252:3)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:126:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at run (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:71:3)
+        at runAndTransformResultsToJestFormat (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+        at jestAdapter (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+        at runTestInternal (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:367:16)
+        at runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:444:34)
+
+      39 |         return results;
+      40 |     } catch (error) {
+    > 41 |         console.error('[ReportService] fetchAllCardTimers error:', error);
+         |                 ^
+      42 |         return [];
+      43 |     }
+      44 | };
+
+      at Object.fetchAllCardTimers (src/services/ReportService.js:41:17)
+      at Object.<anonymous> (tests/services/ReportService.test.js:57:28)
+
+PASS tests/services/ReportService.test.js
+  ReportService
+    fetchAllCardTimers
+      ✓ fetches timer data from all cards (2 ms)
+      ✓ skips cards with no entries
+      ✓ handles errors gracefully (12 ms)
+    flattenEntries
+      ✓ flattens nested entries
+      ✓ returns empty array for empty input
+    filterByDateRange
+      ✓ filters entries within date range (1 ms)
+      ✓ includes entries on boundary dates
+      ✓ returns empty array when no entries match (1 ms)
+    groupByDate
+      ✓ groups entries by date (4 ms)
+      ✓ sorts dates in descending order (3 ms)
+    groupByCard
+      ✓ groups entries by card
+    calculateTotal
+      ✓ sums all durations (1 ms)
+      ✓ handles missing duration
+      ✓ returns 0 for empty array
+    generateCSV
+      ✓ generates CSV with headers and data (6 ms)
+      ✓ escapes quotes in card names
+      ✓ returns only headers for empty entries
+
+  console.error
+    [TimePickerUI] Container not found: time-picker-container
+
+      21 |       this._ensureRender();
+      22 |     } else {
+    > 23 |       console.error("[TimePickerUI] Container not found:", containerId);
+         |               ^
+      24 |     }
+      25 |   }
+      26 |
+
+      at new TimePickerUI (src/ui/TimePickerUI.js:23:15)
+      at new EstimateUI (src/ui/EstimateUI.js:22:23)
+      at Object.<anonymous> (tests/ui/EstimateUI.test.js:59:18)
+
+  console.error
+    [TimePickerUI] Container not found: time-picker-container
+
+      21 |       this._ensureRender();
+      22 |     } else {
+    > 23 |       console.error("[TimePickerUI] Container not found:", containerId);
+         |               ^
+      24 |     }
+      25 |   }
+      26 |
+
+      at new TimePickerUI (src/ui/TimePickerUI.js:23:15)
+      at new EstimateUI (src/ui/EstimateUI.js:22:23)
+      at Object.<anonymous> (tests/ui/EstimateUI.test.js:59:18)
+
+  console.error
+    [TimePickerUI] Container not found: time-picker-container
+
+      21 |       this._ensureRender();
+      22 |     } else {
+    > 23 |       console.error("[TimePickerUI] Container not found:", containerId);
+         |               ^
+      24 |     }
+      25 |   }
+      26 |
+
+      at new TimePickerUI (src/ui/TimePickerUI.js:23:15)
+      at new EstimateUI (src/ui/EstimateUI.js:22:23)
+      at Object.<anonymous> (tests/ui/EstimateUI.test.js:59:18)
+
+  console.error
+    [TimePickerUI] Container not found: time-picker-container
+
+      21 |       this._ensureRender();
+      22 |     } else {
+    > 23 |       console.error("[TimePickerUI] Container not found:", containerId);
+         |               ^
+      24 |     }
+      25 |   }
+      26 |
+
+      at new TimePickerUI (src/ui/TimePickerUI.js:23:15)
+      at new EstimateUI (src/ui/EstimateUI.js:22:23)
+      at Object.<anonymous> (tests/ui/EstimateUI.test.js:59:18)
+
+  console.error
+    [TimePickerUI] Container not found: time-picker-container
+
+      21 |       this._ensureRender();
+      22 |     } else {
+    > 23 |       console.error("[TimePickerUI] Container not found:", containerId);
+         |               ^
+      24 |     }
+      25 |   }
+      26 |
+
+      at new TimePickerUI (src/ui/TimePickerUI.js:23:15)
+      at new EstimateUI (src/ui/EstimateUI.js:22:23)
+      at Object.<anonymous> (tests/ui/EstimateUI.test.js:59:18)
+
+  console.error
+    [TimePickerUI] Container not found: time-picker-container
+
+      21 |       this._ensureRender();
+      22 |     } else {
+    > 23 |       console.error("[TimePickerUI] Container not found:", containerId);
+         |               ^
+      24 |     }
+      25 |   }
+      26 |
+
+      at new TimePickerUI (src/ui/TimePickerUI.js:23:15)
+      at new EstimateUI (src/ui/EstimateUI.js:22:23)
+      at Object.<anonymous> (tests/ui/EstimateUI.test.js:59:18)
+
+PASS tests/ui/EstimateUI.test.js
+  EstimateUI
+    ✓ handles set estimate click (14 ms)
+    ✓ handles enter key (3 ms)
+    ✓ handles invalid input (3 ms)
+    ✓ handles clear estimate (2 ms)
+    ✓ update shows progress bar when estimate exists (3 ms)
+    ✓ update hides progress bar when no estimate (2 ms)
+
+PASS tests/ui/TimePickerUI.test.js
+  TimePickerUI
+    ✓ should be hidden by default (6 ms)
+    ✓ should show when show() is called (4 ms)
+    ✓ should hide when close button is clicked (5 ms)
+    ✓ should hide when overlay is clicked (4 ms)
+    ✓ should call onSelect and hide when Apply is clicked (5 ms)
+    ✓ should update input from presets (3 ms)
+
+  console.error
+    [TrelloService] getCard error: Error: Card not found
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/mocks/trelloMock.js:95:15)
+        at /home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:397:39
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:404:13)
+        at Object.mockConstructor [as card] (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:148:19)
+        at Object.getCard (/home/vnicolas/workspace/repos/TimeUp/src/services/TrelloService.js:13:24)
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/services/TrelloService.test.js:31:48)
+        at Promise.then.completed (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:298:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:231:10)
+        at _callCircusTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:316:40)
+        at _runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:252:3)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:126:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at run (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:71:3)
+        at runAndTransformResultsToJestFormat (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+        at jestAdapter (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+        at runTestInternal (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:367:16)
+        at runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:444:34)
+
+      13 |         return await t.card('id', 'name', 'url');
+      14 |     } catch (error) {
+    > 15 |         console.error('[TrelloService] getCard error:', error);
+         |                 ^
+      16 |         return null;
+      17 |     }
+      18 | };
+
+      at Object.getCard (src/services/TrelloService.js:15:17)
+      at Object.<anonymous> (tests/services/TrelloService.test.js:31:28)
+
+  console.error
+    [TrelloService] getBoard error: Error: Board not found
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/mocks/trelloMock.js:95:15)
+        at /home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:397:39
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:404:13)
+        at Object.mockConstructor [as board] (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:148:19)
+        at Object.getBoard (/home/vnicolas/workspace/repos/TimeUp/src/services/TrelloService.js:27:24)
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/services/TrelloService.test.js:50:48)
+        at Promise.then.completed (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:298:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:231:10)
+        at _callCircusTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:316:40)
+        at _runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:252:3)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:126:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at run (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:71:3)
+        at runAndTransformResultsToJestFormat (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+        at jestAdapter (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+        at runTestInternal (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:367:16)
+        at runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:444:34)
+
+      27 |         return await t.board('id', 'name', 'url');
+      28 |     } catch (error) {
+    > 29 |         console.error('[TrelloService] getBoard error:', error);
+         |                 ^
+      30 |         return null;
+      31 |     }
+      32 | };
+
+      at Object.getBoard (src/services/TrelloService.js:29:17)
+      at Object.<anonymous> (tests/services/TrelloService.test.js:50:28)
+
+  console.error
+    [TrelloService] getMember error: Error: Member not found
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/mocks/trelloMock.js:95:15)
+        at /home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:397:39
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:404:13)
+        at Object.mockConstructor [as member] (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:148:19)
+        at Object.getMember (/home/vnicolas/workspace/repos/TimeUp/src/services/TrelloService.js:41:24)
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/services/TrelloService.test.js:69:48)
+        at Promise.then.completed (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:298:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:231:10)
+        at _callCircusTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:316:40)
+        at _runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:252:3)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:126:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at run (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:71:3)
+        at runAndTransformResultsToJestFormat (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+        at jestAdapter (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+        at runTestInternal (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:367:16)
+        at runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:444:34)
+
+      41 |         return await t.member('id', 'fullName', 'username');
+      42 |     } catch (error) {
+    > 43 |         console.error('[TrelloService] getMember error:', error);
+         |                 ^
+      44 |         return null;
+      45 |     }
+      46 | };
+
+      at Object.getMember (src/services/TrelloService.js:43:17)
+      at Object.<anonymous> (tests/services/TrelloService.test.js:69:28)
+
+  console.error
+    [TrelloService] closePopup error: Error: Popup error
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/mocks/trelloMock.js:95:15)
+        at /home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:397:39
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:404:13)
+        at Object.mockConstructor [as closePopup] (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:148:19)
+        at Object.closePopup (/home/vnicolas/workspace/repos/TimeUp/src/services/TrelloService.js:55:17)
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/services/TrelloService.test.js:84:40)
+        at Promise.then.completed (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:298:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:231:10)
+        at _callCircusTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:316:40)
+        at _runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:252:3)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:126:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at run (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:71:3)
+        at runAndTransformResultsToJestFormat (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+        at jestAdapter (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+        at runTestInternal (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:367:16)
+        at runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:444:34)
+
+      55 |         await t.closePopup();
+      56 |     } catch (error) {
+    > 57 |         console.error('[TrelloService] closePopup error:', error);
+         |                 ^
+      58 |     }
+      59 | };
+      60 |
+
+      at Object.closePopup (src/services/TrelloService.js:57:17)
+      at Object.<anonymous> (tests/services/TrelloService.test.js:84:13)
+
+PASS tests/services/TrelloService.test.js
+  TrelloService
+    getCard
+      ✓ returns card data (1 ms)
+      ✓ returns null on error (2 ms)
+    getBoard
+      ✓ returns board data
+      ✓ returns null on error (2 ms)
+    getMember
+      ✓ returns member data
+      ✓ returns null on error (2 ms)
+    closePopup
+      ✓ calls closePopup on Trello client
+      ✓ handles errors gracefully (1 ms)
+
+PASS tests/utils/constants.test.js
+  Constants exports
+    STORAGE_KEYS
+      ✓ has required keys (1 ms)
+    STORAGE_SCOPES
+      ✓ has required scopes (1 ms)
+    TIMER_STATE
+      ✓ has all states
+    TIME
+      ✓ has correct millisecond values (1 ms)
+    APP_INFO
+      ✓ has app metadata
+    DEFAULTS
+      ✓ TIMER_DATA has correct structure (1 ms)
+      ✓ CHECKLIST_ITEM_DATA has correct structure
+      ✓ BOARD_SETTINGS has correct structure (1 ms)
+      ✓ USER_PREFERENCES has correct structure
+    BADGE_COLORS
+      ✓ has all badge colors
+
+  console.log
+    [ChecklistService] Not authorized for REST API.
+
+      at getChecklists (src/services/ChecklistService.js:24:21)
+
+  console.warn
+    [ChecklistService] Authorized but no token?
+
+      28 |         const token = await restApi.getToken();
+      29 |         if (!token) {
+    > 30 |             console.warn('[ChecklistService] Authorized but no token?');
+         |                     ^
+      31 |             return [];
+      32 |         }
+      33 |
+
+      at getChecklists (src/services/ChecklistService.js:30:21)
+      at Object.<anonymous> (tests/services/ChecklistService.test.js:67:29)
+
+  console.error
+    [ChecklistService] REST API error: Error: API Error 500: Error
+        at getChecklists (/home/vnicolas/workspace/repos/TimeUp/src/services/ChecklistService.js:43:19)
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/services/ChecklistService.test.js:78:29)
+
+      46 |         return (await response.json()) || [];
+      47 |     } catch (error) {
+    > 48 |         console.error('[ChecklistService] REST API error:', error);
+         |                 ^
+      49 |         return [];
+      50 |     }
+      51 | };
+
+      at getChecklists (src/services/ChecklistService.js:48:17)
+      at Object.<anonymous> (tests/services/ChecklistService.test.js:78:29)
+
+PASS tests/services/ChecklistService.test.js
+  ChecklistService
+    getChecklists
+      ✓ returns checklists from REST API (3 ms)
+      ✓ returns null when not authorized (1 ms)
+      ✓ returns empty array when token missing (1 ms)
+      ✓ returns empty array on API error (2 ms)
+    getAllCheckItems
+      ✓ returns empty array for invalid input (1 ms)
+      ✓ returns empty array for empty checklists
+      ✓ flattens check items from multiple checklists (1 ms)
+      ✓ handles checklists with no checkItems
+    calculateChecklistEstimate
+      ✓ returns 0 for empty checklist items (1 ms)
+      ✓ sums estimates from all items
+      ✓ ignores items without estimates
+    getEffectiveEstimate
+      ✓ returns manual estimate when set (1 ms)
+      ✓ returns calculated estimate when manual not set
+      ✓ returns null when no estimates anywhere
+    getCheckItemData
+      ✓ returns existing item data
+      ✓ returns default for missing item
+    getCheckItemTotalTime
+      ✓ returns 0 for empty entries
+      ✓ sums entry durations
+    getRunningCheckItem
+      ✓ returns isRunning false when no items running (1 ms)
+      ✓ returns running item ID
+
+PASS tests/ui/TimerUI.test.js
+  TimerUI
+    ✓ update renders idle state correctly (3 ms)
+    ✓ update renders running state correctly (2 ms)
+    ✓ clicking toggle calls startTimer when idle (2 ms)
+    ✓ clicking toggle calls stopTimer when running (1 ms)
+    ✓ alerts on timer error (1 ms)
+
+PASS tests/utils/formatTime.test.js
+  padZero
+    ✓ pads single digit numbers (1 ms)
+    ✓ does not pad double digit numbers
+    ✓ handles custom length
+    ✓ handles numbers larger than length
+  formatDuration
+    invalid inputs
+      ✓ returns default for negative numbers (1 ms)
+      ✓ returns default for non-numbers
+      ✓ returns default for NaN
+      ✓ returns default for Infinity (1 ms)
+    standard format
+      ✓ formats zero
+      ✓ formats seconds
+      ✓ formats minutes
+      ✓ formats hours (1 ms)
+      ✓ formats without seconds
+    compact format
+      ✓ formats in compact style
+      ✓ compact without seconds
+    with days
+      ✓ shows days when enabled (1 ms)
+      ✓ compact with days
+  formatTimestamp
+    ✓ returns placeholder for invalid timestamp
+    ✓ formats with 24-hour by default (1 ms)
+    ✓ formats with 12-hour when specified
+    ✓ includes date when specified
+  getElapsedTime
+    ✓ returns 0 for invalid inputs (1 ms)
+    ✓ returns elapsed time from past (3 ms)
+    ✓ returns 0 for future times
+  sumDurations
+    ✓ returns 0 for empty array (1 ms)
+    ✓ returns 0 for non-array
+    ✓ sums valid durations
+    ✓ ignores invalid entries
+    ✓ handles entries without duration property
+  getRemainingTime
+    ✓ returns null if no estimate
+    ✓ calculates remaining time correctly
+    ✓ detects over budget
+    ✓ calculates percentage correctly
+    ✓ caps percentage at 100
+  parseTimeString
+    ✓ returns null for invalid inputs (1 ms)
+    ✓ parses hours only (1 ms)
+    ✓ parses minutes only (1 ms)
+    ✓ parses combined hours and minutes
+    ✓ parses plain number as minutes (1 ms)
+    ✓ is case insensitive
+    ✓ handles whitespace (1 ms)
+
+PASS tests/services/TimerService.test.js
+  TimerService
+    startTimer (Global)
+      ✓ should start timer if idle (6 ms)
+      ✓ should fail if already running (1 ms)
+      ✓ should stop running checklist item before starting (2 ms)
+    startItemTimer
+      ✓ should start item timer and stop global timer (1 ms)
+    Data Integrity (deleteEntry)
+      ✓ should clean up entries from both lists (1 ms)
+
+PASS tests/utils/validators.test.js
+  isPositiveNumber
+    ✓ returns true for positive numbers (3 ms)
+    ✓ returns false for zero
+    ✓ returns false for negative numbers (1 ms)
+    ✓ returns false for non-numbers (1 ms)
+    ✓ returns false for special number values (1 ms)
+  isNonEmptyString
+    ✓ returns true for non-empty strings
+    ✓ returns false for empty string
+    ✓ returns false for whitespace-only strings (6 ms)
+    ✓ returns false for non-strings (1 ms)
+  isValidEntry
+    ✓ returns true for valid entries
+    ✓ returns false if entry is null or undefined (1 ms)
+    ✓ returns false if entry is not an object
+    ✓ returns false if startTime is missing or invalid (1 ms)
+    ✓ returns false if endTime is missing or invalid (1 ms)
+    ✓ returns false if endTime is not after startTime
+
+  console.error
+    [StorageService] Failed to get "key" from card/shared: Error: Storage error
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/mocks/trelloMock.js:95:15)
+        at /home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:397:39
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:404:13)
+        at Object.mockConstructor [as get] (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:148:19)
+        at Object.getData (/home/vnicolas/workspace/repos/TimeUp/src/services/StorageService.js:22:30)
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/services/StorageService.test.js:42:49)
+        at Promise.then.completed (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:298:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:231:10)
+        at _callCircusTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:316:40)
+        at _runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:252:3)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:126:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at run (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:71:3)
+        at runAndTransformResultsToJestFormat (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+        at jestAdapter (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+        at runTestInternal (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:367:16)
+        at runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:444:34)
+
+      23 |         return data ?? defaultValue;
+      24 |     } catch (error) {
+    > 25 |         console.error(`[StorageService] Failed to get "${key}" from ${scope}/${visibility}:`, error);
+         |                 ^
+      26 |         return defaultValue;
+      27 |     }
+      28 | };
+
+      at Object.getData (src/services/StorageService.js:25:17)
+      at Object.<anonymous> (tests/services/StorageService.test.js:42:28)
+
+  console.error
+    [StorageService] Failed to set "key" in card/shared: Error: Save error
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/mocks/trelloMock.js:95:15)
+        at /home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:397:39
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:404:13)
+        at Object.mockConstructor [as set] (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:148:19)
+        at Object.setData (/home/vnicolas/workspace/repos/TimeUp/src/services/StorageService.js:43:17)
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/services/StorageService.test.js:59:49)
+        at Promise.then.completed (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:298:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:231:10)
+        at _callCircusTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:316:40)
+        at _runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:252:3)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:126:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at run (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:71:3)
+        at runAndTransformResultsToJestFormat (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+        at jestAdapter (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+        at runTestInternal (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:367:16)
+        at runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:444:34)
+
+      44 |         return true;
+      45 |     } catch (error) {
+    > 46 |         console.error(`[StorageService] Failed to set "${key}" in ${scope}/${visibility}:`, error);
+         |                 ^
+      47 |         return false;
+      48 |     }
+      49 | };
+
+      at Object.setData (src/services/StorageService.js:46:17)
+      at Object.<anonymous> (tests/services/StorageService.test.js:59:28)
+
+  console.error
+    [StorageService] Failed to remove "key" from card/shared: Error: Remove error
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/mocks/trelloMock.js:95:15)
+        at /home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:397:39
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:404:13)
+        at Object.mockConstructor [as remove] (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-mock/build/index.js:148:19)
+        at Object.removeData (/home/vnicolas/workspace/repos/TimeUp/src/services/StorageService.js:61:17)
+        at Object.<anonymous> (/home/vnicolas/workspace/repos/TimeUp/tests/services/StorageService.test.js:75:49)
+        at Promise.then.completed (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:298:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/utils.js:231:10)
+        at _callCircusTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:316:40)
+        at _runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:252:3)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:126:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at _runTestsForDescribeBlock (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:121:9)
+        at run (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/run.js:71:3)
+        at runAndTransformResultsToJestFormat (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+        at jestAdapter (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+        at runTestInternal (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:367:16)
+        at runTest (/home/vnicolas/workspace/repos/TimeUp/node_modules/jest-runner/build/runTest.js:444:34)
+
+      62 |         return true;
+      63 |     } catch (error) {
+    > 64 |         console.error(`[StorageService] Failed to remove "${key}" from ${scope}/${visibility}:`, error);
+         |                 ^
+      65 |         return false;
+      66 |     }
+      67 | };
+
+      at Object.removeData (src/services/StorageService.js:64:17)
+      at Object.<anonymous> (tests/services/StorageService.test.js:75:28)
+
+PASS tests/services/StorageService.test.js
+  StorageService
+    getData
+      ✓ returns data from storage (4 ms)
+      ✓ returns default value when key not found (1 ms)
+      ✓ returns null when no default and key not found
+      ✓ returns default on error (3 ms)
+    setData
+      ✓ stores data and returns true (1 ms)
+      ✓ returns false on error (6 ms)
+    removeData
+      ✓ removes data and returns true (2 ms)
+      ✓ returns false on error (3 ms)
+    getTimerData
+      ✓ returns timer data from card storage (2 ms)
+      ✓ returns defaults when no data exists (2 ms)
+    setTimerData
+      ✓ saves timer data to card storage (1 ms)
+    getBoardSettings
+      ✓ returns board settings (1 ms)
+      ✓ returns defaults when no data exists (1 ms)
+    setBoardSettings
+      ✓ saves board settings (1 ms)
+    getUserPreferences
+      ✓ returns user preferences (1 ms)
+      ✓ returns defaults when no data exists (1 ms)
+    setUserPreferences
+      ✓ saves user preferences (1 ms)
+
+PASS tests/ui/EstimateUI.integration.test.js
+  EstimateUI Integration
+    ✓ should initialize TimePickerUI (5 ms)
+    ✓ should open TimePicker when input is clicked (3 ms)
+    ✓ should call TimerService.setEstimate when Set is clicked (4 ms)
+
+PASS tests/ui/AuthUI.test.js
+  AuthUI
+    ✓ show() unhides container (2 ms)
+    ✓ hide() hides container (1 ms)
+    ✓ authorize button click triggers auth flow (3 ms)
+
+Test Suites: 1 failed, 13 passed, 14 total
+Tests:       2 failed, 159 passed, 161 total
+Snapshots:   0 total
+Time:        1.746 s
+Ran all test suites.

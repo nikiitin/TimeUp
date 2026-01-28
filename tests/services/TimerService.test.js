@@ -22,7 +22,7 @@ describe("TimerService", () => {
 
     // Mock methods on the default export object
     StorageService.getTimerData = jest.fn().mockResolvedValue(getMockData());
-    StorageService.setTimerData = jest.fn().mockResolvedValue(true);
+    StorageService.setTimerData = jest.fn().mockResolvedValue({ success: true });
 
     jest.clearAllMocks();
   });

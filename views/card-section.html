@@ -14,6 +14,15 @@
   </head>
   <body>
     <div class="timer-section">
+      <!-- Storage Warning -->
+      <div id="storage-status" class="storage-status" hidden>
+        <span class="storage-status__label">Storage:</span>
+        <div class="storage-status__bar">
+          <div id="storage-status-fill" class="storage-status__fill"></div>
+        </div>
+        <span id="storage-status-text" class="storage-status__text">90%</span>
+      </div>
+
       <!-- Timer Header -->
       <div class="timer-header">
         <button class="btn-toggle" id="btn-toggle" title="Start Timer">
@@ -123,6 +132,9 @@
           iconStop: document.getElementById("icon-stop"),
           description: document.getElementById("timer-description"),
           total: document.getElementById("total"),
+          storageStatus: document.getElementById("storage-status"),
+          storageFill: document.getElementById("storage-status-fill"),
+          storageText: document.getElementById("storage-status-text"),
         },
         {
           onRefresh: () => refresh(),

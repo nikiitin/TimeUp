@@ -9,7 +9,7 @@ export const AppConfig = {
     // Trello Power-Up API Key
     // This is the public identifier for the app. It is safe to expose in client-side code.
     APP_KEY: 'ae35d861d2d08a8387667b6808686ad0',
-    
+
     // Application Name
     APP_NAME: APP_INFO.POWER_UP_NAME,
 

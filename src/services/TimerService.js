@@ -23,6 +23,24 @@ const createEntry = (startTime, endTime, description = "") => ({
 });
 
 /**
+ * Common helper to handle StorageService results.
+ * @param {Object} saved - Result from StorageService.setTimerData
+ * @param {Object} updatedData - The data that was saved
+ * @param {Object} extra - Extra fields to include in success response
+ * @returns {Object} Timer response
+ */
+const handleSaveResult = (saved, updatedData, extra = {}) => {
+  if (saved.success) {
+    return { success: true, data: updatedData, ...extra };
+  }
+  const errorMsg =
+    saved.error === "LIMIT_EXCEEDED"
+      ? "Storage limit reached. Try shortening descriptions."
+      : "Save failed";
+  return { success: false, error: errorMsg };
+};
+
+/**
  * Stops a checklist item timer and creates linked entries.
  * Helper to reduce duplication in timer switching logic.
  * @param {Object} timerData - Current timer data
@@ -113,10 +131,7 @@ export const startTimer = async (t) => {
       currentEntry: { startTime: Date.now(), pausedDuration: 0 },
     };
     const saved = await StorageService.setTimerData(t, updatedData);
-    console.log("[TimerService] startTimer save result:", saved);
-    return saved
-      ? { success: true, data: updatedData, stoppedItemId }
-      : { success: false, error: "Save failed" };
+    return handleSaveResult(saved, updatedData, { stoppedItemId });
   } catch (error) {
     console.error("[TimerService] startTimer error:", error);
     return { success: false, error: error.message };
@@ -151,9 +166,7 @@ export const stopTimer = async (t, description = "") => {
       currentEntry: null,
     };
     const saved = await StorageService.setTimerData(t, updatedData);
-    return saved
-      ? { success: true, data: updatedData, entry: newEntry }
-      : { success: false, error: "Save failed" };
+    return handleSaveResult(saved, updatedData, { entry: newEntry });
   } catch (error) {
     console.error("[TimerService] stopTimer error:", error);
     return { success: false, error: error.message };
@@ -191,9 +204,7 @@ export const setEstimate = async (t, estimatedTimeMs) => {
       manualEstimateSet: estimatedTimeMs !== null && estimatedTimeMs > 0,
     };
     const saved = await StorageService.setTimerData(t, updatedData);
-    return saved
-      ? { success: true, data: updatedData }
-      : { success: false, error: "Save failed" };
+    return handleSaveResult(saved, updatedData);
   } catch (error) {
     console.error("[TimerService] setEstimate error:", error);
     return { success: false, error: error.message };
@@ -225,9 +236,7 @@ export const deleteEntry = async (t, entryId) => {
       entries: updatedEntries,
     };
     const saved = await StorageService.setTimerData(t, updatedData);
-    return saved
-      ? { success: true, data: updatedData }
-      : { success: false, error: "Save failed" };
+    return handleSaveResult(saved, updatedData);
   } catch (error) {
     console.error("[TimerService] deleteEntry error:", error);
     return { success: false, error: error.message };
@@ -279,9 +288,7 @@ export const updateEntry = async (t, entryId, updates) => {
     };
 
     const saved = await StorageService.setTimerData(t, updatedData);
-    return saved
-      ? { success: true, data: updatedData, entry: updatedEntry }
-      : { success: false, error: "Save failed" };
+    return handleSaveResult(saved, updatedData, { entry: updatedEntry });
   } catch (error) {
     console.error("[TimerService] updateEntry error:", error);
     return { success: false, error: error.message };
@@ -359,9 +366,10 @@ export const startItemTimer = async (t, checkItemId) => {
     };
 
     const saved = await StorageService.setTimerData(t, updatedData);
-    return saved
-      ? { success: true, data: updatedData, stoppedItemId, stoppedGlobal }
-      : { success: false, error: "Save failed" };
+    return handleSaveResult(saved, updatedData, {
+      stoppedItemId,
+      stoppedGlobal,
+    });
   } catch (error) {
     console.error("[TimerService] startItemTimer error:", error);
     return { success: false, error: error.message };
@@ -413,9 +421,7 @@ export const stopItemTimer = async (t, checkItemId, description = "") => {
     };
 
     const saved = await StorageService.setTimerData(t, updatedData);
-    return saved
-      ? { success: true, data: updatedData, entry: newEntry }
-      : { success: false, error: "Save failed" };
+    return handleSaveResult(saved, updatedData, { entry: newEntry });
   } catch (error) {
     console.error("[TimerService] stopItemTimer error:", error);
     return { success: false, error: error.message };
@@ -446,9 +452,7 @@ export const setItemEstimate = async (t, checkItemId, estimatedTimeMs) => {
     };
 
     const saved = await StorageService.setTimerData(t, updatedData);
-    return saved
-      ? { success: true, data: updatedData }
-      : { success: false, error: "Save failed" };
+    return handleSaveResult(saved, updatedData);
   } catch (error) {
     console.error("[TimerService] setItemEstimate error:", error);
     return { success: false, error: error.message };
@@ -467,6 +471,22 @@ export const getItemCurrentElapsed = (itemData) => {
     return getElapsedTime(startTime) - pausedDuration;
   return 0;
 };
+/**
+ * Gets storage usage stats for timer data.
+ * Considers both metadata and entries keys separately.
+ * @param {Object} timerData - Current timer data
+ * @returns {Object} Usage stats for the most full key
+ */
+export const getStorageUsage = (timerData) => {
+  const { entries, ...metadata } = timerData;
+  const metadataUsage = StorageService.calculateUsage(metadata);
+  const entriesUsage = StorageService.calculateUsage(entries);
+
+  // Return the one that is more full
+  return metadataUsage.percent > entriesUsage.percent
+    ? metadataUsage
+    : entriesUsage;
+};
 
 const TimerService = {
   startTimer,
@@ -480,5 +500,6 @@ const TimerService = {
   stopItemTimer,
   setItemEstimate,
   getItemCurrentElapsed,
+  getStorageUsage,
 };
 export default TimerService;

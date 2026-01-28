@@ -45,19 +45,28 @@ describe('StorageService', () => {
     });
 
     describe('setData', () => {
-        test('stores data and returns true', async () => {
+        test('stores data and returns success object', async () => {
             const testData = { test: 'value' };
             const result = await StorageService.setData(mockT, 'card', 'shared', 'testKey', testData);
 
-            expect(result).toBe(true);
+            expect(result.success).toBe(true);
+            expect(result.size).toBeGreaterThan(0);
             expect(mockT._getStorage('card', 'shared', 'testKey')).toEqual(testData);
         });
 
-        test('returns false on error', async () => {
+        test('returns failure on error', async () => {
             mockT.set = createErrorMock('Save error');
 
             const result = await StorageService.setData(mockT, 'card', 'shared', 'key', {});
-            expect(result).toBe(false);
+            expect(result.success).toBe(false);
+            expect(result.error).toBeDefined();
+        });
+
+        test('returns failure when limit exceeded', async () => {
+            const largeData = 'a'.repeat(5000);
+            const result = await StorageService.setData(mockT, 'card', 'shared', 'key', largeData);
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('LIMIT_EXCEEDED');
         });
     });
 
@@ -78,16 +87,31 @@ describe('StorageService', () => {
     });
 
     describe('getTimerData', () => {
-        test('returns timer data from card storage', async () => {
-            const timerData = {
-                entries: [{ id: 'e1', duration: 1000 }],
+        test('returns merged timer data from card storage', async () => {
+            const metadata = {
                 state: 'running',
-                currentEntry: { startTime: Date.now() },
+                currentEntry: { startTime: 1000 },
+                checklistItems: {}
             };
-            mockT._setStorage('card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.TIMER_DATA, timerData);
+            const entries = [{ id: 'e1', duration: 1000 }];
+
+            mockT._setStorage('card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.TIMER_DATA, metadata);
+            mockT._setStorage('card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.ENTRIES, entries);
 
             const result = await StorageService.getTimerData(mockT);
-            expect(result).toEqual(timerData);
+            expect(result).toEqual({ ...metadata, entries });
+        });
+
+        test('migrates entries from timerData key if found', async () => {
+            const oldData = {
+                entries: [{ id: 'old', duration: 500 }],
+                state: 'idle'
+            };
+            mockT._setStorage('card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.TIMER_DATA, oldData);
+
+            const result = await StorageService.getTimerData(mockT);
+            expect(result.entries).toEqual(oldData.entries);
+            expect(result.state).toBe('idle');
         });
 
         test('returns defaults when no data exists', async () => {
@@ -97,12 +121,24 @@ describe('StorageService', () => {
     });
 
     describe('setTimerData', () => {
-        test('saves timer data to card storage', async () => {
-            const timerData = { entries: [], state: 'idle', currentEntry: null };
+        test('saves timer data by splitting it into metadata and entries keys', async () => {
+            const timerData = {
+                entries: [{ id: 'e1' }],
+                state: 'idle',
+                currentEntry: null,
+                checklistItems: { item1: { estimatedTime: 100 } }
+            };
 
             const result = await StorageService.setTimerData(mockT, timerData);
-            expect(result).toBe(true);
-            expect(mockT._getStorage('card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.TIMER_DATA)).toEqual(timerData);
+            expect(result.success).toBe(true);
+
+            // Check sharding
+            const savedMetadata = mockT._getStorage('card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.TIMER_DATA);
+            const savedEntries = mockT._getStorage('card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.ENTRIES);
+
+            expect(savedEntries).toEqual(timerData.entries);
+            expect(savedMetadata.entries).toBeUndefined(); // Should be removed from metadata
+            expect(savedMetadata.checklistItems).toEqual(timerData.checklistItems);
         });
     });
 
@@ -126,7 +162,7 @@ describe('StorageService', () => {
             const settings = { hourlyRate: 75, currency: 'GBP', categories: [] };
 
             const result = await StorageService.setBoardSettings(mockT, settings);
-            expect(result).toBe(true);
+            expect(result.success).toBe(true);
         });
     });
 
@@ -150,7 +186,7 @@ describe('StorageService', () => {
             const prefs = { showSeconds: true, use24HourFormat: true, autoStartOnOpen: true };
 
             const result = await StorageService.setUserPreferences(mockT, prefs);
-            expect(result).toBe(true);
+            expect(result.success).toBe(true);
         });
     });
 });
