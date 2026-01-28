@@ -4,442 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TimeUp - Card Section</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 14px;
-      color: #b6c2cf;
-      background: transparent;
-    }
-    .timer-section {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .timer-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .btn-toggle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 6px 12px;
-      font-size: 14px;
-      font-weight: 500;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      background: rgba(255, 255, 255, 0.1);
-      color: #b6c2cf;
-      transition: background-color 0.1s;
-    }
-    .btn-toggle:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-    .btn-toggle--running {
-      background: rgba(235, 90, 70, 0.3);
-      color: #f87168;
-    }
-    .btn-toggle--running:hover {
-      background: rgba(235, 90, 70, 0.4);
-    }
-    .btn-toggle svg {
-      width: 14px;
-      height: 14px;
-      fill: currentColor;
-    }
-    .timer-display {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 16px;
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-    }
-    .timer-display--running { color: #4bce97; }
-    .timer-display--idle { color: #8c9bab; }
-    .timer-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: auto;
-      font-size: 12px;
-    }
-    .timer-total { color: #8c9bab; }
-    .timer-remaining { color: #579dff; }
-    .timer-remaining--warning { color: #f5cd47; }
-    .timer-remaining--over { color: #f87168; }
-    .timer-description {
-      flex: 1;
-      min-width: 120px;
-      max-width: 200px;
-      padding: 4px 8px;
-      font-size: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 3px;
-      background: rgba(255, 255, 255, 0.08);
-      color: #b6c2cf;
-    }
-    .timer-description:focus {
-      outline: none;
-      border-color: #579dff;
-    }
-    .timer-description::placeholder {
-      color: #626f86;
-      font-style: italic;
-    }
-
-    /* Estimate row */
-    .estimate-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .estimate-label {
-      font-size: 12px;
-      color: #8c9bab;
-    }
-    .estimate-input {
-      flex: 1;
-      max-width: 100px;
-      padding: 4px 8px;
-      font-size: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 3px;
-      background: rgba(255, 255, 255, 0.08);
-      color: #b6c2cf;
-    }
-    .estimate-input:focus {
-      outline: none;
-      border-color: #579dff;
-    }
-    .estimate-input::placeholder { color: #626f86; }
-    .btn-small {
-      padding: 4px 8px;
-      font-size: 12px;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      background: rgba(87, 157, 255, 0.2);
-      color: #579dff;
-      transition: background-color 0.1s;
-    }
-    .btn-small:hover { background: rgba(87, 157, 255, 0.3); }
-    .btn-small--clear {
-      background: rgba(255, 255, 255, 0.1);
-      color: #8c9bab;
-    }
-    .btn-small--clear:hover { background: rgba(255, 255, 255, 0.15); }
-    .estimate-display {
-      font-size: 12px;
-      color: #8c9bab;
-    }
-
-    /* Progress bar */
-    .progress-bar {
-      height: 4px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .progress-bar__fill {
-      height: 100%;
-      background: #579dff;
-      transition: width 0.3s ease;
-    }
-    .progress-bar__fill--warning { background: #f5cd47; }
-    .progress-bar__fill--over { background: #f87168; }
-
-    /* Entries list */
-    .entries-list {
-      max-height: 100px;
-      overflow-y: auto;
-      background: rgba(255, 255, 255, 0.04);
-      border-radius: 3px;
-    }
-    .entries-list::-webkit-scrollbar { width: 6px; }
-    .entries-list::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 3px;
-    }
-    .entry {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-      font-size: 13px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .entry:last-child { border-bottom: none; }
-    .entry__info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .entry__time { color: #8c9bab; }
-    .entry__label {
-      font-size: 11px;
-      color: #579dff;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 140px;
-    }
-    .entry__desc {
-      font-size: 11px;
-      color: #9fadbc;
-      font-style: italic;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 160px;
-    }
-    .entry--linked {
-      background: rgba(87, 157, 255, 0.05);
-    }
-    .entry__right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .entry__duration {
-      font-weight: 500;
-      color: #b6c2cf;
-      font-variant-numeric: tabular-nums;
-    }
-    /* Entry edit mode */
-    .entry--editing {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 8px;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.03);
-    }
-    .entry__edit-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .entry__edit-label {
-      font-size: 11px;
-      color: #626f86;
-      min-width: 60px;
-    }
-    .entry__edit-input {
-      flex: 1;
-      padding: 4px 8px;
-      font-size: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 3px;
-      background: rgba(255, 255, 255, 0.08);
-      color: #b6c2cf;
-    }
-    .entry__edit-input:focus {
-      outline: none;
-      border-color: #579dff;
-    }
-    .entry__edit-select {
-      flex: 1;
-      padding: 4px 8px;
-      font-size: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 3px;
-      background: rgba(255, 255, 255, 0.08);
-      color: #b6c2cf;
-    }
-    .entry__edit-actions {
-      display: flex;
-      gap: 6px;
-      justify-content: flex-end;
-      margin-top: 4px;
-    }
-    .btn-save, .btn-cancel {
-      padding: 4px 10px;
-      font-size: 12px;
-      font-weight: 500;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-    }
-    .btn-save {
-      background: #579dff;
-      color: #1d2125;
-    }
-    .btn-save:hover {
-      background: #85b8ff;
-    }
-    .btn-cancel {
-      background: rgba(255, 255, 255, 0.1);
-      color: #b6c2cf;
-    }
-    .btn-cancel:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-    .btn-delete {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 20px;
-      height: 20px;
-      padding: 0;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      background: transparent;
-      color: #626f86;
-      font-size: 14px;
-      line-height: 1;
-      transition: all 0.15s;
-      opacity: 0;
-      pointer-events: none;
-    }
-    .entry:hover .btn-delete {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .btn-delete:hover {
-      background: rgba(248, 113, 104, 0.2);
-      color: #f87168;
-    }
-    .empty-msg {
-      padding: 16px;
-      text-align: center;
-      color: #626f86;
-      font-size: 13px;
-    }
-
-    /* Checklist UI */
-    .checklists-container {
-      margin-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      padding-top: 12px;
-    }
-    .checklist {
-      margin-bottom: 12px;
-    }
-    .checklist__title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      color: #626f86;
-      margin-bottom: 6px;
-      letter-spacing: 0.5px;
-    }
-    .checklist-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 8px;
-      margin: 2px 0;
-      border-radius: 3px;
-      background: rgba(255, 255, 255, 0.04);
-      transition: background 0.1s;
-      /* Progress bar support */
-      position: relative;
-      overflow: hidden;
-      z-index: 0;
-    }
-    .checklist-item::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, rgba(75, 191, 115, 0.3), rgba(75, 191, 115, 0.15));
-      transform: scaleX(var(--progress, 0));
-      transform-origin: left;
-      transition: transform 0.3s ease, background 0.3s ease;
-      z-index: -1;
-      pointer-events: none;
-    }
-    .checklist-item:hover {
-      background: rgba(255, 255, 255, 0.08);
-    }
-    .checklist-item--over::before {
-      background: linear-gradient(90deg, rgba(248, 113, 104, 0.4), rgba(248, 113, 104, 0.2));
-      transform: scaleX(1);
-    }
-    .checklist-item--over:hover {
-      background: rgba(248, 113, 104, 0.1);
-    }
-    .checklist-item__name {
-      flex: 1;
-      font-size: 13px;
-      color: #b6c2cf;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .checklist-item__name--over {
-      color: #f87168;
-    }
-    .checklist-item__time {
-      font-size: 12px;
-      font-variant-numeric: tabular-nums;
-      color: #8c9bab;
-    }
-    .checklist-item__time--over {
-      color: #f87168;
-      font-weight: 500;
-    }
-
-    .btn-item-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      padding: 0;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      background: rgba(75, 206, 151, 0.2);
-      color: #4bce97;
-      opacity: 0.7;
-      pointer-events: auto;
-      transition: all 0.15s;
-    }
-    .checklist-item:hover .btn-item-toggle {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .btn-item-toggle:hover {
-      background: rgba(75, 206, 151, 0.35);
-    }
-    .btn-item-toggle--running {
-      background: rgba(248, 113, 104, 0.2);
-      color: #f87168;
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .btn-item-toggle--running:hover {
-      background: rgba(248, 113, 104, 0.35);
-    }
-    .btn-item-toggle svg {
-      width: 12px;
-      height: 12px;
-      fill: currentColor;
-    }
-    .checklist-item__estimate-input {
-      width: 60px;
-      padding: 2px 4px;
-      font-size: 11px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 2px;
-      background: rgba(255, 255, 255, 0.08);
-      color: #b6c2cf;
-    }
-    .checklist-item__estimate-input:focus {
-      outline: none;
-      border-color: #579dff;
-    }
-    .total-row--over {
-      color: #f87168;
-    }
-  </style>
+  <link rel="stylesheet" href="./styles/card-section.css">
 </head>
 <body>
   <div class="timer-section">
+    <!-- Timer Header -->
     <div class="timer-header">
       <button class="btn-toggle" id="btn-toggle" title="Start Timer">
         <svg id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -454,6 +23,7 @@
       </div>
     </div>
 
+    <!-- Estimate & Progress -->
     <div class="estimate-row" id="estimate-row">
       <span class="estimate-label">Estimate:</span>
       <input type="text" class="estimate-input" id="estimate-input" placeholder="e.g. 2h 30m">
@@ -466,551 +36,127 @@
       <div class="progress-bar__fill" id="progress-fill"></div>
     </div>
 
+    <!-- Lists -->
     <div class="entries-list" id="entries"></div>
     <div class="checklists-container" id="checklists-container" hidden></div>
+
+    <!-- Auth UI -->
+    <div class="auth-container" id="auth-container" hidden style="margin-top: 12px; padding: 12px; background: rgba(87, 157, 255, 0.1); border-radius: 3px; text-align: center;">
+      <p style="margin-bottom: 8px; font-size: 13px;">Allow access to load checklists correctly.</p>
+      <button class="btn-small" id="btn-authorize" style="width: 100%; padding: 6px;">Authorize Trello</button>
+    </div>
   </div>
 
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <script type="module">
-    import { TIMER_STATE } from '../src/utils/constants.js';
-    import { formatDuration, formatTimestamp, sumDurations, getRemainingTime, parseTimeString } from '../src/utils/formatTime.js';
     import StorageService from '../src/services/StorageService.js';
-    import TimerService from '../src/services/TimerService.js';
     import ChecklistService from '../src/services/ChecklistService.js';
+    
+    // UI Controllers
+    import { TimerUI } from '../src/ui/TimerUI.js';
+    import { EstimateUI } from '../src/ui/EstimateUI.js';
+    import { ChecklistUI } from '../src/ui/ChecklistUI.js';
+    import { EntryListUI } from '../src/ui/EntryListUI.js';
+    import { AuthUI } from '../src/ui/AuthUI.js';
 
-    const display = document.getElementById('display');
-    const btnToggle = document.getElementById('btn-toggle');
-    const btnText = document.getElementById('btn-text');
-    const iconPlay = document.getElementById('icon-play');
-    const iconStop = document.getElementById('icon-stop');
-    const entriesEl = document.getElementById('entries');
-    const totalEl = document.getElementById('total');
-    const remainingEl = document.getElementById('remaining');
-    const estimateInput = document.getElementById('estimate-input');
-    const btnSetEstimate = document.getElementById('btn-set-estimate');
-    const btnClearEstimate = document.getElementById('btn-clear-estimate');
-    const estimateDisplay = document.getElementById('estimate-display');
-    const progressBar = document.getElementById('progress-bar');
-    const progressFill = document.getElementById('progress-fill');
-    const checklistsEl = document.getElementById('checklists-container');
-    const timerDescription = document.getElementById('timer-description');
-
-    let updateInterval = null;
-    let isRunning = false;
-    let cachedChecklists = [];  // Cache checklists to avoid API call on every refresh
     const t = TrelloPowerUp.iframe();
 
-    // Security: Escape HTML to prevent XSS
-    const escapeHtml = (str) => {
-      if (!str) return '';
-      return String(str).replace(/[<>&"']/g, c => ({
-        '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;'
-      })[c]);
-    };
+    // -- State --
+    let cachedChecklists = []; 
+    let updateInterval = null;
 
-    // Progress calculation for checklist items
-    const getItemProgress = (itemTime, itemEstimate) => {
-      if (!itemEstimate || itemEstimate <= 0) return 0;
-      return Math.min(itemTime / itemEstimate, 1);  // Clamp to 0-1
-    };
+    // -- Initialize Controllers --
+    
+    // 1. Timer Header
+    const timerUI = new TimerUI(t, {
+        display: document.getElementById('display'),
+        btnToggle: document.getElementById('btn-toggle'),
+        btnText: document.getElementById('btn-text'),
+        iconPlay: document.getElementById('icon-play'),
+        iconStop: document.getElementById('icon-stop'),
+        description: document.getElementById('timer-description'),
+        total: document.getElementById('total')
+    });
 
-    const handleDeleteEntry = async (entryId) => {
-      if (!confirm('Delete this time entry?')) return;
-      const result = await TimerService.deleteEntry(t, entryId);
-      if (!result.success) {
-        alert(`Failed to delete entry: ${result.error}`);
-        return;
-      }
-      await refresh();
-    };
+    // 2. Estimation & Progress
+    const estimateUI = new EstimateUI(t, {
+        row: document.getElementById('estimate-row'),
+        input: document.getElementById('estimate-input'),
+        btnSet: document.getElementById('btn-set-estimate'),
+        btnClear: document.getElementById('btn-clear-estimate'),
+        display: document.getElementById('estimate-display'),
+        progressBar: document.getElementById('progress-bar'),
+        progressFill: document.getElementById('progress-fill'),
+        remaining: document.getElementById('remaining')
+    });
 
-    // Helper: get checklist item name by ID
-    const getCheckItemName = (checkItemId) => {
-      if (!checkItemId || !cachedChecklists) return null;
-      for (const checklist of cachedChecklists) {
-        for (const item of checklist.checkItems || []) {
-          if (item.id === checkItemId) return item.name;
-        }
-      }
-      return null;
-    };
+    // 3. Entry List
+    const entryListUI = new EntryListUI(t, 'entries', {
+        onRefresh: () => refresh(),
+        getChecklists: () => cachedChecklists
+    });
 
-    // Helper: get all checklist items as flat list
-    const getAllChecklistItems = () => {
-      const items = [];
-      for (const checklist of cachedChecklists || []) {
-        for (const item of checklist.checkItems || []) {
-          items.push({ id: item.id, name: item.name, checklist: checklist.name });
-        }
-      }
-      return items;
-    };
+    // 4. Checklist Controls
+    const checklistUI = new ChecklistUI(t, 'checklists-container', {
+        onRefresh: () => refresh()
+    });
 
-    // Track which entry is being edited
-    let editingEntryId = null;
-    let currentEntries = [];
+    // 5. Auth
+    const authUI = new AuthUI(t, {
+        authContainerId: 'auth-container',
+        btnAuthorizeId: 'btn-authorize',
+        onAuthorized: () => fullRefresh()
+    });
 
-    const renderEntryEditMode = (entry) => {
-      const allItems = getAllChecklistItems();
-      const optionsHtml = allItems.map(item =>
-        `<option value="${escapeHtml(item.id)}" ${entry.checklistItemId === item.id ? 'selected' : ''}>${escapeHtml(item.name)}</option>`
-      ).join('');
+    // -- Main Loop --
 
-      return `<div class="entry entry--editing" data-entry-id="${escapeHtml(entry.id)}">
-        <div class="entry__edit-row">
-          <span class="entry__edit-label">Duration:</span>
-          <input type="text" class="entry__edit-input" id="edit-duration" value="${escapeHtml(formatDuration(entry.duration, { compact: true }))}" placeholder="e.g. 1h 30m">
-        </div>
-        <div class="entry__edit-row">
-          <span class="entry__edit-label">Checklist:</span>
-          <select class="entry__edit-select" id="edit-checklist">
-            <option value="">— None —</option>
-            ${optionsHtml}
-          </select>
-        </div>
-        <div class="entry__edit-row">
-          <span class="entry__edit-label">Description:</span>
-          <input type="text" class="entry__edit-input" id="edit-description" value="${escapeHtml(entry.description || '')}" placeholder="What was done">
-        </div>
-        <div class="entry__edit-actions">
-          <button class="btn-cancel" id="btn-edit-cancel">Cancel</button>
-          <button class="btn-save" id="btn-edit-save">Save</button>
-        </div>
-      </div>`;
-    };
-
-    const renderEntryViewMode = (entry) => {
-      const itemName = getCheckItemName(entry.checklistItemId);
-      const labelHtml = itemName ? `<span class="entry__label" title="${escapeHtml(itemName)}">☑ ${escapeHtml(itemName)}</span>` : '';
-      const descHtml = entry.description ? `<span class="entry__desc" title="${escapeHtml(entry.description)}">${escapeHtml(entry.description)}</span>` : '';
-
-      return `<div class="entry${itemName ? ' entry--linked' : ''}" data-entry-id="${escapeHtml(entry.id)}" role="button" tabindex="0" title="Click to edit">
-        <div class="entry__info">
-          <span class="entry__time">${formatTimestamp(entry.startTime, { showDate: true })}</span>
-          ${labelHtml}
-          ${descHtml}
-        </div>
-        <div class="entry__right">
-          <span class="entry__duration">${formatDuration(entry.duration, { compact: true })}</span>
-          <button class="btn-delete" data-id="${escapeHtml(entry.id)}" title="Delete entry">×</button>
-        </div>
-      </div>`;
-    };
-
-    const handleEditEntry = (entryId) => {
-      editingEntryId = entryId;
-      renderEntries(currentEntries);
-    };
-
-    const handleCancelEdit = () => {
-      editingEntryId = null;
-      renderEntries(currentEntries);
-    };
-
-    const handleSaveEdit = async (entryId) => {
-      const durationInput = document.getElementById('edit-duration');
-      const checklistSelect = document.getElementById('edit-checklist');
-      const descInput = document.getElementById('edit-description');
-
-      const newDuration = parseTimeString(durationInput.value.trim());
-      if (!newDuration) {
-        alert('Invalid duration format. Try: 1h 30m, 1.5h, or 90 (minutes)');
-        return;
-      }
-
-      const updates = {
-        duration: newDuration,
-        checklistItemId: checklistSelect.value || null,
-        description: descInput.value.trim(),
-      };
-
-      const result = await TimerService.updateEntry(t, entryId, updates);
-      if (!result.success) {
-        alert(`Failed to update entry: ${result.error}`);
-        return;
-      }
-
-      editingEntryId = null;
-      await refresh();
-    };
-
-    const renderEntries = (entries) => {
-      currentEntries = entries;
-      if (!entries || entries.length === 0) {
-        entriesEl.innerHTML = '<div class="empty-msg">No time entries yet</div>';
-        totalEl.textContent = 'Total: 0m';
-        return;
-      }
-
-      const sorted = [...entries].reverse();
-      entriesEl.innerHTML = sorted.map(entry => {
-        if (entry.id === editingEntryId) {
-          return renderEntryEditMode(entry);
-        }
-        return renderEntryViewMode(entry);
-      }).join('');
-
-      // Attach click handlers for view mode entries
-      entriesEl.querySelectorAll('.entry:not(.entry--editing)').forEach(el => {
-        const handleActivate = (e) => {
-          if (e.target.classList.contains('btn-delete')) return;
-          handleEditEntry(el.dataset.entryId);
-        };
-        el.addEventListener('click', handleActivate);
-        el.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleActivate(e);
-          }
-        });
-      });
-
-      // Attach delete handlers
-      entriesEl.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          handleDeleteEntry(btn.dataset.id);
-        });
-      });
-
-      // Attach edit mode handlers
-      const saveBtn = document.getElementById('btn-edit-save');
-      const cancelBtn = document.getElementById('btn-edit-cancel');
-      if (saveBtn) saveBtn.addEventListener('click', () => handleSaveEdit(editingEntryId));
-      if (cancelBtn) cancelBtn.addEventListener('click', handleCancelEdit);
-
-      const total = sumDurations(entries);
-      totalEl.textContent = `Total: ${formatDuration(total, { compact: true, showSeconds: false })}`;
-    };
-
-    const updateEstimateUI = (timerData) => {
-      // Use effective estimate (manual or calculated from checklists)
-      const effectiveEstimate = ChecklistService.getEffectiveEstimate(timerData, cachedChecklists);
-      const hasEstimate = effectiveEstimate && effectiveEstimate > 0;
-      const hasManualEstimate = timerData.manualEstimateSet && timerData.estimatedTime > 0;
-
-      // Always show input field (for setting manual estimate)
-      estimateInput.hidden = false;
-      btnSetEstimate.hidden = false;
-
-      if (hasEstimate) {
-        estimateDisplay.hidden = false;
-        estimateDisplay.textContent = formatDuration(effectiveEstimate, { compact: true, showSeconds: false });
-        btnClearEstimate.hidden = !hasManualEstimate;  // Only show clear if manual was set
-
-        // Show progress bar and remaining time
-        const remainingInfo = getRemainingTime(timerData.entries, effectiveEstimate);
-        if (remainingInfo) {
-          progressBar.hidden = false;
-          progressFill.style.width = `${remainingInfo.percentComplete}%`;
-
-          // Update colors based on progress
-          progressFill.className = 'progress-bar__fill';
-          remainingEl.className = 'timer-remaining';
-
-          if (remainingInfo.isOverBudget) {
-            progressFill.classList.add('progress-bar__fill--over');
-            remainingEl.classList.add('timer-remaining--over');
-            remainingEl.textContent = `${formatDuration(Math.abs(remainingInfo.remaining), { compact: true, showSeconds: false })} over`;
-          } else if (remainingInfo.percentComplete >= 80) {
-            progressFill.classList.add('progress-bar__fill--warning');
-            remainingEl.classList.add('timer-remaining--warning');
-            remainingEl.textContent = `${formatDuration(remainingInfo.remaining, { compact: true, showSeconds: false })} left`;
-          } else {
-            remainingEl.textContent = `${formatDuration(remainingInfo.remaining, { compact: true, showSeconds: false })} left`;
-          }
-          remainingEl.hidden = false;
-        }
-      } else {
-        estimateDisplay.hidden = true;
-        btnClearEstimate.hidden = true;
-        progressBar.hidden = true;
-        remainingEl.hidden = true;
-      }
-    };
-
-    const updateUI = (timerData) => {
-      isRunning = timerData.state === TIMER_STATE.RUNNING;
-      const elapsed = TimerService.getCurrentElapsed(timerData);
-
-      display.textContent = formatDuration(elapsed);
-      display.className = `timer-display timer-display--${isRunning ? 'running' : 'idle'}`;
-
-      btnText.textContent = isRunning ? 'Stop' : 'Start';
-      btnToggle.className = `btn-toggle${isRunning ? ' btn-toggle--running' : ''}`;
-      btnToggle.title = isRunning ? 'Stop Timer' : 'Start Timer';
-      iconPlay.hidden = isRunning;
-      iconStop.hidden = !isRunning;
-      timerDescription.hidden = !isRunning;
-
-      // Guard: don't re-render entries if user is editing one (preserves form input)
-      if (!editingEntryId) {
-        renderEntries(timerData.entries);
-      } else {
-        currentEntries = timerData.entries;  // Keep cached entries updated
-      }
-      updateEstimateUI(timerData);
-    };
-
-    // Checklist item handlers
-    const handleItemToggle = async (itemId) => {
-      const timerData = await StorageService.getTimerData(t);
-      const itemData = timerData.checklistItems?.[itemId];
-      const isItemRunning = itemData?.state === TIMER_STATE.RUNNING;
-
-      let result;
-      if (isItemRunning) {
-        result = await TimerService.stopItemTimer(t, itemId);
-      } else {
-        result = await TimerService.startItemTimer(t, itemId);
-        if (result.success) startLoop();
-      }
-
-      if (!result.success) {
-        alert(`Timer operation failed: ${result.error}`);
-        return;
-      }
-      await refresh();
-    };
-
-    const handleItemEstimate = async (itemId, value) => {
-      const ms = parseTimeString(value);
-      if (ms) {
-        const result = await TimerService.setItemEstimate(t, itemId, ms);
-        if (!result.success) {
-          alert(`Failed to set estimate: ${result.error}`);
-          return;
-        }
-        await refresh();
-      } else if (value && value.trim()) {
-        alert('Invalid time format. Please use a format like "1h 30m", "90m", or "1:30".');
-      }
-    };
-
-    // Track currently rendered item IDs to detect changes
-    let renderedItemIds = new Set();
-
-    // Initial render - builds DOM and attaches event handlers (called once per checklist change)
-    const renderChecklists = (timerData, checklists) => {
-      if (!checklists || checklists.length === 0) {
-        checklistsEl.hidden = true;
-        renderedItemIds = new Set();
-        return;
-      }
-
-      // Get new item IDs
-      const newItemIds = new Set();
-      checklists.forEach(cl => (cl.checkItems || []).forEach(item => newItemIds.add(item.id)));
-
-      // Check if structure changed - if not, just update values
-      const structureChanged = newItemIds.size !== renderedItemIds.size ||
-        [...newItemIds].some(id => !renderedItemIds.has(id));
-
-      if (!structureChanged && checklistsEl.innerHTML !== '') {
-        // Structure same, just update values in-place
-        updateChecklists(timerData, checklists);
-        return;
-      }
-
-      // Structure changed - full DOM rebuild
-      checklistsEl.hidden = false;
-      renderedItemIds = newItemIds;
-      const checklistItems = timerData.checklistItems || {};
-
-      let html = '';
-      for (const checklist of checklists) {
-        if (!checklist.checkItems || checklist.checkItems.length === 0) continue;
-
-        html += `<div class="checklist">
-          <div class="checklist__title">${escapeHtml(checklist.name)}</div>`;
-
-        for (const item of checklist.checkItems) {
-          const itemData = checklistItems[item.id] || {};
-          const itemIsRunning = itemData.state === TIMER_STATE.RUNNING;
-          const itemTime = sumDurations(itemData.entries || []) +
-            (itemIsRunning ? TimerService.getItemCurrentElapsed(itemData) : 0);
-          const itemEstimate = itemData.estimatedTime || 0;
-          const isOver = itemEstimate > 0 && itemTime > itemEstimate;
-          const progress = getItemProgress(itemTime, itemEstimate);
-
-          const itemClass = isOver ? 'checklist-item checklist-item--over' : 'checklist-item';
-          const nameClass = isOver ? 'checklist-item__name checklist-item__name--over' : 'checklist-item__name';
-          const timeClass = isOver ? 'checklist-item__time checklist-item__time--over' : 'checklist-item__time';
-          const btnClass = itemIsRunning ? 'btn-item-toggle btn-item-toggle--running' : 'btn-item-toggle';
-          const escapedName = escapeHtml(item.name);
-
-          html += `<div class="${itemClass}" data-item-id="${escapeHtml(item.id)}" style="--progress: ${progress}">
-            <button class="${btnClass}" data-item-id="${escapeHtml(item.id)}" title="${itemIsRunning ? 'Stop' : 'Start'}">
-              ${itemIsRunning
-                ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
-                : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}
-            </button>
-            <span class="${nameClass}" title="${escapedName}">${escapedName}</span>
-            <span class="${timeClass}" data-time-id="${escapeHtml(item.id)}">${formatDuration(itemTime, { compact: true, showSeconds: true })}</span>
-            <input type="text" class="checklist-item__estimate-input" data-item-id="${escapeHtml(item.id)}"
-              placeholder="${itemEstimate > 0 ? formatDuration(itemEstimate, { compact: true, showSeconds: false }) : 'Est'}"
-              title="Set estimate (e.g. 30m, 1h)">
-          </div>`;
-        }
-        html += '</div>';
-      }
-
-      checklistsEl.innerHTML = html;
-
-      // Attach handlers
-      checklistsEl.querySelectorAll('.btn-item-toggle').forEach(btn => {
-        btn.addEventListener('click', () => handleItemToggle(btn.dataset.itemId));
-      });
-
-      checklistsEl.querySelectorAll('.checklist-item__estimate-input').forEach(input => {
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            handleItemEstimate(input.dataset.itemId, input.value);
-            input.value = '';
-            input.blur();
-          }
-        });
-      });
-    };
-
-    // In-place update - updates values without replacing DOM (preserves focus)
-    const updateChecklists = (timerData, checklists) => {
-      const checklistItems = timerData.checklistItems || {};
-
-      for (const checklist of checklists) {
-        if (!checklist.checkItems) continue;
-
-        for (const item of checklist.checkItems) {
-          const itemData = checklistItems[item.id] || {};
-          const itemIsRunning = itemData.state === TIMER_STATE.RUNNING;
-          const itemTime = sumDurations(itemData.entries || []) +
-            (itemIsRunning ? TimerService.getItemCurrentElapsed(itemData) : 0);
-          const itemEstimate = itemData.estimatedTime || 0;
-          const isOver = itemEstimate > 0 && itemTime > itemEstimate;
-
-          // Update time display
-          const timeEl = checklistsEl.querySelector(`[data-time-id="${item.id}"]`);
-          if (timeEl) {
-            timeEl.textContent = formatDuration(itemTime, { compact: true, showSeconds: true });
-            timeEl.className = isOver ? 'checklist-item__time checklist-item__time--over' : 'checklist-item__time';
-          }
-
-          // Update item container class and progress for smooth animation
-          const itemEl = checklistsEl.querySelector(`[data-item-id="${item.id}"]`);
-          if (itemEl && itemEl.classList.contains('checklist-item')) {
-            const progress = getItemProgress(itemTime, itemEstimate);
-            itemEl.className = isOver ? 'checklist-item checklist-item--over' : 'checklist-item';
-            itemEl.style.setProperty('--progress', progress);
-          }
-
-          // Update button state
-          const btn = checklistsEl.querySelector(`button[data-item-id="${item.id}"]`);
-          if (btn) {
-            btn.className = itemIsRunning ? 'btn-item-toggle btn-item-toggle--running' : 'btn-item-toggle';
-            btn.title = itemIsRunning ? 'Stop' : 'Start';
-            btn.innerHTML = itemIsRunning
-              ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
-              : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-          }
-
-          // Update placeholder (only if input is empty and not focused)
-          const input = checklistsEl.querySelector(`input[data-item-id="${item.id}"]`);
-          if (input && document.activeElement !== input) {
-            input.placeholder = itemEstimate > 0 ? formatDuration(itemEstimate, { compact: true, showSeconds: false }) : 'Est';
-          }
-        }
-      }
-    };
-
-    // Lightweight refresh - only updates timer state (called every second)
     const refresh = async () => {
-      const timerData = await StorageService.getTimerData(t);
-      updateUI(timerData);
-      renderChecklists(timerData, cachedChecklists);  // Will use updateChecklists if structure unchanged
+        try {
+            const timerData = await StorageService.getTimerData(t);
+            
+            // Validate data
+            if (!timerData.entries) timerData.entries = [];
+
+            // Update UI Components
+            timerUI.update(timerData);
+            estimateUI.update(timerData);
+            entryListUI.render(timerData.entries);
+            checklistUI.render(timerData, cachedChecklists);
+
+        } catch (error) {
+            console.error('Refresh loop error:', error);
+        }
     };
 
-    // Full refresh - includes fetching checklists (called on user actions)
     const fullRefresh = async () => {
-      cachedChecklists = await ChecklistService.getChecklists(t);
-      await refresh();
-      // Resize iframe to fit content
-      t.sizeTo('body').catch(() => {});
+        // 1. Fetch Checklists (Auth check handled inside service return)
+        const newChecklists = await ChecklistService.getChecklists(t);
+        
+        if (newChecklists === null) {
+            // Not Authorized
+            authUI.show();
+            checklistUI.render({}, []); // Clear checklists
+        } else {
+            authUI.hide();
+            cachedChecklists = newChecklists;
+            estimateUI.setChecklists(cachedChecklists);
+            
+            // 2. Update UI
+            await refresh();
+            
+            // Resize (safe approach)
+            t.sizeTo('body').catch(() => {});
+        }
+        
+        // Start Loop if not running
+        if (!updateInterval) {
+            updateInterval = setInterval(refresh, 1000);
+        }
     };
 
-    const startLoop = () => {
-      if (updateInterval) clearInterval(updateInterval);
-      updateInterval = setInterval(refresh, 1000);
-    };
-
-    const stopLoop = () => {
-      if (updateInterval) {
-        clearInterval(updateInterval);
-        updateInterval = null;
-      }
-    };
-
-    btnToggle.addEventListener('click', async () => {
-      let result;
-      if (isRunning) {
-        stopLoop();
-        const description = timerDescription.value.trim();
-        result = await TimerService.stopTimer(t, description);
-        if (!result.success) {
-          alert(`Failed to stop timer: ${result.error}`);
-          startLoop();
-          return;
-        }
-        timerDescription.value = '';
-        timerDescription.hidden = true;
-      } else {
-        result = await TimerService.startTimer(t);
-        if (!result.success) {
-          alert(`Failed to start timer: ${result.error}`);
-          return;
-        }
-        timerDescription.hidden = false;
-        startLoop();
-      }
-      await refresh();
-    });
-
-    btnSetEstimate.addEventListener('click', async () => {
-      const value = estimateInput.value.trim();
-      const ms = parseTimeString(value);
-      if (ms) {
-        const result = await TimerService.setEstimate(t, ms);
-        if (!result.success) {
-          alert(`Failed to set estimate: ${result.error}`);
-          return;
-        }
-        estimateInput.value = '';
-        await refresh();
-      } else {
-        alert('Invalid time format. Try: 2h 30m, 1.5h, or 90 (minutes)');
-      }
-    });
-
-    estimateInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        btnSetEstimate.click();
-      }
-    });
-
-    btnClearEstimate.addEventListener('click', async () => {
-      const result = await TimerService.setEstimate(t, null);
-      if (!result.success) {
-        alert(`Failed to clear estimate: ${result.error}`);
-        return;
-      }
-      await refresh();
-    });
-
+    // Initial Load
     t.render(async () => {
-      await fullRefresh();  // Initial load - fetch checklists
-      const timerData = await StorageService.getTimerData(t);
-      if (timerData.state === TIMER_STATE.RUNNING) {
-        startLoop();
-      }
+        await fullRefresh();
     });
   </script>
 </body>
