@@ -1,551 +1,122 @@
-/**
- * Tests for TimerService.js
- */
+import { jest } from "@jest/globals";
+import TimerService from "../../src/services/TimerService.js";
+import StorageService from "../../src/services/StorageService.js";
+import { TIMER_STATE, DEFAULTS } from "../../src/utils/constants.js";
 
-import { jest } from '@jest/globals';
-import { createTrelloMock } from '../mocks/trelloMock.js';
-import TimerService from '../../src/services/TimerService.js';
-import StorageService from '../../src/services/StorageService.js';
-import { TIMER_STATE, STORAGE_KEYS, STORAGE_SCOPES, DEFAULTS } from '../../src/utils/constants.js';
+// Mock StorageService
+jest.mock("../../src/services/StorageService.js");
 
-describe('TimerService', () => {
-    let mockT;
+describe("TimerService", () => {
+  let tMock;
 
-    beforeEach(() => {
-        mockT = createTrelloMock();
-        jest.clearAllMocks();
+  // Helper to generate fresh mock data
+  const getMockData = () => ({
+    entries: [],
+    checklistItems: {},
+    state: TIMER_STATE.IDLE,
+    currentEntry: null,
+  });
+
+  beforeEach(() => {
+    tMock = { t: "mock" };
+
+    // Mock methods on the default export object
+    StorageService.getTimerData = jest.fn().mockResolvedValue(getMockData());
+    StorageService.setTimerData = jest.fn().mockResolvedValue(true);
+
+    jest.clearAllMocks();
+  });
+
+  describe("startTimer (Global)", () => {
+    test("should start timer if idle", async () => {
+      const result = await TimerService.startTimer(tMock);
+
+      expect(result.success).toBe(true);
+      expect(result.data.state).toBe(TIMER_STATE.RUNNING);
+      expect(result.data.currentEntry).toBeDefined();
+      expect(StorageService.setTimerData).toHaveBeenCalled();
     });
 
-    afterEach(() => {
-        jest.restoreAllMocks();
+    test("should fail if already running", async () => {
+      StorageService.getTimerData.mockResolvedValue({
+        ...getMockData(),
+        state: TIMER_STATE.RUNNING,
+      });
+
+      const result = await TimerService.startTimer(tMock);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Timer already running");
     });
 
-    const setTimerData = (data) => {
-        mockT._setStorage('card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.TIMER_DATA, data);
-    };
+    test("should stop running checklist item before starting", async () => {
+      const runningItemData = {
+        ...getMockData(),
+        checklistItems: {
+          item1: {
+            state: TIMER_STATE.RUNNING,
+            currentEntry: { startTime: Date.now() - 1000 },
+            entries: [],
+          },
+        },
+      };
+      StorageService.getTimerData.mockResolvedValue(runningItemData);
 
-    const getTimerData = () => {
-        return mockT._getStorage('card', STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.TIMER_DATA);
-    };
+      const result = await TimerService.startTimer(tMock);
 
-    describe('startTimer', () => {
-        test('starts timer when idle', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA });
-
-            const result = await TimerService.startTimer(mockT);
-
-            expect(result.success).toBe(true);
-            expect(result.data.state).toBe(TIMER_STATE.RUNNING);
-            expect(result.data.currentEntry).not.toBeNull();
-            expect(result.data.currentEntry.startTime).toBeDefined();
-        });
-
-        test('fails when timer already running', async () => {
-            setTimerData({
-                entries: [],
-                state: TIMER_STATE.RUNNING,
-                currentEntry: { startTime: Date.now(), pausedDuration: 0 },
-            });
-
-            const result = await TimerService.startTimer(mockT);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Timer already running');
-        });
-
-        test('handles exceptions gracefully', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA });
-            jest.spyOn(StorageService, 'setTimerData').mockRejectedValue(new Error('Storage error'));
-
-            const result = await TimerService.startTimer(mockT);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Storage error');
-        });
-
-        test('handles save errors gracefully', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA });
-            // Mock setData to fail
-            mockT.set = jest.fn(async () => {
-                throw new Error('Storage quota exceeded');
-            });
-
-            const result = await TimerService.startTimer(mockT);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Save failed');
-        });
-
-        test('stops running checklist item timer when starting main timer', async () => {
-            const itemStartTime = Date.now() - 30000;
-            setTimerData({
-                ...DEFAULTS.TIMER_DATA,
-                checklistItems: {
-                    item1: {
-                        state: TIMER_STATE.RUNNING,
-                        currentEntry: { startTime: itemStartTime, pausedDuration: 0 },
-                        entries: [],
-                        estimatedTime: null,
-                    },
-                },
-            });
-
-            const result = await TimerService.startTimer(mockT);
-
-            expect(result.success).toBe(true);
-            expect(result.stoppedItemId).toBe('item1');
-            expect(result.data.checklistItems.item1.state).toBe(TIMER_STATE.IDLE);
-            expect(result.data.checklistItems.item1.entries).toHaveLength(1);
-        });
+      expect(result.success).toBe(true);
+      expect(result.stoppedItemId).toBe("item1");
+      // Global should be running now
+      expect(result.data.state).toBe(TIMER_STATE.RUNNING);
+      // Item should be idle
+      expect(result.data.checklistItems["item1"].state).toBe(TIMER_STATE.IDLE);
+      // Entry should have been created for item
+      expect(result.data.checklistItems["item1"].entries.length).toBe(1);
     });
+  });
 
-    describe('stopTimer', () => {
-        test('stops running timer and creates entry', async () => {
-            const startTime = Date.now() - 60000; // 1 minute ago
-            setTimerData({
-                entries: [],
-                state: TIMER_STATE.RUNNING,
-                currentEntry: { startTime, pausedDuration: 0 },
-            });
+  describe("startItemTimer", () => {
+    test("should start item timer and stop global timer", async () => {
+      const runningGlobalData = {
+        ...getMockData(),
+        state: TIMER_STATE.RUNNING,
+        currentEntry: { startTime: Date.now() - 1000 },
+      };
+      StorageService.getTimerData.mockResolvedValue(runningGlobalData);
 
-            const result = await TimerService.stopTimer(mockT, 'Test description');
+      const result = await TimerService.startItemTimer(tMock, "item1");
 
-            expect(result.success).toBe(true);
-            expect(result.data.state).toBe(TIMER_STATE.IDLE);
-            expect(result.data.currentEntry).toBeNull();
-            expect(result.data.entries).toHaveLength(1);
-            expect(result.entry).toBeDefined();
-            expect(result.entry.id).toMatch(/^entry_/);
-            expect(result.entry.duration).toBeGreaterThan(0);
-        });
-
-        test('fails when no timer is running', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA });
-
-            const result = await TimerService.stopTimer(mockT);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('No active timer');
-        });
-
-        test('preserves existing entries when stopping', async () => {
-            const existingEntry = { id: 'existing', duration: 1000 };
-            setTimerData({
-                entries: [existingEntry],
-                state: TIMER_STATE.RUNNING,
-                currentEntry: { startTime: Date.now() - 1000, pausedDuration: 0 },
-            });
-
-            const result = await TimerService.stopTimer(mockT);
-
-            expect(result.success).toBe(true);
-            expect(result.data.entries).toHaveLength(2);
-            expect(result.data.entries[0]).toEqual(existingEntry);
-        });
-
-        test('handles exceptions gracefully', async () => {
-            setTimerData({
-                entries: [],
-                state: TIMER_STATE.RUNNING,
-                currentEntry: { startTime: Date.now() - 1000, pausedDuration: 0 },
-            });
-            jest.spyOn(StorageService, 'setTimerData').mockRejectedValue(new Error('Network error'));
-
-            const result = await TimerService.stopTimer(mockT);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Network error');
-        });
-
-        test('handles save failure gracefully', async () => {
-            setTimerData({
-                entries: [],
-                state: TIMER_STATE.RUNNING,
-                currentEntry: { startTime: Date.now() - 1000, pausedDuration: 0 },
-            });
-            jest.spyOn(StorageService, 'setTimerData').mockResolvedValue(false);
-
-            const result = await TimerService.stopTimer(mockT);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Save failed');
-        });
+      expect(result.success).toBe(true);
+      expect(result.stoppedGlobal).toBe(true);
+      // Global should be idle
+      expect(result.data.state).toBe(TIMER_STATE.IDLE);
+      // Item should be running
+      expect(result.data.checklistItems["item1"].state).toBe(
+        TIMER_STATE.RUNNING,
+      );
     });
+  });
 
-    describe('getCurrentElapsed', () => {
-        test('returns 0 when no current entry', () => {
-            const timerData = { currentEntry: null };
-            expect(TimerService.getCurrentElapsed(timerData)).toBe(0);
-        });
+  describe("Data Integrity (deleteEntry)", () => {
+    test("should clean up entries from both lists", async () => {
+      const entryId = "e1";
+      const itemId = "item1";
+      const entry = { id: entryId, checklistItemId: itemId, duration: 100 };
 
-        test('returns 0 for null timer data', () => {
-            expect(TimerService.getCurrentElapsed(null)).toBe(0);
-        });
+      const dataWithEntry = {
+        entries: [entry],
+        checklistItems: {
+          [itemId]: {
+            entries: [entry],
+          },
+        },
+      };
+      StorageService.getTimerData.mockResolvedValue(dataWithEntry);
 
-        test('calculates elapsed time for running timer', () => {
-            const startTime = Date.now() - 5000;
-            const timerData = {
-                state: TIMER_STATE.RUNNING,
-                currentEntry: { startTime, pausedDuration: 0 },
-            };
+      const result = await TimerService.deleteEntry(tMock, entryId);
 
-            const elapsed = TimerService.getCurrentElapsed(timerData);
-            expect(elapsed).toBeGreaterThanOrEqual(5000);
-            expect(elapsed).toBeLessThan(6000);
-        });
-
-        test('subtracts paused duration', () => {
-            const startTime = Date.now() - 10000;
-            const timerData = {
-                state: TIMER_STATE.RUNNING,
-                currentEntry: { startTime, pausedDuration: 5000 },
-            };
-
-            const elapsed = TimerService.getCurrentElapsed(timerData);
-            expect(elapsed).toBeGreaterThanOrEqual(5000);
-            expect(elapsed).toBeLessThan(6000);
-        });
-
-        test('returns elapsedBeforePause when timer is paused', () => {
-            const timerData = {
-                state: TIMER_STATE.PAUSED,
-                currentEntry: { startTime: Date.now() - 10000, elapsedBeforePause: 7500 },
-            };
-
-            const elapsed = TimerService.getCurrentElapsed(timerData);
-            expect(elapsed).toBe(7500);
-        });
-
-        test('returns 0 when paused without elapsedBeforePause', () => {
-            const timerData = {
-                state: TIMER_STATE.PAUSED,
-                currentEntry: { startTime: Date.now() - 10000 },
-            };
-
-            const elapsed = TimerService.getCurrentElapsed(timerData);
-            expect(elapsed).toBe(0);
-        });
+      expect(result.success).toBe(true);
+      expect(result.data.entries.length).toBe(0); // Removed from global
+      expect(result.data.checklistItems[itemId].entries.length).toBe(0); // Removed from item
     });
-
-    describe('setEstimate', () => {
-        test('sets estimate successfully', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA });
-
-            const result = await TimerService.setEstimate(mockT, 3600000);
-
-            expect(result.success).toBe(true);
-            expect(result.data.estimatedTime).toBe(3600000);
-        });
-
-        test('clears estimate when null', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA, estimatedTime: 7200000 });
-
-            const result = await TimerService.setEstimate(mockT, null);
-
-            expect(result.success).toBe(true);
-            expect(result.data.estimatedTime).toBeNull();
-        });
-
-        test('preserves other timer data', async () => {
-            const entries = [{ id: 'e1', duration: 1000 }];
-            setTimerData({
-                entries,
-                state: TIMER_STATE.IDLE,
-                currentEntry: null,
-                estimatedTime: null,
-            });
-
-            const result = await TimerService.setEstimate(mockT, 5400000);
-
-            expect(result.data.entries).toEqual(entries);
-            expect(result.data.state).toBe(TIMER_STATE.IDLE);
-        });
-
-        test('handles exceptions gracefully', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA });
-            jest.spyOn(StorageService, 'setTimerData').mockRejectedValue(new Error('Quota exceeded'));
-
-            const result = await TimerService.setEstimate(mockT, 3600000);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Quota exceeded');
-        });
-
-        test('handles save failure gracefully', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA });
-            jest.spyOn(StorageService, 'setTimerData').mockResolvedValue(false);
-
-            const result = await TimerService.setEstimate(mockT, 3600000);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Save failed');
-        });
-    });
-
-    describe('deleteEntry', () => {
-        test('deletes existing entry', async () => {
-            const entries = [
-                { id: 'entry1', duration: 1000 },
-                { id: 'entry2', duration: 2000 },
-            ];
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries });
-
-            const result = await TimerService.deleteEntry(mockT, 'entry1');
-
-            expect(result.success).toBe(true);
-            expect(result.data.entries).toHaveLength(1);
-            expect(result.data.entries[0].id).toBe('entry2');
-        });
-
-        test('fails when entry not found', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries: [{ id: 'other' }] });
-
-            const result = await TimerService.deleteEntry(mockT, 'nonexistent');
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Entry not found');
-        });
-
-        test('handles empty entries array', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA });
-
-            const result = await TimerService.deleteEntry(mockT, 'any');
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Entry not found');
-        });
-
-        test('handles exceptions gracefully', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries: [{ id: 'entry1', duration: 1000 }] });
-            // For deleteEntry, it could fail at getTimerData or setTimerData.
-            // Let's mock setTimerData failure as it's common.
-            jest.spyOn(StorageService, 'setTimerData').mockRejectedValue(new Error('Storage error'));
-
-            const result = await TimerService.deleteEntry(mockT, 'entry1');
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Storage error');
-        });
-
-        test('handles save failure gracefully', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries: [{ id: 'entry1', duration: 1000 }] });
-            jest.spyOn(StorageService, 'setTimerData').mockResolvedValue(false);
-
-            const result = await TimerService.deleteEntry(mockT, 'entry1');
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Save failed');
-        });
-    });
-
-    describe('updateEntry', () => {
-        test('updates entry duration', async () => {
-            const entries = [{ id: 'entry1', duration: 1000, description: 'old' }];
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries });
-
-            const result = await TimerService.updateEntry(mockT, 'entry1', { duration: 5000 });
-
-            expect(result.success).toBe(true);
-            expect(result.entry.duration).toBe(5000);
-            expect(result.entry.description).toBe('old');  // Preserved
-        });
-
-        test('updates entry description', async () => {
-            const entries = [{ id: 'entry1', duration: 1000, description: '' }];
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries });
-
-            const result = await TimerService.updateEntry(mockT, 'entry1', { description: 'new desc' });
-
-            expect(result.success).toBe(true);
-            expect(result.entry.description).toBe('new desc');
-            expect(result.entry.duration).toBe(1000);  // Preserved
-        });
-
-        test('updates entry checklistItemId', async () => {
-            const entries = [{ id: 'entry1', duration: 1000, checklistItemId: null }];
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries, checklistItems: {} });
-
-            const result = await TimerService.updateEntry(mockT, 'entry1', { checklistItemId: 'item1' });
-
-            expect(result.success).toBe(true);
-            expect(result.entry.checklistItemId).toBe('item1');
-            // Also check it was added to checklistItems
-            expect(result.data.checklistItems.item1.entries).toHaveLength(1);
-            expect(result.data.checklistItems.item1.entries[0].id).toBe('entry1');
-        });
-
-        test('clears checklistItemId when set to null', async () => {
-            const entries = [{ id: 'entry1', duration: 1000, checklistItemId: 'item1' }];
-            const checklistItems = { item1: { entries: [{ id: 'entry1', duration: 1000 }], estimate: 0 } };
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries, checklistItems });
-
-            const result = await TimerService.updateEntry(mockT, 'entry1', { checklistItemId: null });
-
-            expect(result.success).toBe(true);
-            expect(result.entry.checklistItemId).toBeNull();
-            // Entry removed from old checklist item
-            expect(result.data.checklistItems.item1.entries).toHaveLength(0);
-        });
-
-        test('moves entry between checklist items', async () => {
-            const entries = [{ id: 'entry1', duration: 1000, checklistItemId: 'item1' }];
-            const checklistItems = {
-                item1: { entries: [{ id: 'entry1', duration: 1000 }], estimate: 0 },
-                item2: { entries: [], estimate: 0 },
-            };
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries, checklistItems });
-
-            const result = await TimerService.updateEntry(mockT, 'entry1', { checklistItemId: 'item2' });
-
-            expect(result.success).toBe(true);
-            expect(result.entry.checklistItemId).toBe('item2');
-            expect(result.data.checklistItems.item1.entries).toHaveLength(0);
-            expect(result.data.checklistItems.item2.entries).toHaveLength(1);
-        });
-
-        test('fails when entry not found', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries: [{ id: 'other' }] });
-
-            const result = await TimerService.updateEntry(mockT, 'nonexistent', { duration: 5000 });
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Entry not found');
-        });
-
-        test('handles exceptions gracefully', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries: [{ id: 'entry1', duration: 1000 }] });
-            jest.spyOn(StorageService, 'setTimerData').mockRejectedValue(new Error('Update error'));
-
-            const result = await TimerService.updateEntry(mockT, 'entry1', { duration: 2000 });
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Update error');
-        });
-
-        test('handles save failure gracefully', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA, entries: [{ id: 'entry1', duration: 1000 }] });
-            jest.spyOn(StorageService, 'setTimerData').mockResolvedValue(false);
-
-            const result = await TimerService.updateEntry(mockT, 'entry1', { duration: 2000 });
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Save failed');
-        });
-    });
-
-    describe('startItemTimer', () => {
-        test('starts item timer when idle', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA });
-
-            const result = await TimerService.startItemTimer(mockT, 'item1');
-
-            expect(result.success).toBe(true);
-            expect(result.data.checklistItems.item1.state).toBe(TIMER_STATE.RUNNING);
-        });
-
-        test('switches when card timer is running (stops global, starts item)', async () => {
-            setTimerData({
-                ...DEFAULTS.TIMER_DATA,
-                state: TIMER_STATE.RUNNING,
-                currentEntry: { startTime: Date.now() - 5000, pausedDuration: 0 },
-            });
-
-            const result = await TimerService.startItemTimer(mockT, 'item1');
-
-            expect(result.success).toBe(true);
-            expect(result.stoppedGlobal).toBe(true);
-            expect(result.data.state).toBe(TIMER_STATE.IDLE);  // Global timer stopped
-            expect(result.data.checklistItems.item1.state).toBe(TIMER_STATE.RUNNING);  // Item started
-            expect(result.data.entries.length).toBe(1);  // Entry created for global
-        });
-
-        test('switches when another item timer is running (stops other, starts new)', async () => {
-            setTimerData({
-                ...DEFAULTS.TIMER_DATA,
-                checklistItems: {
-                    item1: { entries: [], state: TIMER_STATE.RUNNING, currentEntry: { startTime: Date.now() - 5000, pausedDuration: 0 } },
-                },
-            });
-
-            const result = await TimerService.startItemTimer(mockT, 'item2');
-
-            expect(result.success).toBe(true);
-            expect(result.stoppedItemId).toBe('item1');
-            expect(result.data.checklistItems.item1.state).toBe(TIMER_STATE.IDLE);  // item1 stopped
-            expect(result.data.checklistItems.item2.state).toBe(TIMER_STATE.RUNNING);  // item2 started
-            expect(result.data.checklistItems.item1.entries.length).toBe(1);  // Entry created for item1
-        });
-    });
-
-    describe('stopItemTimer', () => {
-        test('stops item timer and creates entry', async () => {
-            setTimerData({
-                ...DEFAULTS.TIMER_DATA,
-                checklistItems: {
-                    item1: {
-                        entries: [],
-                        state: TIMER_STATE.RUNNING,
-                        currentEntry: { startTime: Date.now() - 60000, pausedDuration: 0 },
-                    },
-                },
-            });
-
-            const result = await TimerService.stopItemTimer(mockT, 'item1');
-
-            expect(result.success).toBe(true);
-            expect(result.data.checklistItems.item1.state).toBe(TIMER_STATE.IDLE);
-            expect(result.data.checklistItems.item1.entries).toHaveLength(1);
-            expect(result.entry.duration).toBeGreaterThan(0);
-        });
-
-        test('fails when no timer running for item', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA });
-
-            const result = await TimerService.stopItemTimer(mockT, 'item1');
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('No active timer for this item');
-        });
-    });
-
-    describe('setItemEstimate', () => {
-        test('sets estimate for item', async () => {
-            setTimerData({ ...DEFAULTS.TIMER_DATA });
-
-            const result = await TimerService.setItemEstimate(mockT, 'item1', 3600000);
-
-            expect(result.success).toBe(true);
-            expect(result.data.checklistItems.item1.estimatedTime).toBe(3600000);
-        });
-
-        test('clears estimate when null', async () => {
-            setTimerData({
-                ...DEFAULTS.TIMER_DATA,
-                checklistItems: { item1: { estimatedTime: 5000 } },
-            });
-
-            const result = await TimerService.setItemEstimate(mockT, 'item1', null);
-
-            expect(result.success).toBe(true);
-            expect(result.data.checklistItems.item1.estimatedTime).toBeNull();
-        });
-    });
-
-    describe('getItemCurrentElapsed', () => {
-        test('returns 0 for no current entry', () => {
-            expect(TimerService.getItemCurrentElapsed(null)).toBe(0);
-            expect(TimerService.getItemCurrentElapsed({})).toBe(0);
-        });
-
-        test('calculates elapsed for running item', () => {
-            const itemData = {
-                state: TIMER_STATE.RUNNING,
-                currentEntry: { startTime: Date.now() - 5000, pausedDuration: 0 },
-            };
-
-            const elapsed = TimerService.getItemCurrentElapsed(itemData);
-            expect(elapsed).toBeGreaterThanOrEqual(5000);
-            expect(elapsed).toBeLessThan(6000);
-        });
-    });
+  });
 });

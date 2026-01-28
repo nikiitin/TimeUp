@@ -1,98 +1,141 @@
-import { jest, describe, test, expect, beforeEach } from '@jest/globals';
-import { TIMER_STATE } from '../../src/utils/constants.js';
+/**
+ * @jest-environment jsdom
+ */
+import { jest } from "@jest/globals";
+import { ChecklistUI } from "../../src/ui/ChecklistUI.js";
+import TimerService from "../../src/services/TimerService.js";
+import { TIMER_STATE } from "../../src/utils/constants.js";
 
-const mockTimerService = {
-    startItemTimer: jest.fn(),
-    stopItemTimer: jest.fn(),
-    setItemEstimate: jest.fn(),
-    getItemCurrentElapsed: jest.fn(),
-};
+// Mock Utils
+jest.mock("../../src/utils/formatTime.js", () => ({
+  formatDuration: (ms) => {
+    if (ms === 3600000) return "1h";
+    if (ms === 1800000) return "30m";
+    if (ms === 60000) return "1m";
+    if (ms === 120000) return "2m";
+    return "0m";
+  },
+  parseTimeString: () => 0,
+}));
 
-jest.unstable_mockModule('../../src/services/TimerService.js', () => ({ default: mockTimerService }));
+describe("ChecklistUI", () => {
+  let container;
+  let tMock;
+  let checklistUI;
 
-const { ChecklistUI } = await import('../../src/ui/ChecklistUI.js');
-const { default: TimerService } = await import('../../src/services/TimerService.js');
-
-describe('ChecklistUI', () => {
-    let t;
-    let container;
-    let checklistUI;
-
-    beforeEach(() => {
-        t = {};
-        document.body.innerHTML = '<div id="checklists"></div>';
-        container = document.getElementById('checklists');
-        jest.clearAllMocks();
-        window.alert = jest.fn();
-        
-        checklistUI = new ChecklistUI(t, 'checklists', { onRefresh: jest.fn() });
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="checklists-container"></div>';
+    container = document.getElementById("checklists-container");
+    tMock = {
+      t: "mock",
+    };
+    checklistUI = new ChecklistUI(tMock, "checklists-container", {
+      onRefresh: jest.fn(),
     });
+  });
 
-    test('render empty state', () => {
-        checklistUI.render({}, []);
-        expect(container.hidden).toBe(true);
-        expect(container.innerHTML).toBe('');
-    });
+  test("should render nothing if no checklists provided", () => {
+    checklistUI.render({}, []);
+    expect(container.hidden).toBe(true);
+    expect(container.innerHTML).toBe("");
+  });
 
-    test('render checklists with items', () => {
-        const checklists = [{
-            id: 'cl1', name: 'Checklist 1',
-            checkItems: [{ id: 'item1', name: 'Task 1' }]
-        }];
-        const timerData = { checklistItems: {} };
+  test("should render Control Panel table structure", () => {
+    const checklists = [
+      {
+        id: "cl1",
+        name: "Project Plan",
+        checkItems: [{ id: "item1", name: "Task 1", state: "incomplete" }],
+      },
+    ];
+    const timerData = {};
 
-        checklistUI.render(timerData, checklists);
+    checklistUI.render(timerData, checklists);
 
-        expect(container.hidden).toBe(false);
-        expect(container.innerHTML).toContain('Checklist 1');
-        expect(container.innerHTML).toContain('Task 1');
-        expect(container.querySelector('.btn-item-toggle')).toBeTruthy();
-    });
+    expect(container.hidden).toBe(false);
+    expect(container.querySelector(".checklist-panel")).not.toBeNull();
+    expect(container.querySelector(".checklist-table")).not.toBeNull();
+    // Check headers
+    expect(container.textContent).toContain("Est");
+    expect(container.textContent).toContain("Time");
+  });
 
-    test('render running state', () => {
-        const checklists = [{
-            id: 'cl1', name: 'CL',
-            checkItems: [{ id: 'item1', name: 'Item' }]
-        }];
-        const timerData = { 
-            checklistItems: { 
-                'item1': { state: TIMER_STATE.RUNNING, entries: [] }
-            }
-        };
+  test("should highlight running items", () => {
+    const checklists = [
+      {
+        id: "cl1",
+        checkItems: [
+          { id: "item1", name: "Running Task", state: "incomplete" },
+        ],
+      },
+    ];
 
-        checklistUI.render(timerData, checklists);
+    const timerData = {
+      checklistItems: {
+        item1: { state: TIMER_STATE.RUNNING, entries: [] },
+      },
+    };
 
-        const btn = container.querySelector('.btn-item-toggle');
-        expect(btn.classList).toContain('btn-item-toggle--running');
-    });
+    checklistUI.render(timerData, checklists);
 
-    test('handle toggle click', async () => {
-        const checklists = [{
-            id: 'cl1', name: 'CL',
-            checkItems: [{ id: 'item1', name: 'Item' }]
-        }];
-        checklistUI.render({}, checklists);
-        TimerService.startItemTimer.mockResolvedValue({ success: true });
+    const row = container.querySelector(".checklist-row");
+    expect(row.classList).toContain("checklist-row--running");
+    expect(row.querySelector(".btn-icon--running")).not.toBeNull();
+  });
 
-        const btn = container.querySelector('.btn-item-toggle');
-        btn.click();
+  test("should show estimate and total time", () => {
+    const checklists = [
+      {
+        id: "cl1",
+        checkItems: [
+          { id: "item1", name: "Estimated Task", state: "incomplete" },
+        ],
+      },
+    ];
 
-        expect(TimerService.startItemTimer).toHaveBeenCalledWith(t, 'item1');
-    });
+    const timerData = {
+      checklistItems: {
+        item1: {
+          estimatedTime: 3600000, // 1h
+          entries: [{ duration: 1800000 }], // 30m
+        },
+      },
+    };
 
-    test('handle estimate input enter', async () => {
-        const checklists = [{
-            id: 'cl1', name: 'CL',
-            checkItems: [{ id: 'item1', name: 'Item' }]
-        }];
-        checklistUI.render({}, checklists);
-        TimerService.setItemEstimate.mockResolvedValue({ success: true });
+    checklistUI.render(timerData, checklists);
 
-        const input = container.querySelector('.checklist-item__estimate-input');
-        input.value = '1h';
-        input.focus();
-        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    // Scope to the row to avoid selecting the header
+    const row = container.querySelector(".checklist-row");
+    const estInput = row.querySelector('input[data-action="estimate"]');
+    const timeDiv = row.querySelector(".col-time");
 
-        expect(TimerService.setItemEstimate).toHaveBeenCalledWith(t, 'item1', 3600000);
-    });
+    expect(estInput.getAttribute("value")).toBe("1h 0m");
+    expect(timeDiv.textContent.trim()).toBe("30m 0s");
+  });
+
+  test("should mark over-budget items", () => {
+    const checklists = [
+      {
+        id: "cl1",
+        checkItems: [{ id: "item1", name: "Over Task", state: "incomplete" }],
+      },
+    ];
+
+    const timerData = {
+      checklistItems: {
+        item1: {
+          estimatedTime: 60000,
+          entries: [{ duration: 120000 }],
+        },
+      },
+    };
+
+    checklistUI.render(timerData, checklists);
+
+    const row = container.querySelector(".checklist-row");
+    const timeDiv = row.querySelector(".col-time");
+
+    expect(row.classList).toContain("checklist-row--over");
+    expect(timeDiv.classList).toContain("text-over");
+  });
 });

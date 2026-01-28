@@ -3,149 +3,158 @@
  * A popover component for selecting time durations (presets + sliders)
  */
 
-import { formatDuration, parseTimeString } from '../utils/formatTime.js';
+import { formatDuration, parseTimeString } from "../utils/formatTime.js";
 
 export class TimePickerUI {
-    constructor({ containerId, onSelect, onClose }) {
-        this.container = document.getElementById(containerId);
-        this.onSelect = onSelect;
-        this.onClose = onClose;
-        this.targetInput = null;
-        
-        this.state = {
-            hours: 0,
-            minutes: 0
-        };
+  constructor({ containerId, onSelect, onClose }) {
+    this.container = document.getElementById(containerId);
+    this.onSelect = onSelect;
+    this.onClose = onClose;
+    this.targetInput = null;
 
-        this._render();
-        this._attachListeners();
+    this.state = {
+      hours: 0,
+      minutes: 0,
+    };
+
+    if (this.container) {
+      this._ensureRender();
+    } else {
+      console.error("[TimePickerUI] Container not found:", containerId);
+    }
+  }
+
+  _ensureRender() {
+    // Prevent double rendering if already initialized
+    if (this.container.querySelector(".time-picker__content")) {
+      this._attachGlobalListener();
+      return;
     }
 
-    _render() {
-        if (!this.container) return;
-
-        this.container.innerHTML = `
-            <div class="time-picker__overlay"></div>
+    this.container.innerHTML = `
+            <div class="time-picker__overlay" data-action="close"></div>
             <div class="time-picker__content">
                 <div class="time-picker__header">
                     <span class="time-picker__title">Set Duration</span>
-                    <button class="time-picker__close">×</button>
+                    <button class="time-picker__close" data-action="close">×</button>
                 </div>
                 
                 <div class="time-picker__presets">
-                    <button class="btn-preset" data-value="5m">5m</button>
-                    <button class="btn-preset" data-value="15m">15m</button>
-                    <button class="btn-preset" data-value="30m">30m</button>
-                    <button class="btn-preset" data-value="1h">1h</button>
+                    <button class="btn-preset" data-action="preset" data-value="5m">5m</button>
+                    <button class="btn-preset" data-action="preset" data-value="15m">15m</button>
+                    <button class="btn-preset" data-action="preset" data-value="30m">30m</button>
+                    <button class="btn-preset" data-action="preset" data-value="1h">1h</button>
                 </div>
 
                 <div class="time-picker__sliders">
                     <div class="time-picker__row">
-                        <label>Hours</label>
-                        <input type="range" min="0" max="12" step="0.5" id="tp-hours-range">
-                        <span class="time-picker__val" id="tp-hours-val">0h</span>
+                        <label>Hours <span class="time-picker__val" id="tp-hours-val">0h</span></label>
+                        <input type="range" min="0" max="12" step="0.5" id="tp-hours-range" data-action="slider-h">
                     </div>
                     <div class="time-picker__row">
-                        <label>Minutes</label>
-                        <input type="range" min="0" max="59" step="5" id="tp-mins-range">
-                        <span class="time-picker__val" id="tp-mins-val">0m</span>
+                        <label>Minutes <span class="time-picker__val" id="tp-mins-val">0m</span></label>
+                        <input type="range" min="0" max="59" step="5" id="tp-mins-range" data-action="slider-m">
                     </div>
                 </div>
 
                 <div class="time-picker__actions">
-                    <button class="btn-primary" id="tp-apply">Apply</button>
+                    <button class="btn-apply" id="tp-apply" data-action="apply">Set Duration</button>
                 </div>
             </div>
         `;
+
+    this._attachGlobalListener();
+  }
+
+  _attachGlobalListener() {
+    // Use single listener for robustness
+    this.container.onclick = (e) => {
+      const target = e.target;
+      const actionBtn = target.closest("[data-action]");
+      const action = actionBtn ? actionBtn.dataset.action : null;
+
+      if (action === "close") {
+        this.hide();
+      } else if (action === "preset") {
+        const ms = parseTimeString(actionBtn.dataset.value);
+        this._updateStateFromMs(ms);
+        this._updateInput();
+      } else if (action === "apply") {
+        this._handleApply();
+      }
+    };
+
+    // Input listeners for sliders (input event doesn't bubble well for click, need separate)
+    const hRange = this.container.querySelector("#tp-hours-range");
+    const mRange = this.container.querySelector("#tp-mins-range");
+
+    hRange.oninput = (e) => {
+      this.state.hours = parseFloat(e.target.value);
+      this.container.querySelector("#tp-hours-val").textContent =
+        `${this.state.hours}h`;
+      this._updateInput();
+    };
+
+    mRange.oninput = (e) => {
+      this.state.minutes = parseInt(e.target.value, 10);
+      this.container.querySelector("#tp-mins-val").textContent =
+        `${this.state.minutes}m`;
+      this._updateInput();
+    };
+  }
+
+  _handleApply() {
+    if (this.onSelect) {
+      const ms = this.state.hours * 3600000 + this.state.minutes * 60000;
+      this.onSelect(ms);
     }
+    this.hide();
+  }
 
-    _attachListeners() {
-        if (!this.container) return;
+  _updateStateFromMs(ms) {
+    if (!ms && ms !== 0) return;
 
-        // Close
-        this.container.querySelector('.time-picker__close').addEventListener('click', () => this.hide());
-        this.container.querySelector('.time-picker__overlay').addEventListener('click', () => this.hide());
+    const totalMinutes = Math.floor(ms / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
 
-        // Presets
-        this.container.querySelectorAll('.btn-preset').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const ms = parseTimeString(e.target.dataset.value);
-                this._updateStateFromMs(ms);
-                this._updateInput();
-            });
-        });
+    this.state.hours = hours;
+    this.state.minutes = minutes;
 
-        // Sliders
-        const hRange = this.container.querySelector('#tp-hours-range');
-        const mRange = this.container.querySelector('#tp-mins-range');
+    // Update DOM
+    const hRange = this.container.querySelector("#tp-hours-range");
+    const mRange = this.container.querySelector("#tp-mins-range");
 
-        hRange.addEventListener('input', (e) => {
-            this.state.hours = parseFloat(e.target.value);
-            this.container.querySelector('#tp-hours-val').textContent = `${this.state.hours}h`;
-            this._updateInput();
-        });
+    if (hRange) hRange.value = this.state.hours;
+    if (mRange) mRange.value = this.state.minutes;
 
-        mRange.addEventListener('input', (e) => {
-            this.state.minutes = parseInt(e.target.value, 10);
-            this.container.querySelector('#tp-mins-val').textContent = `${this.state.minutes}m`;
-            this._updateInput();
-        });
+    this.container.querySelector("#tp-hours-val").textContent =
+      `${this.state.hours}h`;
+    this.container.querySelector("#tp-mins-val").textContent =
+      `${this.state.minutes}m`;
+  }
 
-        // Apply (just closes, as we update live or strictly on click)
-        this.container.querySelector('#tp-apply').addEventListener('click', () => {
-            if (this.onSelect) {
-                const ms = (this.state.hours * 3600000) + (this.state.minutes * 60000);
-                this.onSelect(ms);
-            }
-            this.hide();
-        });
+  _updateInput() {
+    if (!this.targetInput) return;
+    const h = this.state.hours > 0 ? `${this.state.hours}h ` : "";
+    const m = `${this.state.minutes}m`;
+    this.targetInput.value = (h + m).trim();
+  }
+
+  show(targetInput) {
+    this.targetInput = targetInput;
+    this.container.style.display = "flex";
+    this.container.hidden = false;
+
+    const currentMs = parseTimeString(targetInput.value);
+    this._updateStateFromMs(currentMs || 0);
+  }
+
+  hide() {
+    if (this.container) {
+      this.container.style.display = "none";
+      this.container.hidden = true;
     }
-
-    _updateStateFromMs(ms) {
-        if (!ms) return;
-        
-        // Naive breakdown for sliders
-        const totalMinutes = Math.floor(ms / 60000);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-
-        this.state.hours = hours + (minutes >= 30 && minutes < 60 && hours < 12 ? 0.5 : 0); // Simplified for 0.5 step? 
-        // Better: strict
-        this.state.hours = hours;
-        this.state.minutes = minutes;
-
-        // Update DOM
-        this.container.querySelector('#tp-hours-range').value = this.state.hours;
-        this.container.querySelector('#tp-hours-val').textContent = `${this.state.hours}h`;
-        
-        this.container.querySelector('#tp-mins-range').value = this.state.minutes;
-        this.container.querySelector('#tp-mins-val').textContent = `${this.state.minutes}m`;
-    }
-
-    _updateInput() {
-        if (!this.targetInput) return;
-        
-        // Format for input text
-        const h = this.state.hours > 0 ? `${this.state.hours}h ` : '';
-        const m = `${this.state.minutes}m`;
-        this.targetInput.value = (h + m).trim();
-    }
-
-    show(targetInput) {
-        this.targetInput = targetInput;
-        this.container.hidden = false;
-        
-        // Parse current value to set initial state
-        const currentMs = parseTimeString(targetInput.value);
-        if (currentMs) {
-            this._updateStateFromMs(currentMs);
-        } else {
-            this._updateStateFromMs(0);
-        }
-    }
-
-    hide() {
-        if (this.container) this.container.hidden = true;
-        if (this.onClose) this.onClose();
-    }
+    if (this.onClose) this.onClose();
+  }
 }
