@@ -82,7 +82,7 @@ describe("TimePickerUI", () => {
     const applyBtn = container.querySelector("#tp-apply");
     applyBtn.click();
 
-    expect(onSelectMock).toHaveBeenCalledWith(5400000); // 1.5 hours in ms
+    expect(onSelectMock).toHaveBeenCalledWith(5400000, input); // 1.5 hours in ms
     expect(container.hidden).toBe(true);
   });
 

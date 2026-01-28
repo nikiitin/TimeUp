@@ -38,7 +38,7 @@ export class TimePickerUI {
                     <span class="time-picker__title">Set Duration</span>
                     <button class="time-picker__close" data-action="close">×</button>
                 </div>
-                
+
                 <div class="time-picker__presets">
                     <button class="btn-preset" data-action="preset" data-value="5m">5m</button>
                     <button class="btn-preset" data-action="preset" data-value="15m">15m</button>

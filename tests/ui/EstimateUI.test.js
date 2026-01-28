@@ -56,7 +56,10 @@ describe("EstimateUI", () => {
     jest.clearAllMocks();
     window.alert = jest.fn();
 
-    estimateUI = new EstimateUI(t, elements);
+    const mockTimePicker = {
+      show: jest.fn()
+    };
+    estimateUI = new EstimateUI(t, elements, { timePicker: mockTimePicker });
   });
 
   test("handles set estimate click", async () => {
@@ -73,8 +76,12 @@ describe("EstimateUI", () => {
     elements.input.value = "30m";
     TimerService.setEstimate.mockResolvedValue({ success: true });
 
-    const event = new KeyboardEvent("keydown", { key: "Enter" });
-    elements.input.dispatchEvent(event);
+    const keyEvent = new KeyboardEvent("keydown", { key: "Enter" });
+    elements.input.dispatchEvent(keyEvent);
+
+    // Dispatch blur manually as JSDOM doesn't always trigger it from .blur() in same event loop
+    const blurEvent = new Event("blur");
+    elements.input.dispatchEvent(blurEvent);
 
     expect(TimerService.setEstimate).toHaveBeenCalledWith(t, 1800000);
   });

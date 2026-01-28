@@ -29,9 +29,59 @@ describe("ChecklistUI", () => {
     tMock = {
       t: "mock",
     };
+    const mockTimePicker = {
+      show: jest.fn()
+    };
     checklistUI = new ChecklistUI(tMock, "checklists-container", {
       onRefresh: jest.fn(),
+      timePicker: mockTimePicker
     });
+  });
+
+  test("should be able to keep focus during second render if structure is same (Smart Render)", () => {
+    const checklists = [
+      {
+        id: "cl1",
+        checkItems: [{ id: "item1", name: "Task 1", state: "incomplete" }],
+      },
+    ];
+    const timerData = {};
+
+    // First render - full
+    checklistUI.render(timerData, checklists);
+    const estInput = container.querySelector('input[data-action="estimate"]');
+
+    // Track if element is replaced
+    const firstInput = estInput;
+
+    // Second render - should be smart
+    checklistUI.render(timerData, checklists);
+    const secondInput = container.querySelector('input[data-action="estimate"]');
+
+    expect(firstInput).toBe(secondInput); // Same DOM node preserved
+  });
+
+  test("should update live progress without full re-render", () => {
+    const checklists = [
+      {
+        id: "cl1",
+        checkItems: [{ id: "item1", name: "Task 1", state: "incomplete" }],
+      },
+    ];
+    const timerData1 = {
+      checklistItems: { item1: { entries: [{ duration: 0 }] } }
+    };
+    const timerData2 = {
+      checklistItems: { item1: { entries: [{ duration: 60000 }] } }
+    };
+
+    checklistUI.render(timerData1, checklists);
+    const timeValue = container.querySelector(".item-time-value");
+    expect(timeValue.textContent).toBe("0m 0s");
+
+    // "Smart" update
+    checklistUI.render(timerData2, checklists);
+    expect(timeValue.textContent).toBe("1m 0s");
   });
 
   test("should render nothing if no checklists provided", () => {

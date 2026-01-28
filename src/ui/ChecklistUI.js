@@ -97,8 +97,8 @@ export class ChecklistUI {
     return `
       <div class="${rowClasses.join(" ")}" data-id="${item.id}">
         <div class="col-action">
-          <button class="btn-item-toggle ${isRunning ? "btn-item-toggle--running" : ""}" 
-                  data-action="toggle" data-id="${item.id}" 
+          <button class="btn-item-toggle ${isRunning ? "btn-item-toggle--running" : ""}"
+                  data-action="toggle" data-id="${item.id}"
                   title="${isRunning ? "Stop task timer" : "Start task timer"}">
             ${icon}
           </button>
@@ -106,7 +106,7 @@ export class ChecklistUI {
         <div class="col-task">
           <div class="task-name" title="${this._escape(item.name)}">${this._escape(item.name)}</div>
           <div class="progress-bar progress-bar--item" ${estimate > 0 ? "" : 'style="display:none"'} id="progress-bar-${item.id}">
-            <div class="progress-bar__fill ${isOver ? "progress-bar__fill--over" : ""} item-progress-fill" 
+            <div class="progress-bar__fill ${isOver ? "progress-bar__fill--over" : ""} item-progress-fill"
                  style="width: ${progressPercent}%" id="progress-fill-${item.id}"></div>
 </div>
           ${isRunning ? '<span class="status-badge status-badge--running">Running</span>' : ""}
@@ -114,7 +114,7 @@ export class ChecklistUI {
         </div>
         <div class="col-est">
           <div class="input-wrapper">
-            <input type="text" class="input-tiny" 
+            <input type="text" class="input-tiny"
                   value="${estimate > 0 ? formatDuration(estimate, { compact: true, showSeconds: false }) : ""}"
                   placeholder="-"
                   data-action="estimate" data-id="${item.id}">
@@ -167,14 +167,14 @@ export class ChecklistUI {
       // 3. Update Row States (running class)
       row.classList.toggle('checklist-row--running', isRunning);
       row.classList.toggle('checklist-row--over', isOver);
-      
+
       // 4. Update Badge and Toggle Button only if changed to avoid unnecessary thrashing
       const toggleBtn = row.querySelector('.btn-item-toggle');
       if (toggleBtn) {
         const wasRunning = toggleBtn.classList.contains('btn-item-toggle--running');
         if (wasRunning !== isRunning) {
           toggleBtn.classList.toggle('btn-item-toggle--running', isRunning);
-          toggleBtn.innerHTML = isRunning 
+          toggleBtn.innerHTML = isRunning
             ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
             : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
           // Also toggle badge visibility by just finding it or we skip for now as badge might be better managed by a total render

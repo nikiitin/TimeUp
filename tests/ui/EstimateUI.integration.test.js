@@ -4,6 +4,7 @@
 import { jest } from "@jest/globals";
 import { EstimateUI } from "../../src/ui/EstimateUI.js";
 import TimerService from "../../src/services/TimerService.js";
+import { TimePickerUI } from "../../src/ui/TimePickerUI.js";
 
 // Mock TimerService
 jest.mock("../../src/services/TimerService.js");
@@ -12,6 +13,7 @@ describe("EstimateUI Integration", () => {
   let tMock;
   let elements;
   let estimateUI;
+  let timePicker;
 
   beforeEach(() => {
     // Setup DOM
@@ -48,7 +50,8 @@ describe("EstimateUI Integration", () => {
     // Setup Service Mocks
     TimerService.setEstimate = jest.fn();
 
-    estimateUI = new EstimateUI(tMock, elements);
+    timePicker = new TimePickerUI({ containerId: "time-picker-container" });
+    estimateUI = new EstimateUI(tMock, elements, { timePicker });
   });
 
   afterEach(() => {
