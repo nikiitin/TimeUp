@@ -196,6 +196,84 @@ export const deleteEntry = async (t, entryId) => {
         return { success: false, error: error.message };
     }
 };
+
+/**
+ * Updates an existing time entry.
+ * Syncs changes with checklistItems if entry is linked.
+ * @param {Object} t - Trello client
+ * @param {string} entryId - Entry ID to update
+ * @param {Object} updates - Fields to update: { duration?, checklistItemId?, description? }
+ * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+ */
+export const updateEntry = async (t, entryId, updates) => {
+    try {
+        let timerData = validateTimerData(await StorageService.getTimerData(t));
+        const entryIndex = timerData.entries.findIndex(e => e.id === entryId);
+
+        if (entryIndex === -1) {
+            return { success: false, error: 'Entry not found', data: timerData };
+        }
+
+        const oldEntry = timerData.entries[entryIndex];
+        const oldChecklistItemId = oldEntry.checklistItemId;
+        const newChecklistItemId = updates.checklistItemId !== undefined
+            ? (updates.checklistItemId || null)
+            : oldChecklistItemId;
+
+        const updatedEntry = {
+            ...oldEntry,
+            ...(updates.duration !== undefined && { duration: updates.duration }),
+            ...(updates.checklistItemId !== undefined && { checklistItemId: newChecklistItemId }),
+            ...(updates.description !== undefined && { description: updates.description }),
+        };
+
+        // Update global entries
+        const updatedEntries = [...timerData.entries];
+        updatedEntries[entryIndex] = updatedEntry;
+
+        // Sync with checklistItems
+        let updatedChecklistItems = { ...timerData.checklistItems };
+
+        // Remove from old checklist item if it had one
+        if (oldChecklistItemId && updatedChecklistItems[oldChecklistItemId]) {
+            const oldItemData = updatedChecklistItems[oldChecklistItemId];
+            updatedChecklistItems[oldChecklistItemId] = {
+                ...oldItemData,
+                entries: oldItemData.entries.filter(e => e.id !== entryId),
+            };
+        }
+
+        // Add/update in new checklist item if it has one
+        if (newChecklistItemId) {
+            const newItemData = updatedChecklistItems[newChecklistItemId] || { ...DEFAULTS.CHECKLIST_ITEM_DATA };
+            const existingIndex = newItemData.entries.findIndex(e => e.id === entryId);
+            const newItemEntries = [...newItemData.entries];
+
+            if (existingIndex >= 0) {
+                newItemEntries[existingIndex] = updatedEntry;
+            } else {
+                newItemEntries.push(updatedEntry);
+            }
+
+            updatedChecklistItems[newChecklistItemId] = {
+                ...newItemData,
+                entries: newItemEntries,
+            };
+        }
+
+        const updatedData = {
+            ...timerData,
+            entries: updatedEntries,
+            checklistItems: updatedChecklistItems,
+        };
+
+        const saved = await StorageService.setTimerData(t, updatedData);
+        return saved ? { success: true, data: updatedData, entry: updatedEntry } : { success: false, error: 'Save failed' };
+    } catch (error) {
+        console.error('[TimerService] updateEntry error:', error);
+        return { success: false, error: error.message };
+    }
+};
 // =============================================================================
 // CHECKLIST ITEM TIMER OPERATIONS
 // =============================================================================
@@ -365,6 +443,7 @@ const TimerService = {
     getCurrentElapsed,
     setEstimate,
     deleteEntry,
+    updateEntry,
     // Checklist item operations
     startItemTimer,
     stopItemTimer,
