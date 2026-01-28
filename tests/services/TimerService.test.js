@@ -211,6 +211,81 @@ describe('TimerService', () => {
         });
     });
 
+    describe('updateEntry', () => {
+        test('updates entry duration', async () => {
+            const entries = [{ id: 'entry1', duration: 1000, description: 'old' }];
+            setTimerData({ ...DEFAULTS.TIMER_DATA, entries });
+
+            const result = await TimerService.updateEntry(mockT, 'entry1', { duration: 5000 });
+
+            expect(result.success).toBe(true);
+            expect(result.entry.duration).toBe(5000);
+            expect(result.entry.description).toBe('old');  // Preserved
+        });
+
+        test('updates entry description', async () => {
+            const entries = [{ id: 'entry1', duration: 1000, description: '' }];
+            setTimerData({ ...DEFAULTS.TIMER_DATA, entries });
+
+            const result = await TimerService.updateEntry(mockT, 'entry1', { description: 'new desc' });
+
+            expect(result.success).toBe(true);
+            expect(result.entry.description).toBe('new desc');
+            expect(result.entry.duration).toBe(1000);  // Preserved
+        });
+
+        test('updates entry checklistItemId', async () => {
+            const entries = [{ id: 'entry1', duration: 1000, checklistItemId: null }];
+            setTimerData({ ...DEFAULTS.TIMER_DATA, entries, checklistItems: {} });
+
+            const result = await TimerService.updateEntry(mockT, 'entry1', { checklistItemId: 'item1' });
+
+            expect(result.success).toBe(true);
+            expect(result.entry.checklistItemId).toBe('item1');
+            // Also check it was added to checklistItems
+            expect(result.data.checklistItems.item1.entries).toHaveLength(1);
+            expect(result.data.checklistItems.item1.entries[0].id).toBe('entry1');
+        });
+
+        test('clears checklistItemId when set to null', async () => {
+            const entries = [{ id: 'entry1', duration: 1000, checklistItemId: 'item1' }];
+            const checklistItems = { item1: { entries: [{ id: 'entry1', duration: 1000 }], estimate: 0 } };
+            setTimerData({ ...DEFAULTS.TIMER_DATA, entries, checklistItems });
+
+            const result = await TimerService.updateEntry(mockT, 'entry1', { checklistItemId: null });
+
+            expect(result.success).toBe(true);
+            expect(result.entry.checklistItemId).toBeNull();
+            // Entry removed from old checklist item
+            expect(result.data.checklistItems.item1.entries).toHaveLength(0);
+        });
+
+        test('moves entry between checklist items', async () => {
+            const entries = [{ id: 'entry1', duration: 1000, checklistItemId: 'item1' }];
+            const checklistItems = {
+                item1: { entries: [{ id: 'entry1', duration: 1000 }], estimate: 0 },
+                item2: { entries: [], estimate: 0 },
+            };
+            setTimerData({ ...DEFAULTS.TIMER_DATA, entries, checklistItems });
+
+            const result = await TimerService.updateEntry(mockT, 'entry1', { checklistItemId: 'item2' });
+
+            expect(result.success).toBe(true);
+            expect(result.entry.checklistItemId).toBe('item2');
+            expect(result.data.checklistItems.item1.entries).toHaveLength(0);
+            expect(result.data.checklistItems.item2.entries).toHaveLength(1);
+        });
+
+        test('fails when entry not found', async () => {
+            setTimerData({ ...DEFAULTS.TIMER_DATA, entries: [{ id: 'other' }] });
+
+            const result = await TimerService.updateEntry(mockT, 'nonexistent', { duration: 5000 });
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Entry not found');
+        });
+    });
+
     describe('startItemTimer', () => {
         test('starts item timer when idle', async () => {
             setTimerData({ ...DEFAULTS.TIMER_DATA });

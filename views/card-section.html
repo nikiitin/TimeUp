@@ -431,7 +431,7 @@
         <span id="btn-text">Start</span>
       </button>
       <div class="timer-display timer-display--idle" id="display">00:00:00</div>
-      <input type="text" class="timer-description" id="timer-description" placeholder="What are you working on?" hidden>
+      <input type="text" class="timer-description" id="timer-description" placeholder="What are you working on?" aria-label="Timer description" hidden>
       <div class="timer-info">
         <span class="timer-total" id="total"></span>
         <span class="timer-remaining" id="remaining" hidden></span>
@@ -562,7 +562,7 @@
       const labelHtml = itemName ? `<span class="entry__label" title="${escapeHtml(itemName)}">☑ ${escapeHtml(itemName)}</span>` : '';
       const descHtml = entry.description ? `<span class="entry__desc" title="${escapeHtml(entry.description)}">${escapeHtml(entry.description)}</span>` : '';
 
-      return `<div class="entry${itemName ? ' entry--linked' : ''}" data-entry-id="${escapeHtml(entry.id)}">
+      return `<div class="entry${itemName ? ' entry--linked' : ''}" data-entry-id="${escapeHtml(entry.id)}" role="button" tabindex="0" title="Click to edit">
         <div class="entry__info">
           <span class="entry__time">${formatTimestamp(entry.startTime, { showDate: true })}</span>
           ${labelHtml}
@@ -570,7 +570,7 @@
         </div>
         <div class="entry__right">
           <span class="entry__duration">${formatDuration(entry.duration, { compact: true })}</span>
-          <button class="btn-delete" data-id="${entry.id}" title="Delete entry">×</button>
+          <button class="btn-delete" data-id="${escapeHtml(entry.id)}" title="Delete entry">×</button>
         </div>
       </div>`;
     };
@@ -630,9 +630,16 @@
 
       // Attach click handlers for view mode entries
       entriesEl.querySelectorAll('.entry:not(.entry--editing)').forEach(el => {
-        el.addEventListener('click', (e) => {
+        const handleActivate = (e) => {
           if (e.target.classList.contains('btn-delete')) return;
           handleEditEntry(el.dataset.entryId);
+        };
+        el.addEventListener('click', handleActivate);
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleActivate(e);
+          }
         });
       });
 
@@ -714,7 +721,12 @@
       iconStop.hidden = !isRunning;
       timerDescription.hidden = !isRunning;
 
-      renderEntries(timerData.entries);
+      // Guard: don't re-render entries if user is editing one (preserves form input)
+      if (!editingEntryId) {
+        renderEntries(timerData.entries);
+      } else {
+        currentEntries = timerData.entries;  // Keep cached entries updated
+      }
       updateEstimateUI(timerData);
     };
 
