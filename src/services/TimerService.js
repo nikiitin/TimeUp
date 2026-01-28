@@ -196,6 +196,46 @@ export const deleteEntry = async (t, entryId) => {
         return { success: false, error: error.message };
     }
 };
+
+/**
+ * Updates an existing time entry.
+ * @param {Object} t - Trello client
+ * @param {string} entryId - Entry ID to update
+ * @param {Object} updates - Fields to update: { duration?, checklistItemId?, description? }
+ * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+ */
+export const updateEntry = async (t, entryId, updates) => {
+    try {
+        const timerData = validateTimerData(await StorageService.getTimerData(t));
+        const entryIndex = timerData.entries.findIndex(e => e.id === entryId);
+
+        if (entryIndex === -1) {
+            return { success: false, error: 'Entry not found', data: timerData };
+        }
+
+        const oldEntry = timerData.entries[entryIndex];
+        const updatedEntry = {
+            ...oldEntry,
+            ...(updates.duration !== undefined && { duration: updates.duration }),
+            ...(updates.checklistItemId !== undefined && { checklistItemId: updates.checklistItemId || null }),
+            ...(updates.description !== undefined && { description: updates.description }),
+        };
+
+        const updatedEntries = [...timerData.entries];
+        updatedEntries[entryIndex] = updatedEntry;
+
+        const updatedData = {
+            ...timerData,
+            entries: updatedEntries,
+        };
+
+        const saved = await StorageService.setTimerData(t, updatedData);
+        return saved ? { success: true, data: updatedData, entry: updatedEntry } : { success: false, error: 'Save failed' };
+    } catch (error) {
+        console.error('[TimerService] updateEntry error:', error);
+        return { success: false, error: error.message };
+    }
+};
 // =============================================================================
 // CHECKLIST ITEM TIMER OPERATIONS
 // =============================================================================
@@ -365,6 +405,7 @@ const TimerService = {
     getCurrentElapsed,
     setEstimate,
     deleteEntry,
+    updateEntry,
     // Checklist item operations
     startItemTimer,
     stopItemTimer,

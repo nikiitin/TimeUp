@@ -209,6 +209,74 @@
       color: #b6c2cf;
       font-variant-numeric: tabular-nums;
     }
+    /* Entry edit mode */
+    .entry--editing {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .entry__edit-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .entry__edit-label {
+      font-size: 11px;
+      color: #626f86;
+      min-width: 60px;
+    }
+    .entry__edit-input {
+      flex: 1;
+      padding: 4px 8px;
+      font-size: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #b6c2cf;
+    }
+    .entry__edit-input:focus {
+      outline: none;
+      border-color: #579dff;
+    }
+    .entry__edit-select {
+      flex: 1;
+      padding: 4px 8px;
+      font-size: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #b6c2cf;
+    }
+    .entry__edit-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+    .btn-save, .btn-cancel {
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .btn-save {
+      background: #579dff;
+      color: #1d2125;
+    }
+    .btn-save:hover {
+      background: #85b8ff;
+    }
+    .btn-cancel {
+      background: rgba(255, 255, 255, 0.1);
+      color: #b6c2cf;
+    }
+    .btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
     .btn-delete {
       display: flex;
       align-items: center;
@@ -445,7 +513,107 @@
       return null;
     };
 
+    // Helper: get all checklist items as flat list
+    const getAllChecklistItems = () => {
+      const items = [];
+      for (const checklist of cachedChecklists || []) {
+        for (const item of checklist.checkItems || []) {
+          items.push({ id: item.id, name: item.name, checklist: checklist.name });
+        }
+      }
+      return items;
+    };
+
+    // Track which entry is being edited
+    let editingEntryId = null;
+    let currentEntries = [];
+
+    const renderEntryEditMode = (entry) => {
+      const allItems = getAllChecklistItems();
+      const optionsHtml = allItems.map(item =>
+        `<option value="${escapeHtml(item.id)}" ${entry.checklistItemId === item.id ? 'selected' : ''}>${escapeHtml(item.name)}</option>`
+      ).join('');
+
+      return `<div class="entry entry--editing" data-entry-id="${escapeHtml(entry.id)}">
+        <div class="entry__edit-row">
+          <span class="entry__edit-label">Duration:</span>
+          <input type="text" class="entry__edit-input" id="edit-duration" value="${escapeHtml(formatDuration(entry.duration, { compact: true }))}" placeholder="e.g. 1h 30m">
+        </div>
+        <div class="entry__edit-row">
+          <span class="entry__edit-label">Checklist:</span>
+          <select class="entry__edit-select" id="edit-checklist">
+            <option value="">— None —</option>
+            ${optionsHtml}
+          </select>
+        </div>
+        <div class="entry__edit-row">
+          <span class="entry__edit-label">Description:</span>
+          <input type="text" class="entry__edit-input" id="edit-description" value="${escapeHtml(entry.description || '')}" placeholder="What was done">
+        </div>
+        <div class="entry__edit-actions">
+          <button class="btn-cancel" id="btn-edit-cancel">Cancel</button>
+          <button class="btn-save" id="btn-edit-save">Save</button>
+        </div>
+      </div>`;
+    };
+
+    const renderEntryViewMode = (entry) => {
+      const itemName = getCheckItemName(entry.checklistItemId);
+      const labelHtml = itemName ? `<span class="entry__label" title="${escapeHtml(itemName)}">☑ ${escapeHtml(itemName)}</span>` : '';
+      const descHtml = entry.description ? `<span class="entry__desc" title="${escapeHtml(entry.description)}">${escapeHtml(entry.description)}</span>` : '';
+
+      return `<div class="entry${itemName ? ' entry--linked' : ''}" data-entry-id="${escapeHtml(entry.id)}">
+        <div class="entry__info">
+          <span class="entry__time">${formatTimestamp(entry.startTime, { showDate: true })}</span>
+          ${labelHtml}
+          ${descHtml}
+        </div>
+        <div class="entry__right">
+          <span class="entry__duration">${formatDuration(entry.duration, { compact: true })}</span>
+          <button class="btn-delete" data-id="${entry.id}" title="Delete entry">×</button>
+        </div>
+      </div>`;
+    };
+
+    const handleEditEntry = (entryId) => {
+      editingEntryId = entryId;
+      renderEntries(currentEntries);
+    };
+
+    const handleCancelEdit = () => {
+      editingEntryId = null;
+      renderEntries(currentEntries);
+    };
+
+    const handleSaveEdit = async (entryId) => {
+      const durationInput = document.getElementById('edit-duration');
+      const checklistSelect = document.getElementById('edit-checklist');
+      const descInput = document.getElementById('edit-description');
+
+      const newDuration = parseTimeString(durationInput.value.trim());
+      if (!newDuration) {
+        alert('Invalid duration format. Try: 1h 30m, 1.5h, or 90 (minutes)');
+        return;
+      }
+
+      const updates = {
+        duration: newDuration,
+        checklistItemId: checklistSelect.value || null,
+        description: descInput.value.trim(),
+      };
+
+      const result = await TimerService.updateEntry(t, entryId, updates);
+      if (!result.success) {
+        alert(`Failed to update entry: ${result.error}`);
+        return;
+      }
+
+      editingEntryId = null;
+      await refresh();
+    };
+
     const renderEntries = (entries) => {
+      currentEntries = entries;
       if (!entries || entries.length === 0) {
         entriesEl.innerHTML = '<div class="empty-msg">No time entries yet</div>';
         totalEl.textContent = 'Total: 0m';
@@ -454,27 +622,33 @@
 
       const sorted = [...entries].reverse();
       entriesEl.innerHTML = sorted.map(entry => {
-        const itemName = getCheckItemName(entry.checklistItemId);
-        const labelHtml = itemName ? `<span class="entry__label" title="${escapeHtml(itemName)}">☑ ${escapeHtml(itemName)}</span>` : '';
-        const descHtml = entry.description ? `<span class="entry__desc" title="${escapeHtml(entry.description)}">${escapeHtml(entry.description)}</span>` : '';
-
-        return `<div class="entry${itemName ? ' entry--linked' : ''}">
-          <div class="entry__info">
-            <span class="entry__time">${formatTimestamp(entry.startTime, { showDate: true })}</span>
-            ${labelHtml}
-            ${descHtml}
-          </div>
-          <div class="entry__right">
-            <span class="entry__duration">${formatDuration(entry.duration, { compact: true })}</span>
-            <button class="btn-delete" data-id="${entry.id}" title="Delete entry">×</button>
-          </div>
-        </div>`;
+        if (entry.id === editingEntryId) {
+          return renderEntryEditMode(entry);
+        }
+        return renderEntryViewMode(entry);
       }).join('');
+
+      // Attach click handlers for view mode entries
+      entriesEl.querySelectorAll('.entry:not(.entry--editing)').forEach(el => {
+        el.addEventListener('click', (e) => {
+          if (e.target.classList.contains('btn-delete')) return;
+          handleEditEntry(el.dataset.entryId);
+        });
+      });
 
       // Attach delete handlers
       entriesEl.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', () => handleDeleteEntry(btn.dataset.id));
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handleDeleteEntry(btn.dataset.id);
+        });
       });
+
+      // Attach edit mode handlers
+      const saveBtn = document.getElementById('btn-edit-save');
+      const cancelBtn = document.getElementById('btn-edit-cancel');
+      if (saveBtn) saveBtn.addEventListener('click', () => handleSaveEdit(editingEntryId));
+      if (cancelBtn) cancelBtn.addEventListener('click', handleCancelEdit);
 
       const total = sumDurations(entries);
       totalEl.textContent = `Total: ${formatDuration(total, { compact: true, showSeconds: false })}`;
