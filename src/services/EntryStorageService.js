@@ -13,8 +13,8 @@ import StorageService from "./StorageService.js";
  * This allows ~500+ entries per card while maintaining performance.
  */
 
-const ENTRIES_PER_MAIN_STORAGE = 15; // Recent entries in timerData (reduced to fit in 4KB)
-const ENTRIES_PER_ARCHIVE_PAGE = 30; // Entries per archive key (reduced to fit compressed in 4KB)
+const ENTRIES_PER_MAIN_STORAGE = 5; // Recent entries in timerData (critical: must stay under 4KB with metadata)
+const ENTRIES_PER_ARCHIVE_PAGE = 30; // Entries per archive key (compressed to fit in 4KB)
 
 /**
  * Compresses entry to reduce storage size by ~40%.

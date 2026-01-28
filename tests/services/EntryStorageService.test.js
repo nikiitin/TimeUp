@@ -178,8 +178,8 @@ describe("EntryStorageService", () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.recentCount).toBe(15);
-      expect(result.archived).toBe(45);
+      expect(result.recentCount).toBe(5);
+      expect(result.archived).toBe(55);
     });
 
     test("should handle save errors", async () => {
@@ -422,8 +422,8 @@ describe("EntryStorageService", () => {
       const result = await EntryStorageService.saveEntries(tMock, entries, { state: "idle" });
 
       expect(result.success).toBe(true);
-      expect(result.recentCount).toBe(15);
-      expect(result.archived).toBe(85);
+      expect(result.recentCount).toBe(5);
+      expect(result.archived).toBe(95);
     });
   });
 
