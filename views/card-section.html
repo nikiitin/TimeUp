@@ -336,15 +336,31 @@
       border-radius: 3px;
       background: rgba(255, 255, 255, 0.04);
       transition: background 0.1s;
+      /* Progress bar support */
+      position: relative;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .checklist-item::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(75, 191, 115, 0.3), rgba(75, 191, 115, 0.15));
+      transform: scaleX(var(--progress, 0));
+      transform-origin: left;
+      transition: transform 0.3s ease, background 0.3s ease;
+      z-index: -1;
+      pointer-events: none;
     }
     .checklist-item:hover {
       background: rgba(255, 255, 255, 0.08);
     }
-    .checklist-item--over {
-      background: rgba(248, 113, 104, 0.15);
+    .checklist-item--over::before {
+      background: linear-gradient(90deg, rgba(248, 113, 104, 0.4), rgba(248, 113, 104, 0.2));
+      transform: scaleX(1);
     }
     .checklist-item--over:hover {
-      background: rgba(248, 113, 104, 0.25);
+      background: rgba(248, 113, 104, 0.1);
     }
     .checklist-item__name {
       flex: 1;
@@ -490,6 +506,12 @@
       return String(str).replace(/[<>&"']/g, c => ({
         '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;'
       })[c]);
+    };
+
+    // Progress calculation for checklist items
+    const getItemProgress = (itemTime, itemEstimate) => {
+      if (!itemEstimate || itemEstimate <= 0) return 0;
+      return Math.min(itemTime / itemEstimate, 1);  // Clamp to 0-1
     };
 
     const handleDeleteEntry = async (entryId) => {
@@ -809,6 +831,7 @@
             (itemIsRunning ? TimerService.getItemCurrentElapsed(itemData) : 0);
           const itemEstimate = itemData.estimatedTime || 0;
           const isOver = itemEstimate > 0 && itemTime > itemEstimate;
+          const progress = getItemProgress(itemTime, itemEstimate);
 
           const itemClass = isOver ? 'checklist-item checklist-item--over' : 'checklist-item';
           const nameClass = isOver ? 'checklist-item__name checklist-item__name--over' : 'checklist-item__name';
@@ -816,7 +839,7 @@
           const btnClass = itemIsRunning ? 'btn-item-toggle btn-item-toggle--running' : 'btn-item-toggle';
           const escapedName = escapeHtml(item.name);
 
-          html += `<div class="${itemClass}" data-item-id="${escapeHtml(item.id)}">
+          html += `<div class="${itemClass}" data-item-id="${escapeHtml(item.id)}" style="--progress: ${progress}">
             <button class="${btnClass}" data-item-id="${escapeHtml(item.id)}" title="${itemIsRunning ? 'Stop' : 'Start'}">
               ${itemIsRunning
                 ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
@@ -872,10 +895,12 @@
             timeEl.className = isOver ? 'checklist-item__time checklist-item__time--over' : 'checklist-item__time';
           }
 
-          // Update item container class for over-budget styling
+          // Update item container class and progress for smooth animation
           const itemEl = checklistsEl.querySelector(`[data-item-id="${item.id}"]`);
           if (itemEl && itemEl.classList.contains('checklist-item')) {
+            const progress = getItemProgress(itemTime, itemEstimate);
             itemEl.className = isOver ? 'checklist-item checklist-item--over' : 'checklist-item';
+            itemEl.style.setProperty('--progress', progress);
           }
 
           // Update button state
