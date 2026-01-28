@@ -154,7 +154,23 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
     .entry:last-child { border-bottom: none; }
+    .entry__info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
     .entry__time { color: #8c9bab; }
+    .entry__label {
+      font-size: 11px;
+      color: #579dff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 140px;
+    }
+    .entry--linked {
+      background: rgba(87, 157, 255, 0.05);
+    }
     .entry__right {
       display: flex;
       align-items: center;
@@ -391,23 +407,40 @@
       await refresh();
     };
 
+    // Helper: get checklist item name by ID
+    const getCheckItemName = (checkItemId) => {
+      if (!checkItemId || !cachedChecklists) return null;
+      for (const checklist of cachedChecklists) {
+        for (const item of checklist.checkItems || []) {
+          if (item.id === checkItemId) return item.name;
+        }
+      }
+      return null;
+    };
+
     const renderEntries = (entries) => {
       if (!entries || entries.length === 0) {
         entriesEl.innerHTML = '<div class="empty-msg">No time entries yet</div>';
-        totalEl.textContent = '';
+        totalEl.textContent = 'Total: 0m';
         return;
       }
 
       const sorted = [...entries].reverse();
-      entriesEl.innerHTML = sorted.map(entry => `
-        <div class="entry">
-          <span class="entry__time">${formatTimestamp(entry.startTime, { showDate: true })}</span>
+      entriesEl.innerHTML = sorted.map(entry => {
+        const itemName = getCheckItemName(entry.checklistItemId);
+        const labelHtml = itemName ? `<span class="entry__label" title="${escapeHtml(itemName)}">☑ ${escapeHtml(itemName)}</span>` : '';
+
+        return `<div class="entry${itemName ? ' entry--linked' : ''}">
+          <div class="entry__info">
+            <span class="entry__time">${formatTimestamp(entry.startTime, { showDate: true })}</span>
+            ${labelHtml}
+          </div>
           <div class="entry__right">
             <span class="entry__duration">${formatDuration(entry.duration, { compact: true })}</span>
             <button class="btn-delete" data-id="${entry.id}" title="Delete entry">×</button>
           </div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
 
       // Attach delete handlers
       entriesEl.querySelectorAll('.btn-delete').forEach(btn => {
@@ -419,17 +452,22 @@
     };
 
     const updateEstimateUI = (timerData) => {
-      const hasEstimate = timerData.estimatedTime && timerData.estimatedTime > 0;
+      // Use effective estimate (manual or calculated from checklists)
+      const effectiveEstimate = ChecklistService.getEffectiveEstimate(timerData, cachedChecklists);
+      const hasEstimate = effectiveEstimate && effectiveEstimate > 0;
+      const hasManualEstimate = timerData.manualEstimateSet && timerData.estimatedTime > 0;
+
+      // Always show input field (for setting manual estimate)
+      estimateInput.hidden = false;
+      btnSetEstimate.hidden = false;
 
       if (hasEstimate) {
-        estimateInput.hidden = true;
-        btnSetEstimate.hidden = true;
         estimateDisplay.hidden = false;
-        estimateDisplay.textContent = formatDuration(timerData.estimatedTime, { compact: true, showSeconds: false });
-        btnClearEstimate.hidden = false;
+        estimateDisplay.textContent = formatDuration(effectiveEstimate, { compact: true, showSeconds: false });
+        btnClearEstimate.hidden = !hasManualEstimate;  // Only show clear if manual was set
 
         // Show progress bar and remaining time
-        const remainingInfo = getRemainingTime(timerData.entries, timerData.estimatedTime);
+        const remainingInfo = getRemainingTime(timerData.entries, effectiveEstimate);
         if (remainingInfo) {
           progressBar.hidden = false;
           progressFill.style.width = `${remainingInfo.percentComplete}%`;
@@ -452,8 +490,6 @@
           remainingEl.hidden = false;
         }
       } else {
-        estimateInput.hidden = false;
-        btnSetEstimate.hidden = false;
         estimateDisplay.hidden = true;
         btnClearEstimate.hidden = true;
         progressBar.hidden = true;
