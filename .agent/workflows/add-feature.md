@@ -126,6 +126,13 @@ Follow `/test-in-trello` workflow to verify:
 - [ ] No console errors
 - [ ] UI updates correctly after actions
 
-## 8. Document
+## 8. Pre-Commit Review
+
+Before committing, verify all items in `.agent/rules.md`:
+- [ ] Security: XSS prevention (escape all external data in HTML)
+- [ ] Error handling: No silent failures (all errors notified to user)
+- [ ] Performance: No redundant API calls in refresh loops
+
+## 9. Document
 
 Update `README.md` if the feature is user-facing.
