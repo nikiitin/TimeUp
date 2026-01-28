@@ -26,16 +26,22 @@ export class TimerUI {
     async _handleToggle() {
         const isRunning = this.elements.btnToggle.classList.contains('btn-toggle--running');
         try {
+            let result;
             if (isRunning) {
                 const description = this.elements.description.value.trim();
-                await TimerService.stopTimer(this.t, description);
+                result = await TimerService.stopTimer(this.t, description);
             } else {
-                await TimerService.startTimer(this.t);
+                result = await TimerService.startTimer(this.t);
+            }
+            
+            if (!result.success) {
+                alert(`Timer action failed: ${result.error}`);
             }
             // Trigger a refresh call (passed via callback usually, or main loop picks it up)
             // For now, we rely on the main loop in the parent to detect the state change
         } catch (error) {
             console.error('Timer operation failed:', error);
+            alert(`Timer error: ${error.message}`);
         }
     }
 

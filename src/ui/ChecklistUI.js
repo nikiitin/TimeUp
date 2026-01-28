@@ -94,7 +94,14 @@ export class ChecklistUI {
         });
 
         this.container.querySelectorAll('[data-action="estimate"]').forEach(input => {
-            input.addEventListener('change', (e) => this._handleEstimate(e.target.dataset.id, e.target.value));
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.target.blur(); // Trigger logic via blur or call directly
+                    this._handleEstimate(e.target.dataset.id, e.target.value);
+                }
+            });
+            // Keep blur for when user clicks away
+            input.addEventListener('blur', (e) => this._handleEstimate(e.target.dataset.id, e.target.value));
         });
     }
 
@@ -121,6 +128,7 @@ export class ChecklistUI {
              if (this.onRefresh) this.onRefresh();
         } else {
             console.error('Checklist toggle failed', result.error);
+            alert(`Failed to toggle timer: ${result.error}`);
         }
     }
 
@@ -128,8 +136,12 @@ export class ChecklistUI {
         const ms = parseTimeString(value);
         if (ms || value === '') {
              // If empty string, we might want to clear it? Service handles null/0 usu.
-             await TimerService.setItemEstimate(this.t, itemId, ms || 0);
-             if (this.onRefresh) this.onRefresh();
+             const result = await TimerService.setItemEstimate(this.t, itemId, ms || 0);
+             if (result.success) {
+                 if (this.onRefresh) this.onRefresh();
+             } else {
+                 alert(`Failed to set estimate: ${result.error}`);
+             }
         }
     }
 
