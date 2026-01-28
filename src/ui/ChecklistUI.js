@@ -28,8 +28,12 @@ export class ChecklistUI {
     }
 
     // Check if we already have the same structure to avoid trashing focus
-    const currentItemCount = this.container.querySelectorAll('.checklist-row').length;
-    const newItemCount = checklists.reduce((acc, cl) => acc + (cl.checkItems?.length || 0), 0);
+    const currentItemCount =
+      this.container.querySelectorAll(".checklist-row").length;
+    const newItemCount = checklists.reduce(
+      (acc, cl) => acc + (cl.checkItems?.length || 0),
+      0,
+    );
     // Only re-render if structure changed or container is empty
     if (this.container.innerHTML === "" || currentItemCount !== newItemCount) {
       this.container.hidden = false;
@@ -84,7 +88,10 @@ export class ChecklistUI {
     // Progress
     const estimate = itemData?.estimatedTime || 0;
     const isOver = estimate > 0 && totalTime > estimate;
-    const progressPercent = estimate > 0 ? Math.min(100, Math.floor((totalTime / estimate) * 100)) : 0;
+    const progressPercent =
+      estimate > 0
+        ? Math.min(100, Math.floor((totalTime / estimate) * 100))
+        : 0;
 
     const rowClasses = ["checklist-row"];
     if (isRunning) rowClasses.push("checklist-row--running");
@@ -130,7 +137,7 @@ export class ChecklistUI {
   updateLiveProgress(timerData) {
     const active = document.activeElement;
     // Iterate over all checklist rows in DOM
-    this.container.querySelectorAll('.checklist-row').forEach(row => {
+    this.container.querySelectorAll(".checklist-row").forEach((row) => {
       const itemId = row.dataset.id;
       const itemData = timerData.checklistItems?.[itemId];
       const isRunning = itemData?.state === TIMER_STATE.RUNNING;
@@ -142,10 +149,13 @@ export class ChecklistUI {
 
       const estimate = itemData?.estimatedTime || 0;
       const isOver = estimate > 0 && totalTime > estimate;
-      const progressPercent = estimate > 0 ? Math.min(100, Math.floor((totalTime / estimate) * 100)) : 0;
+      const progressPercent =
+        estimate > 0
+          ? Math.min(100, Math.floor((totalTime / estimate) * 100))
+          : 0;
 
       // 1. Update Tracked Time
-      const timeSpan = row.querySelector('.item-time-value');
+      const timeSpan = row.querySelector(".item-time-value");
       if (timeSpan) {
         const newTime = formatDuration(totalTime, { compact: true });
         if (timeSpan.textContent !== newTime) {
@@ -154,38 +164,40 @@ export class ChecklistUI {
       }
 
       // 2. Update Progress Bar
-      const progressFill = row.querySelector('.item-progress-fill');
-      const progressBar = row.querySelector('.progress-bar--item');
+      const progressFill = row.querySelector(".item-progress-fill");
+      const progressBar = row.querySelector(".progress-bar--item");
       if (progressBar) {
         progressBar.style.display = estimate > 0 ? "block" : "none";
       }
       if (progressFill) {
         progressFill.style.width = `${progressPercent}%`;
-        progressFill.classList.toggle('progress-bar__fill--over', isOver);
+        progressFill.classList.toggle("progress-bar__fill--over", isOver);
       }
 
       // 3. Update Row States (running class)
-      row.classList.toggle('checklist-row--running', isRunning);
-      row.classList.toggle('checklist-row--over', isOver);
+      row.classList.toggle("checklist-row--running", isRunning);
+      row.classList.toggle("checklist-row--over", isOver);
 
       // 4. Update Badge and Toggle Button only if changed to avoid unnecessary thrashing
-      const toggleBtn = row.querySelector('.btn-item-toggle');
+      const toggleBtn = row.querySelector(".btn-item-toggle");
       if (toggleBtn) {
-        const wasRunning = toggleBtn.classList.contains('btn-item-toggle--running');
+        const wasRunning = toggleBtn.classList.contains(
+          "btn-item-toggle--running",
+        );
         if (wasRunning !== isRunning) {
-          toggleBtn.classList.toggle('btn-item-toggle--running', isRunning);
+          toggleBtn.classList.toggle("btn-item-toggle--running", isRunning);
           toggleBtn.innerHTML = isRunning
             ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
             : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
           // Also toggle badge visibility by just finding it or we skip for now as badge might be better managed by a total render
           // but we can try to find and update
-          const taskCol = row.querySelector('.col-task');
+          const taskCol = row.querySelector(".col-task");
           if (taskCol) {
-            let runningBadge = taskCol.querySelector('.status-badge--running');
+            let runningBadge = taskCol.querySelector(".status-badge--running");
             if (isRunning && !runningBadge) {
-              const badge = document.createElement('span');
-              badge.className = 'status-badge status-badge--running';
-              badge.textContent = 'Running';
+              const badge = document.createElement("span");
+              badge.className = "status-badge status-badge--running";
+              badge.textContent = "Running";
               taskCol.appendChild(badge);
             } else if (!isRunning && runningBadge) {
               runningBadge.remove();
@@ -195,13 +207,13 @@ export class ChecklistUI {
       }
 
       // Update Over Budget badge
-      const taskCol = row.querySelector('.col-task');
+      const taskCol = row.querySelector(".col-task");
       if (taskCol) {
-        let overBadge = taskCol.querySelector('.status-badge--over');
+        let overBadge = taskCol.querySelector(".status-badge--over");
         if (isOver && !overBadge) {
-          const badge = document.createElement('span');
-          badge.className = 'status-badge status-badge--over';
-          badge.textContent = 'Over';
+          const badge = document.createElement("span");
+          badge.className = "status-badge status-badge--over";
+          badge.textContent = "Over";
           taskCol.appendChild(badge);
         } else if (!isOver && overBadge) {
           overBadge.remove();
@@ -211,9 +223,12 @@ export class ChecklistUI {
       // 5. Update Estimate Input only if it's NOT focused
       const estInput = row.querySelector('[data-action="estimate"]');
       if (estInput && estInput !== active) {
-        const estValue = estimate > 0 ? formatDuration(estimate, { compact: true, showSeconds: false }) : "";
+        const estValue =
+          estimate > 0
+            ? formatDuration(estimate, { compact: true, showSeconds: false })
+            : "";
         if (estInput.value !== estValue) {
-           estInput.value = estValue;
+          estInput.value = estValue;
         }
       }
     });

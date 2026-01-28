@@ -30,11 +30,11 @@ describe("ChecklistUI", () => {
       t: "mock",
     };
     const mockTimePicker = {
-      show: jest.fn()
+      show: jest.fn(),
     };
     checklistUI = new ChecklistUI(tMock, "checklists-container", {
       onRefresh: jest.fn(),
-      timePicker: mockTimePicker
+      timePicker: mockTimePicker,
     });
   });
 
@@ -56,7 +56,9 @@ describe("ChecklistUI", () => {
 
     // Second render - should be smart
     checklistUI.render(timerData, checklists);
-    const secondInput = container.querySelector('input[data-action="estimate"]');
+    const secondInput = container.querySelector(
+      'input[data-action="estimate"]',
+    );
 
     expect(firstInput).toBe(secondInput); // Same DOM node preserved
   });
@@ -69,10 +71,10 @@ describe("ChecklistUI", () => {
       },
     ];
     const timerData1 = {
-      checklistItems: { item1: { entries: [{ duration: 0 }] } }
+      checklistItems: { item1: { entries: [{ duration: 0 }] } },
     };
     const timerData2 = {
-      checklistItems: { item1: { entries: [{ duration: 60000 }] } }
+      checklistItems: { item1: { entries: [{ duration: 60000 }] } },
     };
 
     checklistUI.render(timerData1, checklists);

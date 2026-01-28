@@ -57,7 +57,7 @@ describe("EstimateUI", () => {
     window.alert = jest.fn();
 
     const mockTimePicker = {
-      show: jest.fn()
+      show: jest.fn(),
     };
     estimateUI = new EstimateUI(t, elements, { timePicker: mockTimePicker });
   });

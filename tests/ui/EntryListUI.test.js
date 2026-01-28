@@ -38,10 +38,15 @@ describe("EntryListUI", () => {
 
   test("should render entries correctly", () => {
     const entries = [
-      { id: "e1", startTime: Date.now(), duration: 600000, description: "Test Work" }
+      {
+        id: "e1",
+        startTime: Date.now(),
+        duration: 600000,
+        description: "Test Work",
+      },
     ];
     entryListUI.render(entries);
-    
+
     expect(container.querySelectorAll(".entry").length).toBe(1);
     expect(container.innerHTML).toContain("Test Work");
     expect(container.innerHTML).toContain("10m");
@@ -49,13 +54,18 @@ describe("EntryListUI", () => {
 
   test("should enter edit mode on click", () => {
     const entries = [
-      { id: "e1", startTime: Date.now(), duration: 600000, description: "Test Work" }
+      {
+        id: "e1",
+        startTime: Date.now(),
+        duration: 600000,
+        description: "Test Work",
+      },
     ];
     entryListUI.render(entries);
-    
+
     const entryEl = container.querySelector(".entry");
     entryEl.click();
-    
+
     expect(container.querySelector(".entry--editing")).not.toBeNull();
     expect(container.querySelector("#edit-desc-input").value).toBe("Test Work");
   });
