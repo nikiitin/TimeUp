@@ -53,7 +53,11 @@ export class ChecklistUI {
     _renderItem(item, timerData) {
         const itemData = timerData.checklistItems?.[item.id];
         const isRunning = itemData?.state === TIMER_STATE.RUNNING;
-        const totalTime = itemData ? this._sumDurations(itemData.entries) : 0;
+        let totalTime = itemData ? this._sumDurations(itemData.entries) : 0;
+        
+        if (isRunning && itemData) {
+            totalTime += TimerService.getItemCurrentElapsed(itemData);
+        }
         
         // Progress
         const estimate = itemData?.estimatedTime || 0;
