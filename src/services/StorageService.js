@@ -98,51 +98,38 @@ export const removeData = async (t, scope, visibility, key) => {
 // =============================================================================
 
 /**
- * Gets all timer-related data, merging metadata and entries.
+ * Gets timer data (metadata + recent entries from timerData key).
+ * NOTE: This only loads recent entries from STORAGE_KEYS.TIMER_DATA.
+ * Use EntryStorageService.getAllEntries() to get ALL entries (including archived).
  */
 export const getTimerData = async (t) => {
-  const allData = await t.get("card", STORAGE_SCOPES.CARD_SHARED);
-  let timerData = {
-    ...(allData?.[STORAGE_KEYS.TIMER_DATA] || DEFAULTS.TIMER_DATA),
-  };
-  let entries = allData?.[STORAGE_KEYS.ENTRIES] || [];
-
-  return { ...timerData, entries };
-};
-
-/**
- * Saves timer data by splitting it into metadata and entries keys.
- */
-export const setTimerData = async (t, timerData) => {
-  const { entries, ...metadata } = timerData;
-
-  // Save metadata and entries in parallel
-  const p1 = setData(
+  const timerData = await getData(
     t,
     "card",
     STORAGE_SCOPES.CARD_SHARED,
     STORAGE_KEYS.TIMER_DATA,
-    metadata,
+    DEFAULTS.TIMER_DATA,
   );
-  const p2 = setData(
+
+  return timerData;
+};
+
+/**
+ * Saves timer data (metadata + recent entries only).
+ * NOTE: This saves entries to STORAGE_KEYS.TIMER_DATA, not STORAGE_KEYS.ENTRIES.
+ * EntryStorageService handles archival to paginated keys separately.
+ */
+export const setTimerData = async (t, timerData) => {
+  // Save complete timerData (includes recent entries in the object)
+  const result = await setData(
     t,
     "card",
     STORAGE_SCOPES.CARD_SHARED,
-    STORAGE_KEYS.ENTRIES,
-    entries,
+    STORAGE_KEYS.TIMER_DATA,
+    timerData,
   );
 
-  const [res1, res2] = await Promise.all([p1, p2]);
-
-  if (!res1.success) return res1;
-  if (!res2.success) return res2;
-
-  return {
-    success: true,
-    size: res1.size + res2.size,
-    metadataSize: res1.size,
-    entriesSize: res2.size,
-  };
+  return result;
 };
 
 /**

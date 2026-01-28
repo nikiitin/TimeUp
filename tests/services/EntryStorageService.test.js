@@ -155,7 +155,7 @@ describe("EntryStorageService", () => {
     });
 
     test("should split entries between recent and archived", async () => {
-      // Create 60 entries (50 recent + 10 archived)
+      // Create 60 entries (15 recent + 45 archived)
       const entries = Array.from({ length: 60 }, (_, i) => ({
         id: `e${i}`,
         startTime: i * 1000,
@@ -177,8 +177,8 @@ describe("EntryStorageService", () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.recentCount).toBe(50);
-      expect(result.archived).toBe(10);
+      expect(result.recentCount).toBe(15);
+      expect(result.archived).toBe(45);
     });
 
     test("should handle save errors", async () => {

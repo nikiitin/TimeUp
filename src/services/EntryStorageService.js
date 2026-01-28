@@ -5,16 +5,16 @@ import StorageService from "./StorageService.js";
  * EntryStorageService - Handles unlimited time entries using paginated storage
  * 
  * Strategy:
- * 1. Store recent entries (last 50) in main timerData for fast access
- * 2. Archive older entries to separate paginated keys (entries_0, entries_1, etc.)
+ * 1. Store recent entries (last 15) in main timerData for fast access
+ * 2. Archive older entries to separate paginated keys (timerEntries_0, timerEntries_1, etc.)
  * 3. Compress entry format to reduce storage footprint by 40%
- * 4. Each archive page holds ~100 compressed entries
+ * 4. Each archive page holds ~30 compressed entries (to stay under 4KB limit)
  * 
- * This allows ~1000+ entries per card while maintaining performance.
+ * This allows ~500+ entries per card while maintaining performance.
  */
 
-const ENTRIES_PER_MAIN_STORAGE = 50; // Recent entries in timerData
-const ENTRIES_PER_ARCHIVE_PAGE = 100; // Entries per archive key
+const ENTRIES_PER_MAIN_STORAGE = 15; // Recent entries in timerData (reduced to fit in 4KB)
+const ENTRIES_PER_ARCHIVE_PAGE = 30; // Entries per archive key (reduced to fit compressed in 4KB)
 const STORAGE_LIMIT = 4096;
 
 /**

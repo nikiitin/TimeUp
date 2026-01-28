@@ -141,29 +141,23 @@ describe("StorageService", () => {
   });
 
   describe("getTimerData", () => {
-    test("returns merged timer data from card storage", async () => {
-      const metadata = {
+    test("returns timer data with entries from card storage", async () => {
+      const timerData = {
         state: "running",
         currentEntry: { startTime: 1000 },
         checklistItems: {},
+        entries: [{ id: "e1", duration: 1000 }],
       };
-      const entries = [{ id: "e1", duration: 1000 }];
 
       mockT._setStorage(
         "card",
         STORAGE_SCOPES.CARD_SHARED,
         STORAGE_KEYS.TIMER_DATA,
-        metadata,
-      );
-      mockT._setStorage(
-        "card",
-        STORAGE_SCOPES.CARD_SHARED,
-        STORAGE_KEYS.ENTRIES,
-        entries,
+        timerData,
       );
 
       const result = await StorageService.getTimerData(mockT);
-      expect(result).toEqual({ ...metadata, entries });
+      expect(result).toEqual(timerData);
     });
 
     test("returns defaults when no data exists", async () => {
@@ -173,7 +167,7 @@ describe("StorageService", () => {
   });
 
   describe("setTimerData", () => {
-    test("saves timer data by splitting it into metadata and entries keys", async () => {
+    test("saves complete timer data including entries to timerData key", async () => {
       const timerData = {
         entries: [{ id: "e1" }],
         state: "idle",
@@ -184,21 +178,16 @@ describe("StorageService", () => {
       const result = await StorageService.setTimerData(mockT, timerData);
       expect(result.success).toBe(true);
 
-      // Check sharding
-      const savedMetadata = mockT._getStorage(
+      // Check that complete timerData is saved (not split)
+      const savedTimerData = mockT._getStorage(
         "card",
         STORAGE_SCOPES.CARD_SHARED,
         STORAGE_KEYS.TIMER_DATA,
       );
-      const savedEntries = mockT._getStorage(
-        "card",
-        STORAGE_SCOPES.CARD_SHARED,
-        STORAGE_KEYS.ENTRIES,
-      );
 
-      expect(savedEntries).toEqual(timerData.entries);
-      expect(savedMetadata.entries).toBeUndefined(); // Should be removed from metadata
-      expect(savedMetadata.checklistItems).toEqual(timerData.checklistItems);
+      expect(savedTimerData).toEqual(timerData);
+      expect(savedTimerData.entries).toEqual(timerData.entries); // Entries included
+      expect(savedTimerData.checklistItems).toEqual(timerData.checklistItems);
     });
   });
 
