@@ -3,7 +3,7 @@
  * Business logic for timer operations
  */
 
-import { TIMER_STATE, DEFAULTS } from "../utils/constants.js";
+import { TIMER_STATE, DEFAULTS, VALIDATION } from "../utils/constants.js";
 import { getElapsedTime } from "../utils/formatTime.js";
 import StorageService from "./StorageService.js";
 
@@ -14,13 +14,17 @@ import StorageService from "./StorageService.js";
  * @param {string} [description=''] - Description
  * @returns {Object} Time entry
  */
-const createEntry = (startTime, endTime, description = "") => ({
-  id: `e_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`,
-  startTime,
-  endTime,
-  duration: endTime - startTime,
-  description,
-});
+const createEntry = (startTime, endTime, description = "") => {
+  const truncatedDescription = (description || "").substring(0, VALIDATION.MAX_DESCRIPTION_LENGTH);
+
+  return {
+    id: `e_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`,
+    startTime,
+    endTime,
+    duration: endTime - startTime,
+    description: truncatedDescription,
+  };
+};
 
 /**
  * Common helper to handle StorageService results.
@@ -274,7 +278,10 @@ export const updateEntry = async (t, entryId, updates) => {
         checklistItemId: newChecklistItemId,
       }),
       ...(updates.description !== undefined && {
-        description: updates.description,
+        description: (updates.description || "").substring(
+          0,
+          VALIDATION.MAX_DESCRIPTION_LENGTH,
+        ),
       }),
     };
 

@@ -5,6 +5,7 @@
 
 import { formatDuration, formatTimestamp, parseTimeString } from '../utils/formatTime.js';
 import TimerService from '../services/TimerService.js';
+import { VALIDATION } from '../utils/constants.js';
 
 export class EntryListUI {
     constructor(t, containerId, { onRefresh, getChecklists }) {
@@ -97,7 +98,9 @@ export class EntryListUI {
                  </div>
                  <div class="entry__edit-row">
                     <span class="entry__edit-label">Desc:</span>
-                    <input type="text" class="entry__edit-input" id="edit-desc-input" value="${this._escape(entry.description || '')}">
+                    <input type="text" class="entry__edit-input" id="edit-desc-input"
+                           maxlength="${VALIDATION.MAX_DESCRIPTION_LENGTH}"
+                           value="${this._escape(entry.description || '')}">
                  </div>
                  <div class="entry__edit-actions">
                     <button class="btn-cancel" id="btn-cancel-edit">Cancel</button>

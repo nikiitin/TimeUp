@@ -103,3 +103,11 @@ export const BADGE_COLORS = {
     WARNING: 'yellow',
     OVER_BUDGET: 'red',
 };
+
+/**
+ * Validation constraints
+ * @readonly
+ */
+export const VALIDATION = {
+    MAX_DESCRIPTION_LENGTH: 120,
+};

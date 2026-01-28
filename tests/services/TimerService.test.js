@@ -118,4 +118,37 @@ describe("TimerService", () => {
       expect(result.data.entries.length).toBe(0); // Removed from global
     });
   });
+
+  describe("Validation & Limits", () => {
+    test("should truncate long descriptions in stopTimer", async () => {
+      const runningData = {
+        ...getMockData(),
+        state: TIMER_STATE.RUNNING,
+        currentEntry: { startTime: Date.now() - 1000 },
+      };
+      StorageService.getTimerData.mockResolvedValue(runningData);
+
+      const longDesc = "a".repeat(200);
+      const result = await TimerService.stopTimer(tMock, longDesc);
+
+      expect(result.success).toBe(true);
+      expect(result.entry.description.length).toBe(120);
+      expect(result.entry.description).toBe("a".repeat(120));
+    });
+
+    test("should truncate long descriptions in updateEntry", async () => {
+      const dataWithEntry = {
+        ...getMockData(),
+        entries: [{ id: "e1", startTime: 1000, duration: 500, description: "old" }],
+      };
+      StorageService.getTimerData.mockResolvedValue(dataWithEntry);
+
+      const longDesc = "b".repeat(200);
+      const result = await TimerService.updateEntry(tMock, "e1", { description: longDesc });
+
+      expect(result.success).toBe(true);
+      expect(result.entry.description.length).toBe(120);
+      expect(result.entry.description).toBe("b".repeat(120));
+    });
+  });
 });
