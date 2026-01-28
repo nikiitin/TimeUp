@@ -145,6 +145,25 @@ export const setTimerData = async (t, timerData) => {
   };
 };
 
+/**
+ * Saves ONLY timer metadata (state, estimates, checklist items) WITHOUT entries.
+ * Used by EntryStorageService to save metadata while entries are handled separately.
+ * @param {Object} t - Trello client
+ * @param {Object} metadata - Timer metadata (entries will be stripped if present)
+ * @returns {Promise<{success: boolean, size?: number, error?: string}>}
+ */
+export const setTimerMetadata = async (t, metadata) => {
+  const { entries, ...metadataOnly } = metadata; // Strip entries if present
+  
+  return await setData(
+    t,
+    "card",
+    STORAGE_SCOPES.CARD_SHARED,
+    STORAGE_KEYS.TIMER_DATA,
+    metadataOnly,
+  );
+};
+
 // =============================================================================
 // BOARD-SPECIFIC OPERATIONS
 // =============================================================================
