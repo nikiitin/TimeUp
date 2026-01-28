@@ -185,9 +185,27 @@ export const deleteEntry = async (t, entryId) => {
             return { success: false, error: 'Entry not found', data: timerData };
         }
 
+        const entryToDelete = timerData.entries[entryIndex];
+        const { checklistItemId } = entryToDelete;
+
+        // update global entries
+        const updatedEntries = timerData.entries.filter(e => e.id !== entryId);
+
+        let updatedChecklistItems = { ...timerData.checklistItems };
+        
+        // update checklist item entries if applicable
+        if (checklistItemId && updatedChecklistItems[checklistItemId]) {
+            const itemData = updatedChecklistItems[checklistItemId];
+            updatedChecklistItems[checklistItemId] = {
+                ...itemData,
+                entries: itemData.entries.filter(e => e.id !== entryId),
+            };
+        }
+
         const updatedData = {
             ...timerData,
-            entries: timerData.entries.filter(e => e.id !== entryId),
+            entries: updatedEntries,
+            checklistItems: updatedChecklistItems,
         };
         const saved = await StorageService.setTimerData(t, updatedData);
         return saved ? { success: true, data: updatedData } : { success: false, error: 'Save failed' };
