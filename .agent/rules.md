@@ -57,6 +57,12 @@ Before committing any code changes, VERIFY all of the following:
 - [ ] **No Legacy Bridges**: Since the code is not in production yet, avoid adding migration logic or compatibility layers for old data formats.
   - Assume the developer can reinstall or clear storage whenever a breaking change occurs.
   - Prioritize clean, modern code over backward compatibility during this phase.
+### 8. Lightweight & Compact Storage
+- [ ] **Minimize Storage Footprint**: Trello has a 4,096 character limit per key. The app must be as lightweight as possible.
+  - Avoid redundant fields (e.g., don't store both `duration` and `startTime/endTime` if one can be calculated).
+  - Use concise key names in JSON if necessary.
+  - Enforce character limits on user-generated text fields (e.g., descriptions).
+  - Monitor and display storage usage to the user when it becomes critical.
 
 ---
 
