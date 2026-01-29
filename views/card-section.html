@@ -185,14 +185,16 @@
       const refresh = async () => {
         try {
           const timerData = await StorageService.getTimerData(t);
-
-          // Validate data
-          if (!timerData.entries) timerData.entries = [];
+          
+          // Load entries separately (they're no longer in timerData)
+          const { default: EntryStorageService } = await import("../src/services/EntryStorageService.js");
+          const entries = await EntryStorageService.getAllEntries(t);
+          timerData.entries = entries;
 
           // Update UI Components
           timerUI.update(timerData);
           estimateUI.update(timerData);
-          entryListUI.render(timerData.entries);
+          entryListUI.render(entries);
           checklistUI.render(timerData, cachedChecklists);
 
           // Conditional Interval Management
