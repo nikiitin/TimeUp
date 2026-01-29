@@ -8,6 +8,7 @@ import { AppConfig } from "./config/AppConfig.js";
 import { formatDuration, getRemainingTime } from "./utils/formatTime.js";
 import StorageService from "./services/StorageService.js";
 import TimerService from "./services/TimerService.js";
+import { getRunningCheckItem } from "./services/ChecklistService.js";
 
 // SVG clock icon (works well on dark backgrounds)
 const ICON_TIMER =
@@ -27,31 +28,54 @@ TrelloPowerUp.initialize(
         const timerData = await StorageService.getTimerData(t);
         const badges = [];
 
-        // Show running indicator
-        if (timerData.state === TIMER_STATE.RUNNING) {
-          badges.push({
-            dynamic: async () => ({
-              text: formatDuration(
-                TimerService.getCurrentElapsed(
-                  await StorageService.getTimerData(t),
-                ),
-                { compact: true },
-              ),
-              color: BADGE_COLORS.RUNNING,
-              refresh: 30,
-            }),
-          });
-        }
+        // Check if any timer is running (global or checklist)
+        const isGlobalRunning = timerData.state === TIMER_STATE.RUNNING;
+        const runningCheckItem = getRunningCheckItem(timerData);
+        const isAnyTimerRunning = isGlobalRunning || runningCheckItem.isRunning;
 
-        // Show total time
-        if (timerData.totalTime > 0) {
+        // Show total time badge ONLY when a timer is running (dynamic, real-time update)
+        if (isAnyTimerRunning) {
+          // Calculate elapsed for display
+          let currentElapsed = 0;
+          if (isGlobalRunning) {
+            currentElapsed = TimerService.getCurrentElapsed(timerData);
+          } else if (runningCheckItem.isRunning && runningCheckItem.itemId) {
+            const itemData = timerData.checklistTotals?.[runningCheckItem.itemId];
+            if (itemData) {
+              currentElapsed = TimerService.getItemCurrentElapsed(itemData);
+            }
+          }
+          const displayTotal = timerData.totalTime + currentElapsed;
+
+          // Use dynamic badge for real-time updates
           badges.push({
-            text: formatDuration(timerData.totalTime, {
-              compact: true,
-              showSeconds: false,
-            }),
-            color: BADGE_COLORS.DEFAULT,
-            icon: ICON_TIMER,
+            dynamic: async () => {
+              const freshData = await StorageService.getTimerData(t);
+              const freshRunning = getRunningCheckItem(freshData);
+              const stillRunning = freshData.state === TIMER_STATE.RUNNING || freshRunning.isRunning;
+
+              if (!stillRunning) {
+                // Timer stopped, hide badge
+                return null;
+              }
+
+              let elapsed = 0;
+              if (freshData.state === TIMER_STATE.RUNNING) {
+                elapsed = TimerService.getCurrentElapsed(freshData);
+              } else if (freshRunning.isRunning && freshRunning.itemId) {
+                const itemData = freshData.checklistTotals?.[freshRunning.itemId];
+                if (itemData) {
+                  elapsed = TimerService.getItemCurrentElapsed(itemData);
+                }
+              }
+
+              return {
+                text: formatDuration(freshData.totalTime + elapsed, { compact: true, showSeconds: false }),
+                color: BADGE_COLORS.RUNNING,
+                icon: ICON_TIMER,
+                refresh: 30,
+              };
+            },
           });
         }
 
