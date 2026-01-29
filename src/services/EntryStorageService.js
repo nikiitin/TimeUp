@@ -57,7 +57,6 @@ export const decompressEntry = (compressed) => {
 
 /**
  * Gets all entries for a card (combines recent + archived).
- * Includes migration from old format (entries in timerData) to new format.
  * @param {Object} t - Trello client
  * @returns {Promise<Array>} All entries sorted by createdAt (newest first)
  */
@@ -76,16 +75,6 @@ export const getAllEntries = async (t) => {
     
     if (Array.isArray(recentCompressed)) {
       recentEntries = recentCompressed.map(decompressEntry).filter(Boolean);
-    }
-    
-    // MIGRATION: Check if old format exists (entries in timerData)
-    if (recentEntries.length === 0) {
-      const timerData = await StorageService.getTimerData(t);
-      if (timerData?.entries && Array.isArray(timerData.entries) && timerData.entries.length > 0) {
-        console.warn("[EntryStorageService] Migrating entries from old format to new format");
-        // Use entries from timerData and trigger migration on next save
-        recentEntries = timerData.entries;
-      }
     }
   } catch (error) {
     console.error("[EntryStorageService] Error getting recent entries:", error);

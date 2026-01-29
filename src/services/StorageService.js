@@ -100,7 +100,7 @@ export const removeData = async (t, scope, visibility, key) => {
 /**
  * Gets timer data (metadata only - no entries, no checklistItems).
  * NOTE: This only loads metadata. Use EntryStorageService.getAllEntries() for entries
- * and load checklistItems separately using STORAGE_KEYS.CHECKLIST_ITEMS.
+ * and getChecklistItems() for checklist data.
  */
 export const getTimerData = async (t) => {
   const timerData = await getData(
@@ -121,6 +121,7 @@ export const getTimerData = async (t) => {
   );
   
   timerData.checklistItems = checklistItems;
+  timerData.entries = []; // Entries must be loaded via EntryStorageService.getAllEntries()
 
   return timerData;
 };
