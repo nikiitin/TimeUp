@@ -30,3 +30,23 @@ build/
 .env
 .env.local
 .env.*.local
+
+# Debug and report files
+test_output.txt
+test_results.txt
+AUDIT_*.md
+FIXES_*.md
+UNLIMITED_*.md
+PR_*.md
+CRITICAL_*.md
+BUGFIX_*.md
+*_SOLUTION.md
+*_REPORT*.md
+*_CHECKLIST.md
+
+# CI/CD artifacts
+coverage-output.txt
+maintenance-report.md
+coverage-trend.md
+test-stability.md
+test-run-*.log
