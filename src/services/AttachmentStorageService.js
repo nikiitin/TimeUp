@@ -73,11 +73,13 @@ export const saveEntries = async (t, entries) => {
       count: sorted.length
     }, null, 2);
     
+    // Create a data URL from the JSON
     const blob = new Blob([jsonData], { type: 'application/json' });
-    const file = new File([blob], ATTACHMENT_NAME, { type: 'application/json' });
-    
-    // Get card context
-    const cardId = t.getContext().card;
+    const dataUrl = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
     
     // Remove old attachment if exists
     const card = await t.card('attachments');
@@ -86,11 +88,10 @@ export const saveEntries = async (t, entries) => {
       await t.remove('card', 'attachment', oldAttachment.id);
     }
     
-    // Attach new file
+    // Attach new file using data URL
     await t.attach({
       name: ATTACHMENT_NAME,
-      file: file,
-      mimeType: 'application/json'
+      url: dataUrl
     });
     
     console.log(`[AttachmentStorage] Saved ${sorted.length} entries to attachment`);
