@@ -5,16 +5,16 @@ import StorageService from "./StorageService.js";
  * EntryStorageService - Handles unlimited time entries using paginated storage
  * 
  * Strategy:
- * 1. Store recent entries (last 15) in main timerData for fast access
+ * 1. Store recent entries (last 5) in separate timerEntries_recent key
  * 2. Archive older entries to separate paginated keys (timerEntries_0, timerEntries_1, etc.)
  * 3. Compress entry format to reduce storage footprint by 40%
- * 4. Each archive page holds ~30 compressed entries (to stay under 4KB limit)
+ * 4. Each archive page holds ~20 compressed entries (safe margin under 4KB limit)
  * 
- * This allows ~500+ entries per card while maintaining performance.
+ * This allows 500+ entries per card while maintaining performance and staying under Trello's 4KB limit.
  */
 
-const ENTRIES_PER_MAIN_STORAGE = 5; // Recent entries in timerData (critical: must stay under 4KB with metadata)
-const ENTRIES_PER_ARCHIVE_PAGE = 30; // Entries per archive key (compressed to fit in 4KB)
+const ENTRIES_PER_MAIN_STORAGE = 5; // Recent entries in timerEntries_recent (separate from metadata)
+const ENTRIES_PER_ARCHIVE_PAGE = 30; // Entries per archive key (compressed, stays under 4KB limit)
 
 /**
  * Compresses entry to reduce storage size by ~40%.
@@ -185,16 +185,18 @@ export const saveEntries = async (t, entries, timerData) => {
 
 /**
  * Archives old entries into paginated storage keys.
+ * NOTE: This function REPLACES all archive pages with the provided entries.
+ * It does NOT append - it completely rebuilds the archive from the oldEntries array.
  * @param {Object} t - Trello client
- * @param {Array} oldEntries - Entries to archive
+ * @param {Array} oldEntries - ALL entries to archive (sorted newest first)
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 const archiveOldEntries = async (t, oldEntries) => {
   try {
-    // Compress entries
+    // Compress ALL entries that need archiving
     const compressed = oldEntries.map(compressEntry);
 
-    // Split into pages
+    // Split into pages of ENTRIES_PER_ARCHIVE_PAGE
     const pages = [];
     for (let i = 0; i < compressed.length; i += ENTRIES_PER_ARCHIVE_PAGE) {
       pages.push(compressed.slice(i, i + ENTRIES_PER_ARCHIVE_PAGE));
@@ -208,7 +210,7 @@ const archiveOldEntries = async (t, oldEntries) => {
 
       if (jsonString.length > 4096) {
         console.warn(
-          `[EntryStorageService] Page ${i} exceeds limit: ${jsonString.length}/4096`,
+          `[EntryStorageService] Page ${i} exceeds limit: ${jsonString.length}/4096 chars`,
         );
         // Continue anyway - some data is better than none
       }

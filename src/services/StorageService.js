@@ -98,9 +98,9 @@ export const removeData = async (t, scope, visibility, key) => {
 // =============================================================================
 
 /**
- * Gets timer data (metadata + recent entries from timerData key).
- * NOTE: This only loads recent entries from STORAGE_KEYS.TIMER_DATA.
- * Use EntryStorageService.getAllEntries() to get ALL entries (including archived).
+ * Gets timer data (metadata only - no entries, no checklistItems).
+ * NOTE: This only loads metadata. Use EntryStorageService.getAllEntries() for entries
+ * and load checklistItems separately using STORAGE_KEYS.CHECKLIST_ITEMS.
  */
 export const getTimerData = async (t) => {
   const timerData = await getData(
@@ -110,6 +110,17 @@ export const getTimerData = async (t) => {
     STORAGE_KEYS.TIMER_DATA,
     DEFAULTS.TIMER_DATA,
   );
+
+  // Load checklist items from separate storage
+  const checklistItems = await getData(
+    t,
+    "card",
+    STORAGE_SCOPES.CARD_SHARED,
+    STORAGE_KEYS.CHECKLIST_ITEMS,
+    {},
+  );
+  
+  timerData.checklistItems = checklistItems;
 
   return timerData;
 };
@@ -133,15 +144,27 @@ export const setTimerData = async (t, timerData) => {
 };
 
 /**
- * Saves ONLY timer metadata (state, estimates, checklist items) WITHOUT entries.
- * Used by EntryStorageService to save metadata while entries are handled separately.
+ * Saves ONLY timer metadata (state, estimates) WITHOUT entries or checklistItems.
+ * Used by EntryStorageService to save metadata while entries and checklistItems are handled separately.
  * @param {Object} t - Trello client
- * @param {Object} metadata - Timer metadata (entries will be stripped if present)
+ * @param {Object} metadata - Timer metadata (entries and checklistItems will be stored separately)
  * @returns {Promise<{success: boolean, size?: number, error?: string}>}
  */
 export const setTimerMetadata = async (t, metadata) => {
-  const { entries, ...metadataOnly } = metadata; // Strip entries if present
+  const { entries, checklistItems, ...metadataOnly } = metadata;
   
+  // Save checklist items to separate storage key to prevent metadata bloat
+  if (checklistItems && Object.keys(checklistItems).length > 0) {
+    await setData(
+      t,
+      "card",
+      STORAGE_SCOPES.CARD_SHARED,
+      STORAGE_KEYS.CHECKLIST_ITEMS,
+      checklistItems,
+    );
+  }
+  
+  // Save minimal metadata (state, currentEntry, estimatedTime only)
   return await setData(
     t,
     "card",
