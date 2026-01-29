@@ -1,10 +1,6 @@
-/**
- * TimeUp - Storage Service
- * Abstraction layer over Trello's t.set() and t.get() API
- * Provides consistent error handling and data validation
- */
+import { STORAGE_KEYS, STORAGE_SCOPES, DEFAULTS } from "../utils/constants.js";
 
-import { STORAGE_KEYS, STORAGE_SCOPES, DEFAULTS } from '../utils/constants.js';
+const STORAGE_LIMIT = 4096; // Trello's per-key character limit
 
 /**
  * Gets data from Trello storage with error handling.
@@ -17,35 +13,77 @@ import { STORAGE_KEYS, STORAGE_SCOPES, DEFAULTS } from '../utils/constants.js';
  * @example
  * const timerData = await getData(t, 'card', 'shared', STORAGE_KEYS.TIMER_DATA, DEFAULTS.TIMER_DATA);
  */
-export const getData = async (t, scope, visibility, key, defaultValue = null) => {
-    try {
-        const data = await t.get(scope, visibility, key);
-        return data ?? defaultValue;
-    } catch (error) {
-        console.error(`[StorageService] Failed to get "${key}" from ${scope}/${visibility}:`, error);
-        return defaultValue;
-    }
+export const getData = async (
+  t,
+  scope,
+  visibility,
+  key,
+  defaultValue = null,
+) => {
+  try {
+    const data = await t.get(scope, visibility, key);
+    return data ?? defaultValue;
+  } catch (error) {
+    console.error(
+      `[StorageService] Failed to get "${key}" from ${scope}/${visibility}:`,
+      error,
+    );
+    return defaultValue;
+  }
 };
 
 /**
- * Sets data in Trello storage with error handling.
+ * Saves data to Trello storage with size limit validation.
  * @param {Object} t - Trello Power-Up client instance
  * @param {string} scope - Storage scope ('card' | 'board' | 'member')
  * @param {string} visibility - Visibility ('shared' | 'private')
  * @param {string} key - Storage key
- * @param {*} value - Value to store
- * @returns {Promise<boolean>} True if successful, false otherwise
+ * @param {*} value - Value to store (will be JSON stringified)
+ * @returns {Promise<{success: boolean, size?: number, error?: string}>} Result object
  * @example
- * const success = await setData(t, 'card', 'shared', STORAGE_KEYS.TIMER_DATA, timerData);
+ * const result = await setData(t, 'card', 'shared', 'timerData', { state: 'idle' });
+ * if (!result.success) console.error(result.error);
  */
 export const setData = async (t, scope, visibility, key, value) => {
-    try {
-        await t.set(scope, visibility, key, value);
-        return true;
-    } catch (error) {
-        console.error(`[StorageService] Failed to set "${key}" in ${scope}/${visibility}:`, error);
-        return false;
+  try {
+    const jsonString = JSON.stringify(value);
+
+    if (jsonString.length > STORAGE_LIMIT) {
+      console.error(
+        `[StorageService] Size limit exceeded for "${key}": ${jsonString.length}/${STORAGE_LIMIT} characters.`,
+      );
+      return {
+        success: false,
+        error: "LIMIT_EXCEEDED",
+        size: jsonString.length,
+      };
     }
+
+    await t.set(scope, visibility, key, value);
+
+    return { success: true, size: jsonString.length };
+  } catch (error) {
+    console.error(
+      `[StorageService] Failed to set "${key}" in ${scope}/${visibility}:`,
+      error,
+    );
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Calculates current storage usage percentage for a key.
+ * @param {*} value - The value being stored
+ * @returns {Object} { size, limit, percent, isNearLimit }
+ */
+export const calculateUsage = (value) => {
+  const size = JSON.stringify(value).length;
+  return {
+    size,
+    limit: STORAGE_LIMIT,
+    percent: Math.round((size / STORAGE_LIMIT) * 100),
+    isNearLimit: size > STORAGE_LIMIT * 0.8, // 80% threshold
+  };
 };
 
 /**
@@ -57,13 +95,16 @@ export const setData = async (t, scope, visibility, key, value) => {
  * @returns {Promise<boolean>} True if successful, false otherwise
  */
 export const removeData = async (t, scope, visibility, key) => {
-    try {
-        await t.remove(scope, visibility, key);
-        return true;
-    } catch (error) {
-        console.error(`[StorageService] Failed to remove "${key}" from ${scope}/${visibility}:`, error);
-        return false;
-    }
+  try {
+    await t.remove(scope, visibility, key);
+    return true;
+  } catch (error) {
+    console.error(
+      `[StorageService] Failed to remove "${key}" from ${scope}/${visibility}:`,
+      error,
+    );
+    return false;
+  }
 };
 
 // =============================================================================
@@ -71,34 +112,40 @@ export const removeData = async (t, scope, visibility, key) => {
 // =============================================================================
 
 /**
- * Gets timer data for the current card.
+ * Gets timer data from card storage.
  * @param {Object} t - Trello Power-Up client instance
- * @returns {Promise<Object>} Timer data with entries, state, and currentEntry
+ * @returns {Promise<Object>} Timer data
  */
 export const getTimerData = async (t) => {
-    return getData(
-        t,
-        'card',
-        STORAGE_SCOPES.CARD_SHARED,
-        STORAGE_KEYS.TIMER_DATA,
-        { ...DEFAULTS.TIMER_DATA }
-    );
+  const timerData = await getData(
+    t,
+    "card",
+    STORAGE_SCOPES.CARD_SHARED,
+    STORAGE_KEYS.TIMER_DATA,
+    DEFAULTS.TIMER_DATA,
+  );
+
+  // Ensure structure is valid
+  return {
+    ...DEFAULTS.TIMER_DATA,
+    ...timerData,
+  };
 };
 
 /**
- * Saves timer data for the current card.
- * @param {Object} t - Trello Power-Up client instance
- * @param {Object} timerData - Timer data to save
- * @returns {Promise<boolean>} True if successful
+ * Saves timer data to card storage.
+ * @param {Object} t - Trello client
+ * @param {Object} timerData - Complete timer data to save
+ * @returns {Promise<{success: boolean, size?: number, error?: string}>}
  */
 export const setTimerData = async (t, timerData) => {
-    return setData(
-        t,
-        'card',
-        STORAGE_SCOPES.CARD_SHARED,
-        STORAGE_KEYS.TIMER_DATA,
-        timerData
-    );
+  return await setData(
+    t,
+    "card",
+    STORAGE_SCOPES.CARD_SHARED,
+    STORAGE_KEYS.TIMER_DATA,
+    timerData,
+  );
 };
 
 // =============================================================================
@@ -111,13 +158,13 @@ export const setTimerData = async (t, timerData) => {
  * @returns {Promise<Object>} Board settings
  */
 export const getBoardSettings = async (t) => {
-    return getData(
-        t,
-        'board',
-        STORAGE_SCOPES.CARD_SHARED,
-        STORAGE_KEYS.BOARD_SETTINGS,
-        { ...DEFAULTS.BOARD_SETTINGS }
-    );
+  return getData(
+    t,
+    "board",
+    STORAGE_SCOPES.CARD_SHARED,
+    STORAGE_KEYS.BOARD_SETTINGS,
+    { ...DEFAULTS.BOARD_SETTINGS },
+  );
 };
 
 /**
@@ -127,13 +174,13 @@ export const getBoardSettings = async (t) => {
  * @returns {Promise<boolean>} True if successful
  */
 export const setBoardSettings = async (t, settings) => {
-    return setData(
-        t,
-        'board',
-        STORAGE_SCOPES.CARD_SHARED,
-        STORAGE_KEYS.BOARD_SETTINGS,
-        settings
-    );
+  return setData(
+    t,
+    "board",
+    STORAGE_SCOPES.CARD_SHARED,
+    STORAGE_KEYS.BOARD_SETTINGS,
+    settings,
+  );
 };
 
 // =============================================================================
@@ -146,13 +193,13 @@ export const setBoardSettings = async (t, settings) => {
  * @returns {Promise<Object>} User preferences
  */
 export const getUserPreferences = async (t) => {
-    return getData(
-        t,
-        'member',
-        STORAGE_SCOPES.CARD_PRIVATE,
-        STORAGE_KEYS.USER_PREFERENCES,
-        { ...DEFAULTS.USER_PREFERENCES }
-    );
+  return getData(
+    t,
+    "member",
+    STORAGE_SCOPES.CARD_PRIVATE,
+    STORAGE_KEYS.USER_PREFERENCES,
+    { ...DEFAULTS.USER_PREFERENCES },
+  );
 };
 
 /**
@@ -162,28 +209,29 @@ export const getUserPreferences = async (t) => {
  * @returns {Promise<boolean>} True if successful
  */
 export const setUserPreferences = async (t, preferences) => {
-    return setData(
-        t,
-        'member',
-        STORAGE_SCOPES.CARD_PRIVATE,
-        STORAGE_KEYS.USER_PREFERENCES,
-        preferences
-    );
+  return setData(
+    t,
+    "member",
+    STORAGE_SCOPES.CARD_PRIVATE,
+    STORAGE_KEYS.USER_PREFERENCES,
+    preferences,
+  );
 };
 
 /**
  * StorageService default export - provides all storage operations
  */
 const StorageService = {
-    getData,
-    setData,
-    removeData,
-    getTimerData,
-    setTimerData,
-    getBoardSettings,
-    setBoardSettings,
-    getUserPreferences,
-    setUserPreferences,
+  getData,
+  setData,
+  removeData,
+  getTimerData,
+  setTimerData,
+  calculateUsage,
+  getBoardSettings,
+  setBoardSettings,
+  getUserPreferences,
+  setUserPreferences,
 };
 
 export default StorageService;
