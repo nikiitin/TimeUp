@@ -65,10 +65,7 @@ export class TimerUI {
 
     // Update Total
     if (this.elements.total) {
-      const totalMs = (timerData.entries || []).reduce(
-        (acc, e) => acc + (e.duration || 0),
-        0,
-      );
+      const totalMs = timerData.totalTime || 0;
       this.elements.total.textContent = `Total: ${formatDuration(totalMs + (isRunning ? elapsed : 0), { compact: true })}`;
     }
 

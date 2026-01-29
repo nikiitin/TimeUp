@@ -9,12 +9,8 @@
  * @enum {string}
  */
 export const STORAGE_KEYS = {
-  /** Timer data stored on each card (entries, running state) */
+  /** Timer data stored on each card (state, totalTime, recentEntries, checklistTotals) */
   TIMER_DATA: "timerData",
-  /** List of time entries stored separately to bypass 4KB limit */
-  ENTRIES: "timerEntries",
-  /** Checklist item timer data (stored separately to prevent metadata bloat) */
-  CHECKLIST_ITEMS: "checklistItems",
   /** Board-wide settings (hourly rate, categories) */
   BOARD_SETTINGS: "boardSettings",
   /** User preferences (display format, notifications) */

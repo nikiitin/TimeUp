@@ -103,7 +103,7 @@ export class EstimateUI {
 
       // Progress Logic
       const remainingInfo = getRemainingTime(
-        timerData.entries,
+        timerData.totalTime || 0,
         effectiveEstimate,
       );
       if (remainingInfo) {

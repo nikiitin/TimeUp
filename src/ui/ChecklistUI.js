@@ -77,12 +77,9 @@ export class ChecklistUI {
   }
 
   _renderItem(item, timerData) {
-    const itemData = timerData.checklistItems?.[item.id];
+    const itemData = timerData.checklistTotals?.[item.id];
     const isRunning = itemData?.state === TIMER_STATE.RUNNING;
-    const itemEntries = (timerData.entries || []).filter(
-      (e) => e.checklistItemId === item.id,
-    );
-    let totalTime = this._sumDurations(itemEntries);
+    let totalTime = itemData?.totalTime || 0;
 
     if (isRunning && itemData) {
       totalTime += TimerService.getItemCurrentElapsed(itemData);
@@ -326,10 +323,5 @@ export class ChecklistUI {
           "'": "&#39;",
         })[c],
     );
-  }
-
-  _sumDurations(entries) {
-    if (!entries) return 0;
-    return entries.reduce((acc, entry) => acc + (entry.duration || 0), 0);
   }
 }

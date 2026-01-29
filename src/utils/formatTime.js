@@ -147,11 +147,11 @@ export const sumDurations = (entries) => {
 
 /**
  * Calculates remaining time from an estimate minus spent time.
- * @param {Array<{duration: number}>} entries - Array of time entries
+ * @param {number} totalTime - Total time spent in milliseconds
  * @param {number|null} estimatedTime - Estimated time in milliseconds
  * @returns {{remaining: number, isOverBudget: boolean, percentComplete: number}|null}
  * @example
- * getRemainingTime([{ duration: 1800000 }], 3600000) // { remaining: 1800000, isOverBudget: false, percentComplete: 50 }
+ * getRemainingTime(1800000, 3600000) // { remaining: 1800000, isOverBudget: false, percentComplete: 50 }
  */
 export const getRemainingTime = (totalTime, estimatedTime) => {
     if (typeof estimatedTime !== 'number' || estimatedTime <= 0) {
