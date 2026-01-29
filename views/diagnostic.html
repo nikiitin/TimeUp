@@ -72,10 +72,11 @@
 </head>
 <body>
   <h1>🔍 Storage Diagnostic</h1>
-  <p>This tool shows ALL data stored in <code>card/shared</code> scope</p>
+  <p>This tool shows ALL data stored for this card</p>
   
   <button onclick="loadAllStorage()">🔄 Scan Storage</button>
-  <button onclick="clearOldEntries()">🗑️ Clear Old Entries</button>
+  <button onclick="clearOldEntries()">🗑️ Clear Old Card Archives</button>
+  <button onclick="migrateToBoard()">🔄 Migrate to Board Storage</button>
   
   <div id="results"></div>
 
@@ -88,23 +89,26 @@
       results.innerHTML = '<p>Scanning...</p>';
       
       try {
-        // Get ALL data from card/shared scope
+        // Get ALL data from all scopes
         const allData = await t.getAll();
         console.log('[Diagnostic] All data:', allData);
         
         const cardShared = allData.card?.shared || {};
+        const boardShared = allData.board?.shared || {};
         
-        let totalSize = 0;
+        let totalCardSize = 0;
+        let totalBoardSize = 0;
         let html = '';
         
-        // Analyze each key
-        const keys = Object.keys(cardShared).sort();
+        // Show card/shared storage
+        html += '<h2>📦 Card Storage (card/shared) - 4KB limit per card</h2>';
+        const cardKeys = Object.keys(cardShared).sort();
         
-        for (const key of keys) {
+        for (const key of cardKeys) {
           const value = cardShared[key];
           const jsonStr = JSON.stringify(value);
           const size = jsonStr.length;
-          totalSize += size;
+          totalCardSize += size;
           
           const sizeClass = size > 1000 ? 'storage-size' : '';
           
@@ -116,17 +120,46 @@
           `;
         }
         
-        const limit = 4096;
-        const percentage = ((totalSize / limit) * 100).toFixed(1);
-        const exceeded = totalSize > limit;
+        // Show board/shared storage (archives for this card)
+        const cardId = t.getContext().card;
+        const cardArchiveKeys = Object.keys(boardShared).filter(k => k.startsWith(`card_${cardId}_`)).sort();
+        
+        if (cardArchiveKeys.length > 0) {
+          html += '<h2>🗃️ Board Storage (board/shared) - Archives for this card</h2>';
+          
+          for (const key of cardArchiveKeys) {
+            const value = boardShared[key];
+            const jsonStr = JSON.stringify(value);
+            const size = jsonStr.length;
+            totalBoardSize += size;
+            
+            const sizeClass = size > 1000 ? 'storage-size' : '';
+            
+            html += `
+              <div class="storage-info">
+                <div><span class="storage-key">${key}</span>: <span class="${sizeClass}">${size} chars</span></div>
+                <div class="storage-value">${escapeHtml(jsonStr.substring(0, 500))}${jsonStr.length > 500 ? '...' : ''}</div>
+              </div>
+            `;
+          }
+        }
+        
+        const cardLimit = 4096;
+        const cardPercentage = ((totalCardSize / cardLimit) * 100).toFixed(1);
+        const cardExceeded = totalCardSize > cardLimit;
         
         results.innerHTML = `
-          <div class="total" style="background: ${exceeded ? '#eb5a46' : '#61bd4f'}">
-            TOTAL SIZE: ${totalSize} / ${limit} chars (${percentage}%)
-            ${exceeded ? ' ⚠️ LIMIT EXCEEDED!' : ' ✅ Within limit'}
+          <div class="total" style="background: ${cardExceeded ? '#eb5a46' : '#61bd4f'}">
+            CARD STORAGE: ${totalCardSize} / ${cardLimit} chars (${cardPercentage}%)
+            ${cardExceeded ? ' ⚠️ LIMIT EXCEEDED!' : ' ✅ Within limit'}
           </div>
-          ${exceeded ? '<div class="warning">⚠️ Trello will reject ANY new writes to card/shared until size is reduced!</div>' : ''}
-          <h3>Found ${keys.length} keys in card/shared:</h3>
+          ${totalBoardSize > 0 ? `
+            <div class="total" style="background: #0079bf">
+              BOARD ARCHIVES: ${totalBoardSize} chars (separate 4KB limit)
+            </div>
+          ` : ''}
+          ${cardExceeded ? '<div class="warning">⚠️ Trello will reject ANY new writes to card/shared until size is reduced!</div>' : ''}
+          <h3>Found ${cardKeys.length} keys in card/shared${cardArchiveKeys.length > 0 ? ` + ${cardArchiveKeys.length} archive keys in board/shared` : ''}:</h3>
           ${html}
         `;
         
@@ -137,7 +170,7 @@
     }
     
     async function clearOldEntries() {
-      if (!confirm('Clear all timerEntries_X archive keys? (Keeps timerEntries_recent)')) {
+      if (!confirm('Clear OLD card-level timerEntries_X keys? (These are no longer used - archives are now in board storage)')) {
         return;
       }
       
@@ -154,7 +187,40 @@
           }
         }
         
-        alert(`Cleared ${cleared} archive keys`);
+        alert(`Cleared ${cleared} old archive keys from card storage`);
+        await loadAllStorage();
+        
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    }
+    
+    async function migrateToBoard() {
+      if (!confirm('Migrate archives from card/shared to board/shared? This will free up card storage.')) {
+        return;
+      }
+      
+      try {
+        const allData = await t.getAll();
+        const cardShared = allData.card?.shared || {};
+        const cardId = t.getContext().card;
+        
+        let migrated = 0;
+        for (const key of Object.keys(cardShared)) {
+          if (key.match(/^timerEntries_\d+$/)) {
+            const data = cardShared[key];
+            const pageNum = key.replace('timerEntries_', '');
+            const newKey = `card_${cardId}_entries_${pageNum}`;
+            
+            // Copy to board storage
+            await t.set('board', 'shared', newKey, data);
+            // Remove from card storage
+            await t.remove('card', 'shared', key);
+            migrated++;
+          }
+        }
+        
+        alert(`Migrated ${migrated} archive pages to board storage`);
         await loadAllStorage();
         
       } catch (error) {

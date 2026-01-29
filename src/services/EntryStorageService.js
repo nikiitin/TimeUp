@@ -65,7 +65,7 @@ export const getAllEntries = async (t) => {
   let archivedEntries = [];
 
   try {
-    // Get recent entries from separate storage key
+    // Get recent entries from card storage
     const recentCompressed = await StorageService.getData(
       t,
       "card",
@@ -80,15 +80,17 @@ export const getAllEntries = async (t) => {
     console.error("[EntryStorageService] Error getting recent entries:", error);
   }
 
-  // Try to get archived entries (may not exist or be accessible in tests)
+  // Get archived entries from BOARD storage (to avoid card 4KB limit)
   try {
+    const cardId = t.getContext().card;
     let pageIndex = 0;
     let hasMore = true;
 
     while (hasMore && pageIndex < 20) { // Safety limit: max 20 pages
       try {
-        const pageKey = `${STORAGE_KEYS.ENTRIES}_${pageIndex}`;
-        const page = await StorageService.getData(t, "card", "shared", pageKey);
+        // Archive keys are stored at board level with card ID prefix
+        const pageKey = `card_${cardId}_entries_${pageIndex}`;
+        const page = await StorageService.getData(t, "board", "shared", pageKey);
 
         if (page && Array.isArray(page)) {
           // Decompress archived entries
@@ -174,6 +176,7 @@ export const saveEntries = async (t, entries, timerData) => {
 
 /**
  * Archives old entries into paginated storage keys.
+ * Saves to BOARD storage (not card) to avoid 4KB per-card limit.
  * NOTE: This function REPLACES all archive pages with the provided entries.
  * It does NOT append - it completely rebuilds the archive from the oldEntries array.
  * @param {Object} t - Trello client
@@ -182,6 +185,8 @@ export const saveEntries = async (t, entries, timerData) => {
  */
 const archiveOldEntries = async (t, oldEntries) => {
   try {
+    const cardId = t.getContext().card;
+    
     // Compress ALL entries that need archiving
     const compressed = oldEntries.map(compressEntry);
 
@@ -191,9 +196,9 @@ const archiveOldEntries = async (t, oldEntries) => {
       pages.push(compressed.slice(i, i + ENTRIES_PER_ARCHIVE_PAGE));
     }
 
-    // Save each page
+    // Save each page to BOARD storage with card ID prefix
     for (let i = 0; i < pages.length; i++) {
-      const pageKey = `${STORAGE_KEYS.ENTRIES}_${i}`;
+      const pageKey = `card_${cardId}_entries_${i}`;
       const pageData = pages[i];
       const jsonString = JSON.stringify(pageData);
 
@@ -204,7 +209,7 @@ const archiveOldEntries = async (t, oldEntries) => {
         // Continue anyway - some data is better than none
       }
 
-      await StorageService.setData(t, "card", "shared", pageKey, pageData);
+      await StorageService.setData(t, "board", "shared", pageKey, pageData);
     }
 
     // Clear any extra pages from previous saves
@@ -224,10 +229,12 @@ const archiveOldEntries = async (t, oldEntries) => {
  */
 const clearExtraPages = async (t, currentPageCount) => {
   try {
+    const cardId = t.getContext().card;
+    
     // Clear up to 10 extra pages (covers most scenarios)
     for (let i = currentPageCount; i < currentPageCount + 10; i++) {
-      const pageKey = `${STORAGE_KEYS.ENTRIES}_${i}`;
-      await StorageService.removeData(t, "card", "shared", pageKey);
+      const pageKey = `card_${cardId}_entries_${i}`;
+      await StorageService.removeData(t, "board", "shared", pageKey);
     }
   } catch (error) {
     // Silent fail - not critical
