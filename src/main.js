@@ -10,13 +10,18 @@ import StorageService from "./services/StorageService.js";
 import TimerService from "./services/TimerService.js";
 import { getRunningCheckItem } from "./services/ChecklistService.js";
 
-console.log("[TimeUp] main.js loaded - initializing Power-Up");
-
 // SVG clock icon (works well on dark backgrounds)
 const ICON_TIMER =
   "data:image/svg+xml," +
   encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23b6c2cf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  );
+
+// SVG play icon for running timer badge (green fill)
+const ICON_PLAY =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2361bd4f" stroke="none"><circle cx="12" cy="12" r="10" fill="%2361bd4f"/><polygon points="10,8 16,12 10,16" fill="white"/></svg>`,
   );
 
 /**
@@ -26,10 +31,8 @@ const ICON_TIMER =
 TrelloPowerUp.initialize(
   {
     "card-badges": async (t) => {
-      console.log("[TimeUp] card-badges called");
       try {
         const timerData = await StorageService.getTimerData(t);
-        console.log("[TimeUp] card-badges timerData:", timerData.state, "running:", timerData.state === TIMER_STATE.RUNNING);
         const badges = [];
 
         // Check if any timer is running (global or checklist)
@@ -37,49 +40,11 @@ TrelloPowerUp.initialize(
         const runningCheckItem = getRunningCheckItem(timerData);
         const isAnyTimerRunning = isGlobalRunning || runningCheckItem.isRunning;
 
-        // Show total time badge ONLY when a timer is running (dynamic, real-time update)
+        // Show play icon badge when a timer is running
         if (isAnyTimerRunning) {
-          // Calculate elapsed for display
-          let currentElapsed = 0;
-          if (isGlobalRunning) {
-            currentElapsed = TimerService.getCurrentElapsed(timerData);
-          } else if (runningCheckItem.isRunning && runningCheckItem.itemId) {
-            const itemData = timerData.checklistTotals?.[runningCheckItem.itemId];
-            if (itemData) {
-              currentElapsed = TimerService.getItemCurrentElapsed(itemData);
-            }
-          }
-          const displayTotal = timerData.totalTime + currentElapsed;
-
-          // Use dynamic badge for real-time updates
           badges.push({
-            dynamic: async () => {
-              const freshData = await StorageService.getTimerData(t);
-              const freshRunning = getRunningCheckItem(freshData);
-              const stillRunning = freshData.state === TIMER_STATE.RUNNING || freshRunning.isRunning;
-
-              if (!stillRunning) {
-                // Timer stopped, hide badge
-                return null;
-              }
-
-              let elapsed = 0;
-              if (freshData.state === TIMER_STATE.RUNNING) {
-                elapsed = TimerService.getCurrentElapsed(freshData);
-              } else if (freshRunning.isRunning && freshRunning.itemId) {
-                const itemData = freshData.checklistTotals?.[freshRunning.itemId];
-                if (itemData) {
-                  elapsed = TimerService.getItemCurrentElapsed(itemData);
-                }
-              }
-
-              return {
-                text: formatDuration(freshData.totalTime + elapsed, { compact: true, showSeconds: false }),
-                color: BADGE_COLORS.RUNNING,
-                icon: ICON_TIMER,
-                refresh: 30,
-              };
-            },
+            text: "▶︎",
+            color: "green",
           });
         }
 
@@ -114,7 +79,8 @@ TrelloPowerUp.initialize(
       try {
         const timerData = await StorageService.getTimerData(t);
 
-        if (timerData.totalTime === 0 && timerData.state === TIMER_STATE.IDLE) {
+        // Only show saved totalTime (not live updates)
+        if (timerData.totalTime === 0) {
           return [];
         }
 
@@ -122,10 +88,7 @@ TrelloPowerUp.initialize(
           {
             title: "Total Time",
             text: formatDuration(timerData.totalTime, { compact: true }),
-            color:
-              timerData.state === TIMER_STATE.RUNNING
-                ? BADGE_COLORS.RUNNING
-                : null,
+            color: null,
           },
         ];
       } catch (error) {
