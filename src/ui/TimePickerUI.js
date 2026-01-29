@@ -39,6 +39,11 @@ export class TimePickerUI {
                     <button class="time-picker__close" data-action="close">×</button>
                 </div>
 
+                <div class="time-picker__manual">
+                    <input type="text" id="tp-manual-input" class="time-picker__manual-input" placeholder="e.g. 7:00, 1h 30m, 45m" autocomplete="off">
+                    <span class="time-picker__manual-hint">Format: MM:SS, HH:MM:SS, or 1h 30m</span>
+                </div>
+
                 <div class="time-picker__presets">
                     <button class="btn-preset" data-action="preset" data-value="5m">5m</button>
                     <button class="btn-preset" data-action="preset" data-value="15m">15m</button>
@@ -53,7 +58,7 @@ export class TimePickerUI {
                     </div>
                     <div class="time-picker__row">
                         <label>Minutes <span class="time-picker__val" id="tp-mins-val">0m</span></label>
-                        <input type="range" min="0" max="59" step="5" id="tp-mins-range" data-action="slider-m">
+                        <input type="range" min="0" max="59" step="1" id="tp-mins-range" data-action="slider-m">
                     </div>
                 </div>
 
@@ -78,20 +83,23 @@ export class TimePickerUI {
       } else if (action === "preset") {
         const ms = parseTimeString(actionBtn.dataset.value);
         this._updateStateFromMs(ms);
+        this._updateManualInput();
         this._updateInput();
       } else if (action === "apply") {
         this._handleApply();
       }
     };
 
-    // Input listeners for sliders (input event doesn't bubble well for click, need separate)
+    // Input listeners for sliders
     const hRange = this.container.querySelector("#tp-hours-range");
     const mRange = this.container.querySelector("#tp-mins-range");
+    const manualInput = this.container.querySelector("#tp-manual-input");
 
     hRange.oninput = (e) => {
       this.state.hours = parseFloat(e.target.value);
       this.container.querySelector("#tp-hours-val").textContent =
         `${this.state.hours}h`;
+      this._updateManualInput();
       this._updateInput();
     };
 
@@ -99,7 +107,24 @@ export class TimePickerUI {
       this.state.minutes = parseInt(e.target.value, 10);
       this.container.querySelector("#tp-mins-val").textContent =
         `${this.state.minutes}m`;
+      this._updateManualInput();
       this._updateInput();
+    };
+
+    // Manual input listener
+    manualInput.oninput = (e) => {
+      const ms = parseTimeString(e.target.value);
+      if (ms !== null && ms >= 0) {
+        this._updateStateFromMs(ms);
+      }
+    };
+
+    // Apply on Enter key in manual input
+    manualInput.onkeydown = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this._handleApply();
+      }
     };
   }
 
@@ -134,6 +159,16 @@ export class TimePickerUI {
     const mVal = this.container.querySelector("#tp-mins-val");
     if (hVal) hVal.textContent = `${this.state.hours}h`;
     if (mVal) mVal.textContent = `${this.state.minutes}m`;
+  }
+
+  _updateManualInput() {
+    const manualInput = this.container.querySelector("#tp-manual-input");
+    if (!manualInput) return;
+    // Don't update if user is actively typing
+    if (document.activeElement === manualInput) return;
+    const h = this.state.hours > 0 ? `${this.state.hours}h ` : "";
+    const m = `${this.state.minutes}m`;
+    manualInput.value = (h + m).trim();
   }
 
   _updateInput() {

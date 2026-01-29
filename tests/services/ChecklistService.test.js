@@ -222,7 +222,11 @@ describe("ChecklistService", () => {
     test("returns existing item data", () => {
       const timerData = {
         checklistTotals: {
-          item1: { estimatedTime: 5000, state: TIMER_STATE.RUNNING, totalTime: 1000 },
+          item1: {
+            estimatedTime: 5000,
+            state: TIMER_STATE.RUNNING,
+            totalTime: 1000,
+          },
         },
       };
 

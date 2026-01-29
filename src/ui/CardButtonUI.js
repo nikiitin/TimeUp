@@ -10,6 +10,7 @@ import {
   getRemainingTime,
   parseTimeString,
 } from "../utils/formatTime.js";
+import { escapeHtml } from "../utils/escapeHtml.js";
 import StorageService from "../services/StorageService.js";
 import TimerService from "../services/TimerService.js";
 
@@ -27,26 +28,6 @@ const estimateDisplay = document.getElementById("estimate-display");
 const remainingText = document.getElementById("remaining-text");
 
 let updateInterval = null;
-
-/**
- * Escapes HTML to prevent XSS attacks.
- * @param {string} str - The string to escape
- * @returns {string} Escaped string
- */
-const escapeHtml = (str) => {
-  if (!str) return "";
-  return String(str).replace(
-    /[<>&"']/g,
-    (c) =>
-      ({
-        "<": "&lt;",
-        ">": "&gt;",
-        "&": "&amp;",
-        '"': "&quot;",
-        "'": "&#39;",
-      })[c],
-  );
-};
 
 /**
  * Updates the timer display with current elapsed time.
@@ -81,7 +62,7 @@ const updateEstimateUI = (timerData) => {
 
     // Show remaining time
     const remainingInfo = getRemainingTime(
-      timerData.entries,
+      timerData.totalTime || 0,
       timerData.estimatedTime,
     );
     if (remainingInfo) {
@@ -116,8 +97,10 @@ const handleDeleteEntry = async (entryId) => {
   if (!confirm("Delete this time entry?")) return;
   const result = await TimerService.deleteEntry(t, entryId);
   if (result.success) {
-    renderEntries(result.data.entries);
+    renderEntries(result.data.recentEntries || []);
     updateEstimateUI(result.data);
+  } else {
+    alert(`Failed to delete entry: ${result.error}`);
   }
 };
 
@@ -168,7 +151,7 @@ const init = async (t) => {
   try {
     const timerData = await StorageService.getTimerData(t);
     updateDisplay(timerData);
-    renderEntries(timerData.entries);
+    renderEntries(timerData.recentEntries || []);
     updateEstimateUI(timerData);
 
     if (timerData.state === TIMER_STATE.RUNNING) {
@@ -222,7 +205,7 @@ btnStop.addEventListener("click", async () => {
   const result = await TimerService.stopTimer(t);
   if (result.success) {
     updateDisplay(result.data);
-    renderEntries(result.data.entries);
+    renderEntries(result.data.recentEntries || []);
     updateEstimateUI(result.data);
   }
 });

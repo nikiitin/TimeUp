@@ -9,12 +9,12 @@
  * @returns {Promise<Object|null>} Card data or null
  */
 export const getCard = async (t) => {
-    try {
-        return await t.card('id', 'name', 'url');
-    } catch (error) {
-        console.error('[TrelloService] getCard error:', error);
-        return null;
-    }
+  try {
+    return await t.card("id", "name", "url");
+  } catch (error) {
+    console.error("[TrelloService] getCard error:", error);
+    return null;
+  }
 };
 
 /**
@@ -23,12 +23,12 @@ export const getCard = async (t) => {
  * @returns {Promise<Object|null>} Board data or null
  */
 export const getBoard = async (t) => {
-    try {
-        return await t.board('id', 'name', 'url');
-    } catch (error) {
-        console.error('[TrelloService] getBoard error:', error);
-        return null;
-    }
+  try {
+    return await t.board("id", "name", "url");
+  } catch (error) {
+    console.error("[TrelloService] getBoard error:", error);
+    return null;
+  }
 };
 
 /**
@@ -37,12 +37,12 @@ export const getBoard = async (t) => {
  * @returns {Promise<Object|null>} Member data or null
  */
 export const getMember = async (t) => {
-    try {
-        return await t.member('id', 'fullName', 'username');
-    } catch (error) {
-        console.error('[TrelloService] getMember error:', error);
-        return null;
-    }
+  try {
+    return await t.member("id", "fullName", "username");
+  } catch (error) {
+    console.error("[TrelloService] getMember error:", error);
+    return null;
+  }
 };
 
 /**
@@ -51,11 +51,11 @@ export const getMember = async (t) => {
  * @returns {Promise<void>}
  */
 export const closePopup = async (t) => {
-    try {
-        await t.closePopup();
-    } catch (error) {
-        console.error('[TrelloService] closePopup error:', error);
-    }
+  try {
+    await t.closePopup();
+  } catch (error) {
+    console.error("[TrelloService] closePopup error:", error);
+  }
 };
 
 const TrelloService = { getCard, getBoard, getMember, closePopup };

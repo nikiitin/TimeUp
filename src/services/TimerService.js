@@ -17,7 +17,12 @@ const MAX_RECENT_ENTRIES = 5;
  * @param {string} [checklistItemId=null] - Optional checklist item ID
  * @returns {Object} Time entry
  */
-const createEntry = (startTime, endTime, description = "", checklistItemId = null) => {
+const createEntry = (
+  startTime,
+  endTime,
+  description = "",
+  checklistItemId = null,
+) => {
   const truncatedDescription = (description || "").substring(
     0,
     VALIDATION.MAX_DESCRIPTION_LENGTH,
@@ -59,6 +64,7 @@ const validateTimerData = (data) => ({
 
 /**
  * Starts the global timer.
+ * Stops any running checklist item timers first (single timer constraint).
  * @param {Object} t - Trello client
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
@@ -72,6 +78,24 @@ export const startTimer = async (t) => {
         error: "Timer already running",
         data: timerData,
       };
+    }
+
+    // Stop any running checklist item timers first (single timer constraint)
+    const now = Date.now();
+    for (const [itemId, itemTotal] of Object.entries(
+      timerData.checklistTotals,
+    )) {
+      if (itemTotal.state === TIMER_STATE.RUNNING && itemTotal.currentEntry) {
+        const { startTime, pausedDuration = 0 } = itemTotal.currentEntry;
+        const duration = now - startTime - pausedDuration;
+        timerData.checklistTotals[itemId] = {
+          ...itemTotal,
+          totalTime: (itemTotal.totalTime || 0) + duration,
+          entryCount: (itemTotal.entryCount || 0) + 1,
+          state: TIMER_STATE.IDLE,
+          currentEntry: null,
+        };
+      }
     }
 
     const updatedData = {
@@ -206,7 +230,9 @@ export const deleteEntry = async (t, entryId) => {
 export const updateEntry = async (t, entryId, updates) => {
   try {
     const timerData = validateTimerData(await StorageService.getTimerData(t));
-    const entryIndex = timerData.recentEntries.findIndex((e) => e.id === entryId);
+    const entryIndex = timerData.recentEntries.findIndex(
+      (e) => e.id === entryId,
+    );
 
     if (entryIndex === -1) {
       return { success: false, error: "Entry not found in recent entries" };
@@ -216,12 +242,13 @@ export const updateEntry = async (t, entryId, updates) => {
     const updatedEntry = { ...oldEntry, ...updates };
 
     // Adjust totalTime if duration changed
-    const durationDelta = (updates.duration || oldEntry.duration) - oldEntry.duration;
+    const durationDelta =
+      (updates.duration || oldEntry.duration) - oldEntry.duration;
 
     const updatedData = {
       ...timerData,
       recentEntries: timerData.recentEntries.map((e, i) =>
-        i === entryIndex ? updatedEntry : e
+        i === entryIndex ? updatedEntry : e,
       ),
       totalTime: timerData.totalTime + durationDelta,
     };
@@ -250,6 +277,16 @@ export const startItemTimer = async (t, checkItemId) => {
   try {
     const timerData = validateTimerData(await StorageService.getTimerData(t));
 
+    // Check if adding a new checklist item would exceed the limit
+    const existingItems = Object.keys(timerData.checklistTotals);
+    const isNewItem = !existingItems.includes(checkItemId);
+    if (isNewItem && existingItems.length >= VALIDATION.MAX_CHECKLIST_ITEMS) {
+      return {
+        success: false,
+        error: `Maximum ${VALIDATION.MAX_CHECKLIST_ITEMS} checklist items can have time tracking. Remove estimates from unused items first.`,
+      };
+    }
+
     // Stop global timer if running
     if (timerData.state === TIMER_STATE.RUNNING && timerData.currentEntry) {
       const now = Date.now();
@@ -259,7 +296,10 @@ export const startItemTimer = async (t, checkItemId) => {
       newEntry.duration = duration;
 
       timerData.totalTime += duration;
-      timerData.recentEntries = addToRecentEntries(timerData.recentEntries, newEntry);
+      timerData.recentEntries = addToRecentEntries(
+        timerData.recentEntries,
+        newEntry,
+      );
       timerData.state = TIMER_STATE.IDLE;
       timerData.currentEntry = null;
     }
@@ -353,6 +393,17 @@ export const stopItemTimer = async (t, checkItemId, description = "") => {
 export const setItemEstimate = async (t, checkItemId, estimatedTimeMs) => {
   try {
     const timerData = validateTimerData(await StorageService.getTimerData(t));
+
+    // Check if adding a new checklist item would exceed the limit
+    const existingItems = Object.keys(timerData.checklistTotals);
+    const isNewItem = !existingItems.includes(checkItemId);
+    if (isNewItem && existingItems.length >= VALIDATION.MAX_CHECKLIST_ITEMS) {
+      return {
+        success: false,
+        error: `Maximum ${VALIDATION.MAX_CHECKLIST_ITEMS} checklist items can have estimates. Remove estimates from unused items first.`,
+      };
+    }
+
     const itemTotal = timerData.checklistTotals[checkItemId] || {
       totalTime: 0,
       entryCount: 0,

@@ -71,13 +71,13 @@ export const DEFAULTS = {
     currentEntry: null,
     estimatedTime: null, // Estimated time in milliseconds (manual override)
     manualEstimateSet: false, // true = user set manually, false = calculated from checklists
-    
+
     // Aggregated total time - ONE number for all time tracked
     totalTime: 0,
-    
+
     // Only keep last 5 entries for display/editing
     recentEntries: [],
-    
+
     // Checklist item totals (aggregated, not individual entries)
     checklistTotals: {}, // { [checkItemId]: { totalTime, entryCount, estimatedTime } }
   },
@@ -110,4 +110,6 @@ export const BADGE_COLORS = {
  */
 export const VALIDATION = {
   MAX_DESCRIPTION_LENGTH: 120,
+  /** Maximum checklist items that can have time data (estimates/timers) due to storage limits */
+  MAX_CHECKLIST_ITEMS: 20,
 };

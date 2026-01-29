@@ -176,7 +176,11 @@ export class EntryListUI {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         if (confirm("Delete this entry?")) {
-          await TimerService.deleteEntry(this.t, btn.dataset.id);
+          const result = await TimerService.deleteEntry(this.t, btn.dataset.id);
+          if (!result.success) {
+            alert(`Failed to delete entry: ${result.error}`);
+            return;
+          }
           if (this.onRefresh) this.onRefresh();
         }
       });

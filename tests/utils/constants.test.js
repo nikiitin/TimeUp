@@ -10,6 +10,7 @@ import {
   APP_INFO,
   DEFAULTS,
   BADGE_COLORS,
+  VALIDATION,
 } from "../../src/utils/constants.js";
 
 describe("Constants exports", () => {
@@ -89,6 +90,16 @@ describe("Constants exports", () => {
       expect(BADGE_COLORS.RUNNING).toBe("green");
       expect(BADGE_COLORS.WARNING).toBe("yellow");
       expect(BADGE_COLORS.OVER_BUDGET).toBe("red");
+    });
+  });
+
+  describe("VALIDATION", () => {
+    test("has max description length", () => {
+      expect(VALIDATION.MAX_DESCRIPTION_LENGTH).toBe(120);
+    });
+
+    test("has max checklist items limit", () => {
+      expect(VALIDATION.MAX_CHECKLIST_ITEMS).toBe(20);
     });
   });
 });

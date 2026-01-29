@@ -35,15 +35,7 @@ export const getData = async (
 export const setData = async (t, scope, visibility, key, value) => {
   try {
     const jsonString = JSON.stringify(value);
-    
-    // Enhanced debug logging for timerData specifically
-    if (key === STORAGE_KEYS.TIMER_DATA) {
-      console.log("[setData] About to save timerData:");
-      console.log("  - Size:", jsonString.length, "chars");
-      console.log("  - Keys:", Object.keys(value));
-      console.log("  - Full value:", jsonString);
-    }
-    
+
     if (jsonString.length > STORAGE_LIMIT) {
       console.error(
         `[StorageService] Size limit exceeded for "${key}": ${jsonString.length}/${STORAGE_LIMIT} characters.`,
@@ -56,11 +48,7 @@ export const setData = async (t, scope, visibility, key, value) => {
     }
 
     await t.set(scope, visibility, key, value);
-    
-    if (key === STORAGE_KEYS.TIMER_DATA) {
-      console.log("[setData] Successfully saved timerData");
-    }
-    
+
     return { success: true, size: jsonString.length };
   } catch (error) {
     console.error(

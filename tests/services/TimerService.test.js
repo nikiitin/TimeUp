@@ -6,7 +6,7 @@
 import { jest } from "@jest/globals";
 import TimerService from "../../src/services/TimerService.js";
 import StorageService from "../../src/services/StorageService.js";
-import { TIMER_STATE, DEFAULTS } from "../../src/utils/constants.js";
+import { TIMER_STATE, DEFAULTS, VALIDATION } from "../../src/utils/constants.js";
 
 // Mock StorageService
 jest.mock("../../src/services/StorageService.js");
@@ -34,9 +34,7 @@ describe("TimerService", () => {
     StorageService.setTimerData = jest
       .fn()
       .mockResolvedValue({ success: true });
-    StorageService.setData = jest
-      .fn()
-      .mockResolvedValue({ success: true });
+    StorageService.setData = jest.fn().mockResolvedValue({ success: true });
     StorageService.getData = jest.fn().mockResolvedValue(null);
 
     jest.clearAllMocks();
@@ -83,7 +81,50 @@ describe("TimerService", () => {
       expect(result.success).toBe(true);
       // Global should be running now
       expect(result.data.state).toBe(TIMER_STATE.RUNNING);
-      // Note: startTimer doesn't stop checklist items - they're independent
+      // Checklist item should be stopped (single timer constraint)
+      expect(result.data.checklistTotals.item1.state).toBe(TIMER_STATE.IDLE);
+      expect(result.data.checklistTotals.item1.currentEntry).toBeNull();
+      expect(result.data.checklistTotals.item1.totalTime).toBeGreaterThan(0);
+    });
+
+    test("should stop multiple running checklist items when starting global timer", async () => {
+      const dataWithMultipleItems = {
+        ...getMockData(),
+        checklistTotals: {
+          item1: {
+            state: TIMER_STATE.RUNNING,
+            currentEntry: { startTime: Date.now() - 2000, pausedDuration: 0 },
+            totalTime: 5000,
+            entryCount: 1,
+          },
+          item2: {
+            state: TIMER_STATE.RUNNING,
+            currentEntry: { startTime: Date.now() - 1000, pausedDuration: 0 },
+            totalTime: 0,
+            entryCount: 0,
+          },
+          item3: {
+            state: TIMER_STATE.IDLE,
+            currentEntry: null,
+            totalTime: 3000,
+            entryCount: 1,
+          },
+        },
+      };
+      StorageService.getTimerData.mockResolvedValue(dataWithMultipleItems);
+
+      const result = await TimerService.startTimer(tMock);
+
+      expect(result.success).toBe(true);
+      // All checklist items should be idle
+      expect(result.data.checklistTotals.item1.state).toBe(TIMER_STATE.IDLE);
+      expect(result.data.checklistTotals.item2.state).toBe(TIMER_STATE.IDLE);
+      expect(result.data.checklistTotals.item3.state).toBe(TIMER_STATE.IDLE);
+      // Previously running items should have updated totalTime
+      expect(result.data.checklistTotals.item1.totalTime).toBeGreaterThan(5000);
+      expect(result.data.checklistTotals.item2.totalTime).toBeGreaterThan(0);
+      // Idle item should remain unchanged
+      expect(result.data.checklistTotals.item3.totalTime).toBe(3000);
     });
   });
 
@@ -162,8 +203,58 @@ describe("TimerService", () => {
       const result = await TimerService.startItemTimer(tMock, "item1");
 
       expect(result.success).toBe(true);
-      expect(result.data.checklistTotals["item1"].state).toBe(TIMER_STATE.RUNNING);
+      expect(result.data.checklistTotals["item1"].state).toBe(
+        TIMER_STATE.RUNNING,
+      );
       expect(result.data.checklistTotals["item1"].currentEntry).toBeDefined();
+    });
+
+    test("should reject new item timer when at max checklist items limit", async () => {
+      const checklistTotals = {};
+      for (let i = 0; i < VALIDATION.MAX_CHECKLIST_ITEMS; i++) {
+        checklistTotals[`existingItem${i}`] = {
+          totalTime: 0,
+          entryCount: 0,
+          estimatedTime: null,
+          state: TIMER_STATE.IDLE,
+          currentEntry: null,
+        };
+      }
+      StorageService.getTimerData.mockResolvedValue(
+        getMockData({ checklistTotals }),
+      );
+
+      const result = await TimerService.startItemTimer(tMock, "newItem");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain(
+        `Maximum ${VALIDATION.MAX_CHECKLIST_ITEMS}`,
+      );
+      expect(StorageService.setTimerData).not.toHaveBeenCalled();
+    });
+
+    test("should allow starting timer for existing item even at max limit", async () => {
+      const checklistTotals = {};
+      for (let i = 0; i < VALIDATION.MAX_CHECKLIST_ITEMS; i++) {
+        checklistTotals[`existingItem${i}`] = {
+          totalTime: 0,
+          entryCount: 0,
+          estimatedTime: null,
+          state: TIMER_STATE.IDLE,
+          currentEntry: null,
+        };
+      }
+      StorageService.getTimerData.mockResolvedValue(
+        getMockData({ checklistTotals }),
+      );
+
+      // Start timer on existing item - should succeed
+      const result = await TimerService.startItemTimer(tMock, "existingItem5");
+
+      expect(result.success).toBe(true);
+      expect(result.data.checklistTotals["existingItem5"].state).toBe(
+        TIMER_STATE.RUNNING,
+      );
     });
   });
 
@@ -187,7 +278,9 @@ describe("TimerService", () => {
       expect(result.success).toBe(true);
       expect(result.data.checklistTotals["item1"].state).toBe(TIMER_STATE.IDLE);
       // totalTime should be increased
-      expect(result.data.checklistTotals["item1"].totalTime).toBeGreaterThan(1000);
+      expect(result.data.checklistTotals["item1"].totalTime).toBeGreaterThan(
+        1000,
+      );
       // entryCount should be incremented
       expect(result.data.checklistTotals["item1"].entryCount).toBe(2);
     });
@@ -379,10 +472,71 @@ describe("TimerService", () => {
     test("should set item estimate", async () => {
       StorageService.getTimerData.mockResolvedValue(getMockData());
 
-      const result = await TimerService.setItemEstimate(tMock, "item1", 1800000);
+      const result = await TimerService.setItemEstimate(
+        tMock,
+        "item1",
+        1800000,
+      );
 
       expect(result.success).toBe(true);
       expect(result.data.checklistTotals["item1"].estimatedTime).toBe(1800000);
+    });
+
+    test("should reject new item when at max checklist items limit", async () => {
+      // Create mock data with MAX_CHECKLIST_ITEMS already present
+      const checklistTotals = {};
+      for (let i = 0; i < VALIDATION.MAX_CHECKLIST_ITEMS; i++) {
+        checklistTotals[`existingItem${i}`] = {
+          totalTime: 0,
+          entryCount: 0,
+          estimatedTime: 3600000,
+          state: TIMER_STATE.IDLE,
+          currentEntry: null,
+        };
+      }
+      StorageService.getTimerData.mockResolvedValue(
+        getMockData({ checklistTotals }),
+      );
+
+      const result = await TimerService.setItemEstimate(
+        tMock,
+        "newItem",
+        1800000,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain(
+        `Maximum ${VALIDATION.MAX_CHECKLIST_ITEMS}`,
+      );
+      expect(StorageService.setTimerData).not.toHaveBeenCalled();
+    });
+
+    test("should allow updating existing item even at max limit", async () => {
+      const checklistTotals = {};
+      for (let i = 0; i < VALIDATION.MAX_CHECKLIST_ITEMS; i++) {
+        checklistTotals[`existingItem${i}`] = {
+          totalTime: 0,
+          entryCount: 0,
+          estimatedTime: 3600000,
+          state: TIMER_STATE.IDLE,
+          currentEntry: null,
+        };
+      }
+      StorageService.getTimerData.mockResolvedValue(
+        getMockData({ checklistTotals }),
+      );
+
+      // Update an existing item - should succeed
+      const result = await TimerService.setItemEstimate(
+        tMock,
+        "existingItem5",
+        7200000,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data.checklistTotals["existingItem5"].estimatedTime).toBe(
+        7200000,
+      );
     });
   });
 
@@ -509,7 +663,9 @@ describe("TimerService", () => {
     });
 
     test("startItemTimer should handle storage errors", async () => {
-      StorageService.getTimerData.mockRejectedValue(new Error("Checklist error"));
+      StorageService.getTimerData.mockRejectedValue(
+        new Error("Checklist error"),
+      );
 
       const result = await TimerService.startItemTimer(tMock, "item1");
 
@@ -518,7 +674,9 @@ describe("TimerService", () => {
     });
 
     test("stopItemTimer should handle storage errors", async () => {
-      StorageService.getTimerData.mockRejectedValue(new Error("Stop item error"));
+      StorageService.getTimerData.mockRejectedValue(
+        new Error("Stop item error"),
+      );
 
       const result = await TimerService.stopItemTimer(tMock, "item1");
 
@@ -540,9 +698,15 @@ describe("TimerService", () => {
     });
 
     test("setItemEstimate should handle storage errors", async () => {
-      StorageService.getTimerData.mockRejectedValue(new Error("Estimate error"));
+      StorageService.getTimerData.mockRejectedValue(
+        new Error("Estimate error"),
+      );
 
-      const result = await TimerService.setItemEstimate(tMock, "item1", 3600000);
+      const result = await TimerService.setItemEstimate(
+        tMock,
+        "item1",
+        3600000,
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Estimate error");
@@ -617,7 +781,10 @@ describe("TimerService", () => {
       });
 
       StorageService.getTimerData.mockResolvedValue(mockData);
-      StorageService.setTimerData.mockResolvedValue({ success: false, error: "Storage full" });
+      StorageService.setTimerData.mockResolvedValue({
+        success: false,
+        error: "Storage full",
+      });
 
       const result = await TimerService.stopTimer(tMock);
 
@@ -694,7 +861,9 @@ describe("TimerService", () => {
       // Entry should be created
       expect(result.data.recentEntries).toHaveLength(1);
       // Item timer should be running
-      expect(result.data.checklistTotals["item1"].state).toBe(TIMER_STATE.RUNNING);
+      expect(result.data.checklistTotals["item1"].state).toBe(
+        TIMER_STATE.RUNNING,
+      );
     });
 
     test("stopItemTimer handles missing pausedDuration", async () => {
@@ -733,7 +902,10 @@ describe("TimerService", () => {
       });
 
       StorageService.getTimerData.mockResolvedValue(mockData);
-      StorageService.setTimerData.mockResolvedValue({ success: false, error: "Storage limit" });
+      StorageService.setTimerData.mockResolvedValue({
+        success: false,
+        error: "Storage limit",
+      });
 
       const result = await TimerService.stopItemTimer(tMock, "item1");
 
@@ -744,15 +916,15 @@ describe("TimerService", () => {
     test("updateEntry without duration change keeps totalTime same", async () => {
       const mockData = getMockData({
         totalTime: 10000,
-        recentEntries: [
-          { id: "entry1", duration: 5000, description: "Old" },
-        ],
+        recentEntries: [{ id: "entry1", duration: 5000, description: "Old" }],
       });
 
       StorageService.getTimerData.mockResolvedValue(mockData);
       StorageService.setTimerData.mockResolvedValue({ success: true });
 
-      const result = await TimerService.updateEntry(tMock, "entry1", { description: "Updated" });
+      const result = await TimerService.updateEntry(tMock, "entry1", {
+        description: "Updated",
+      });
 
       expect(result.success).toBe(true);
       expect(result.data.totalTime).toBe(10000); // Unchanged
@@ -765,9 +937,14 @@ describe("TimerService", () => {
       });
 
       StorageService.getTimerData.mockResolvedValue(mockData);
-      StorageService.setTimerData.mockResolvedValue({ success: false, error: "DB error" });
+      StorageService.setTimerData.mockResolvedValue({
+        success: false,
+        error: "DB error",
+      });
 
-      const result = await TimerService.updateEntry(tMock, "entry1", { description: "New" });
+      const result = await TimerService.updateEntry(tMock, "entry1", {
+        description: "New",
+      });
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("DB error");
@@ -775,7 +952,10 @@ describe("TimerService", () => {
 
     test("setEstimate fails when setTimerData fails", async () => {
       StorageService.getTimerData.mockResolvedValue(getMockData());
-      StorageService.setTimerData.mockResolvedValue({ success: false, error: "Quota exceeded" });
+      StorageService.setTimerData.mockResolvedValue({
+        success: false,
+        error: "Quota exceeded",
+      });
 
       const result = await TimerService.setEstimate(tMock, 3600000);
 
@@ -785,9 +965,16 @@ describe("TimerService", () => {
 
     test("setItemEstimate fails when setTimerData fails", async () => {
       StorageService.getTimerData.mockResolvedValue(getMockData());
-      StorageService.setTimerData.mockResolvedValue({ success: false, error: "Item error" });
+      StorageService.setTimerData.mockResolvedValue({
+        success: false,
+        error: "Item error",
+      });
 
-      const result = await TimerService.setItemEstimate(tMock, "item1", 3600000);
+      const result = await TimerService.setItemEstimate(
+        tMock,
+        "item1",
+        3600000,
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Item error");
@@ -800,7 +987,10 @@ describe("TimerService", () => {
       });
 
       StorageService.getTimerData.mockResolvedValue(mockData);
-      StorageService.setTimerData.mockResolvedValue({ success: false, error: "Delete failed" });
+      StorageService.setTimerData.mockResolvedValue({
+        success: false,
+        error: "Delete failed",
+      });
 
       const result = await TimerService.deleteEntry(tMock, "entry1");
 

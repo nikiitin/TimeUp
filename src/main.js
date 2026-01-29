@@ -5,10 +5,7 @@
 
 import { TIMER_STATE, APP_INFO, BADGE_COLORS } from "./utils/constants.js";
 import { AppConfig } from "./config/AppConfig.js";
-import {
-  formatDuration,
-  getRemainingTime,
-} from "./utils/formatTime.js";
+import { formatDuration, getRemainingTime } from "./utils/formatTime.js";
 import StorageService from "./services/StorageService.js";
 import TimerService from "./services/TimerService.js";
 
@@ -25,42 +22,6 @@ const ICON_TIMER =
 /* global TrelloPowerUp */
 TrelloPowerUp.initialize(
   {
-    "card-buttons": async (t) => {
-      const timerData = await StorageService.getTimerData(t);
-      const isRunning = timerData.state === TIMER_STATE.RUNNING;
-
-      return [
-        {
-          // Quick toggle button - one click to start/stop
-          icon: isRunning
-            ? "https://cdn-icons-png.flaticon.com/512/1828/1828778.png" // stop icon
-            : "https://cdn-icons-png.flaticon.com/512/727/727245.png", // play icon
-          text: isRunning ? "⏹ Stop Timer" : "▶ Start Timer",
-          callback: async (t) => {
-            try {
-              if (isRunning) {
-                await TimerService.stopTimer(t);
-              } else {
-                await TimerService.startTimer(t);
-              }
-            } catch (error) {
-              console.error("[Main] Toggle timer error:", error);
-            }
-          },
-        },
-        {
-          icon: "https://cdn-icons-png.flaticon.com/512/3524/3524659.png",
-          text: "🔧 Storage Diagnostic",
-          callback: (t) =>
-            t.popup({
-              title: "Storage Diagnostic",
-              url: "./views/diagnostic.html",
-              height: 600,
-            }),
-        },
-      ];
-    },
-
     "card-badges": async (t) => {
       try {
         const timerData = await StorageService.getTimerData(t);
@@ -85,7 +46,10 @@ TrelloPowerUp.initialize(
         // Show total time
         if (timerData.totalTime > 0) {
           badges.push({
-            text: formatDuration(timerData.totalTime, { compact: true, showSeconds: false }),
+            text: formatDuration(timerData.totalTime, {
+              compact: true,
+              showSeconds: false,
+            }),
             color: BADGE_COLORS.DEFAULT,
             icon: ICON_TIMER,
           });
@@ -153,21 +117,6 @@ TrelloPowerUp.initialize(
           height: 180,
         },
       };
-    },
-
-    // Board-level report button
-    "board-buttons": async (t) => {
-      return [
-        {
-          text: "Time Report",
-          callback: (t) =>
-            t.popup({
-              title: "Time Report",
-              url: "./views/report.html",
-              height: 500,
-            }),
-        },
-      ];
     },
   },
   {

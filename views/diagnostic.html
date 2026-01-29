@@ -1,144 +1,146 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TimeUp - Storage Diagnostic</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      padding: 20px;
-      background: #1d2125;
-      color: #b6c2cf;
-    }
-    .storage-info {
-      background: #282e33;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 3px;
-      border-left: 3px solid #0079bf;
-    }
-    .storage-key {
-      font-weight: bold;
-      color: #61bd4f;
-      font-family: monospace;
-    }
-    .storage-size {
-      color: #f2d600;
-      font-weight: bold;
-    }
-    .storage-value {
-      background: #1d2125;
-      padding: 10px;
-      margin-top: 5px;
-      border-radius: 3px;
-      font-family: monospace;
-      font-size: 12px;
-      max-height: 200px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-    .total {
-      background: #eb5a46;
-      color: white;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 3px;
-      font-weight: bold;
-      font-size: 18px;
-    }
-    button {
-      background: #0079bf;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 14px;
-      margin: 10px 5px;
-    }
-    button:hover {
-      background: #026aa7;
-    }
-    button.danger {
-      background: #eb5a46;
-    }
-    button.danger:hover {
-      background: #cf513d;
-    }
-    .warning {
-      background: #f2d600;
-      color: #172b4d;
-      padding: 10px;
-      border-radius: 3px;
-      margin: 10px 0;
-    }
-    .info {
-      background: rgba(87, 157, 255, 0.1);
-      border: 1px solid #579dff;
-      padding: 12px;
-      border-radius: 3px;
-      margin: 10px 0;
-    }
-    .data-field {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    .data-field:last-child {
-      border-bottom: none;
-    }
-  </style>
-</head>
-<body>
-  <h1>🔍 Storage Diagnostic</h1>
-  
-  <div class="info">
-    <strong>Aggregated Totals Architecture:</strong> TimeUp stores only aggregated time totals (~500 bytes).
-    <ul style="margin: 8px 0 0 20px; padding: 0;">
-      <li><code>totalTime</code> - Single number for all time tracked</li>
-      <li><code>recentEntries</code> - Last 5 entries only (for editing)</li>
-      <li><code>checklistTotals</code> - Per-item aggregated totals</li>
-    </ul>
-  </div>
-  
-  <button onclick="loadAllStorage()">🔄 Scan Storage</button>
-  <button onclick="clearAllData()" class="danger">🗑️ Clear All Data</button>
-  
-  <div id="results"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TimeUp - Storage Diagnostic</title>
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        padding: 20px;
+        background: #1d2125;
+        color: #b6c2cf;
+      }
+      .storage-info {
+        background: #282e33;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 3px;
+        border-left: 3px solid #0079bf;
+      }
+      .storage-key {
+        font-weight: bold;
+        color: #61bd4f;
+        font-family: monospace;
+      }
+      .storage-size {
+        color: #f2d600;
+        font-weight: bold;
+      }
+      .storage-value {
+        background: #1d2125;
+        padding: 10px;
+        margin-top: 5px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .total {
+        background: #eb5a46;
+        color: white;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 3px;
+        font-weight: bold;
+        font-size: 18px;
+      }
+      button {
+        background: #0079bf;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 14px;
+        margin: 10px 5px;
+      }
+      button:hover {
+        background: #026aa7;
+      }
+      button.danger {
+        background: #eb5a46;
+      }
+      button.danger:hover {
+        background: #cf513d;
+      }
+      .warning {
+        background: #f2d600;
+        color: #172b4d;
+        padding: 10px;
+        border-radius: 3px;
+        margin: 10px 0;
+      }
+      .info {
+        background: rgba(87, 157, 255, 0.1);
+        border: 1px solid #579dff;
+        padding: 12px;
+        border-radius: 3px;
+        margin: 10px 0;
+      }
+      .data-field {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .data-field:last-child {
+        border-bottom: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 Storage Diagnostic</h1>
 
-  <script src="https://p.trellocdn.com/power-up.min.js"></script>
-  <script>
-    const t = TrelloPowerUp.iframe();
-    
-    async function loadAllStorage() {
-      const results = document.getElementById('results');
-      results.innerHTML = '<p>Scanning...</p>';
-      
-      try {
-        // Get ALL data from all scopes
-        const allData = await t.getAll();
-        console.log('[Diagnostic] All data:', allData);
-        
-        const cardShared = allData.card?.shared || {};
-        const timerData = cardShared.timerData || {};
-        
-        let totalCardSize = 0;
-        let html = '';
-        
-        // Show timerData breakdown
-        html += '<h2>📦 Timer Data (card/shared/timerData)</h2>';
-        
-        const jsonStr = JSON.stringify(timerData);
-        totalCardSize = jsonStr.length;
-        
-        html += `
+    <div class="info">
+      <strong>Aggregated Totals Architecture:</strong> TimeUp stores only
+      aggregated time totals (~500 bytes).
+      <ul style="margin: 8px 0 0 20px; padding: 0">
+        <li><code>totalTime</code> - Single number for all time tracked</li>
+        <li><code>recentEntries</code> - Last 5 entries only (for editing)</li>
+        <li><code>checklistTotals</code> - Per-item aggregated totals</li>
+      </ul>
+    </div>
+
+    <button onclick="loadAllStorage()">🔄 Scan Storage</button>
+    <button onclick="clearAllData()" class="danger">🗑️ Clear All Data</button>
+
+    <div id="results"></div>
+
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <script>
+      const t = TrelloPowerUp.iframe();
+
+      async function loadAllStorage() {
+        const results = document.getElementById("results");
+        results.innerHTML = "<p>Scanning...</p>";
+
+        try {
+          // Get ALL data from all scopes
+          const allData = await t.getAll();
+          console.log("[Diagnostic] All data:", allData);
+
+          const cardShared = allData.card?.shared || {};
+          const timerData = cardShared.timerData || {};
+
+          let totalCardSize = 0;
+          let html = "";
+
+          // Show timerData breakdown
+          html += "<h2>📦 Timer Data (card/shared/timerData)</h2>";
+
+          const jsonStr = JSON.stringify(timerData);
+          totalCardSize = jsonStr.length;
+
+          html += `
           <div class="storage-info">
             <div class="data-field">
               <span>State:</span>
-              <span class="storage-key">${timerData.state || 'idle'}</span>
+              <span class="storage-key">${timerData.state || "idle"}</span>
             </div>
             <div class="data-field">
               <span>Total Time:</span>
@@ -154,22 +156,22 @@
             </div>
             <div class="data-field">
               <span>Estimate Set:</span>
-              <span>${timerData.manualEstimateSet ? formatDuration(timerData.estimatedTime) : 'Auto (from checklists)'}</span>
+              <span>${timerData.manualEstimateSet ? formatDuration(timerData.estimatedTime) : "Auto (from checklists)"}</span>
             </div>
             <div class="data-field">
               <span>Currently Running:</span>
-              <span class="storage-key">${timerData.currentEntry ? 'Yes ⏱️' : 'No'}</span>
+              <span class="storage-key">${timerData.currentEntry ? "Yes ⏱️" : "No"}</span>
             </div>
           </div>
         `;
-        
-        // Show checklistTotals breakdown if any
-        const checklistTotals = timerData.checklistTotals || {};
-        if (Object.keys(checklistTotals).length > 0) {
-          html += '<h3>Checklist Item Totals</h3>';
-          for (const [itemId, data] of Object.entries(checklistTotals)) {
-            html += `
-              <div class="storage-info" style="border-left-color: ${data.state === 'running' ? '#61bd4f' : '#626f86'};">
+
+          // Show checklistTotals breakdown if any
+          const checklistTotals = timerData.checklistTotals || {};
+          if (Object.keys(checklistTotals).length > 0) {
+            html += "<h3>Checklist Item Totals</h3>";
+            for (const [itemId, data] of Object.entries(checklistTotals)) {
+              html += `
+              <div class="storage-info" style="border-left-color: ${data.state === "running" ? "#61bd4f" : "#626f86"};">
                 <div><span class="storage-key">${itemId.substring(0, 12)}...</span></div>
                 <div class="data-field">
                   <span>Total Time:</span>
@@ -181,74 +183,76 @@
                 </div>
                 <div class="data-field">
                   <span>Estimate:</span>
-                  <span>${data.estimatedTime ? formatDuration(data.estimatedTime) : 'Not set'}</span>
+                  <span>${data.estimatedTime ? formatDuration(data.estimatedTime) : "Not set"}</span>
                 </div>
               </div>
             `;
+            }
           }
-        }
-        
-        // Show raw JSON
-        html += '<h3>Raw Storage</h3>';
-        html += `
+
+          // Show raw JSON
+          html += "<h3>Raw Storage</h3>";
+          html += `
           <div class="storage-info">
-            <div><span class="storage-key">timerData</span>: <span class="${totalCardSize > 1000 ? 'storage-size' : ''}">${totalCardSize} chars</span></div>
+            <div><span class="storage-key">timerData</span>: <span class="${totalCardSize > 1000 ? "storage-size" : ""}">${totalCardSize} chars</span></div>
             <div class="storage-value">${escapeHtml(JSON.stringify(timerData, null, 2))}</div>
           </div>
         `;
-        
-        const cardLimit = 4096;
-        const cardPercentage = ((totalCardSize / cardLimit) * 100).toFixed(1);
-        const cardExceeded = totalCardSize > cardLimit;
-        
-        results.innerHTML = `
-          <div class="total" style="background: ${cardExceeded ? '#eb5a46' : '#61bd4f'}">
+
+          const cardLimit = 4096;
+          const cardPercentage = ((totalCardSize / cardLimit) * 100).toFixed(1);
+          const cardExceeded = totalCardSize > cardLimit;
+
+          results.innerHTML = `
+          <div class="total" style="background: ${cardExceeded ? "#eb5a46" : "#61bd4f"}">
             STORAGE: ${totalCardSize} / ${cardLimit} chars (${cardPercentage}%)
-            ${cardExceeded ? ' ⚠️ LIMIT EXCEEDED!' : ' ✅ Scales infinitely'}
+            ${cardExceeded ? " ⚠️ LIMIT EXCEEDED!" : " ✅ Scales infinitely"}
           </div>
           ${html}
         `;
-        
-      } catch (error) {
-        results.innerHTML = `<div class="warning">Error: ${error.message}</div>`;
-        console.error('[Diagnostic] Error:', error);
+        } catch (error) {
+          results.innerHTML = `<div class="warning">Error: ${error.message}</div>`;
+          console.error("[Diagnostic] Error:", error);
+        }
       }
-    }
-    
-    async function clearAllData() {
-      if (!confirm('Clear ALL TimeUp data for this card? This cannot be undone!')) {
-        return;
+
+      async function clearAllData() {
+        if (
+          !confirm(
+            "Clear ALL TimeUp data for this card? This cannot be undone!",
+          )
+        ) {
+          return;
+        }
+
+        try {
+          await t.remove("card", "shared", "timerData");
+
+          alert("All TimeUp data cleared for this card.");
+          await loadAllStorage();
+        } catch (error) {
+          alert(`Error: ${error.message}`);
+        }
       }
-      
-      try {
-        await t.remove('card', 'shared', 'timerData');
-        
-        alert('All TimeUp data cleared for this card.');
-        await loadAllStorage();
-        
-      } catch (error) {
-        alert(`Error: ${error.message}`);
+
+      function formatDuration(ms) {
+        if (!ms || ms <= 0) return "0m";
+        const hours = Math.floor(ms / (1000 * 60 * 60));
+        const mins = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+        if (hours > 0) return `${hours}h ${mins}m`;
+        return `${mins}m`;
       }
-    }
-    
-    function formatDuration(ms) {
-      if (!ms || ms <= 0) return '0m';
-      const hours = Math.floor(ms / (1000 * 60 * 60));
-      const mins = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-      if (hours > 0) return `${hours}h ${mins}m`;
-      return `${mins}m`;
-    }
-    
-    function escapeHtml(str) {
-      return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-    
-    // Auto-load on open
-    loadAllStorage();
-  </script>
-</body>
+
+      function escapeHtml(str) {
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      // Auto-load on open
+      loadAllStorage();
+    </script>
+  </body>
 </html>

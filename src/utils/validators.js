@@ -9,7 +9,7 @@
  * @returns {boolean} True if valid positive number
  */
 export const isPositiveNumber = (value) => {
-    return typeof value === 'number' && Number.isFinite(value) && value > 0;
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
 };
 
 /**
@@ -18,7 +18,7 @@ export const isPositiveNumber = (value) => {
  * @returns {boolean} True if non-empty string
  */
 export const isNonEmptyString = (value) => {
-    return typeof value === 'string' && value.trim().length > 0;
+  return typeof value === "string" && value.trim().length > 0;
 };
 
 /**
@@ -27,11 +27,11 @@ export const isNonEmptyString = (value) => {
  * @returns {boolean} True if valid entry
  */
 export const isValidEntry = (entry) => {
-    return (
-        entry &&
-        typeof entry === 'object' &&
-        isPositiveNumber(entry.startTime) &&
-        isPositiveNumber(entry.endTime) &&
-        entry.endTime > entry.startTime
-    );
+  return (
+    entry &&
+    typeof entry === "object" &&
+    isPositiveNumber(entry.startTime) &&
+    isPositiveNumber(entry.endTime) &&
+    entry.endTime > entry.startTime
+  );
 };
