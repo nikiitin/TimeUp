@@ -25,6 +25,13 @@ describe("TimerService", () => {
     StorageService.setTimerData = jest
       .fn()
       .mockResolvedValue({ success: true });
+    StorageService.setTimerMetadata = jest
+      .fn()
+      .mockResolvedValue({ success: true });
+    StorageService.setData = jest
+      .fn()
+      .mockResolvedValue({ success: true });
+    StorageService.getData = jest.fn().mockResolvedValue(null);
 
     jest.clearAllMocks();
   });
@@ -36,7 +43,8 @@ describe("TimerService", () => {
       expect(result.success).toBe(true);
       expect(result.data.state).toBe(TIMER_STATE.RUNNING);
       expect(result.data.currentEntry).toBeDefined();
-      expect(StorageService.setTimerData).toHaveBeenCalled();
+      // Now uses setTimerMetadata (setData only called if there are entries to save)
+      expect(StorageService.setTimerMetadata).toHaveBeenCalled();
     });
 
     test("should fail if already running", async () => {
@@ -257,7 +265,7 @@ describe("TimerService", () => {
     });
 
     test("handleSaveResult should handle save errors with generic message", async () => {
-      StorageService.setTimerData.mockResolvedValue({
+      StorageService.setTimerMetadata.mockResolvedValue({
         success: false,
         error: "UNKNOWN_ERROR",
       });
@@ -269,8 +277,8 @@ describe("TimerService", () => {
     });
 
     test("handleSaveResult should handle unexpected errors in catch block", async () => {
-      // Force an error by making setTimerData throw
-      StorageService.setTimerData.mockRejectedValue(new Error("Unexpected save error"));
+      // Force an error by making setTimerMetadata throw
+      StorageService.setTimerMetadata.mockRejectedValue(new Error("Unexpected save error"));
 
       const result = await TimerService.startTimer(tMock);
 

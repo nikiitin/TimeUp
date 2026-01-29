@@ -12,7 +12,7 @@ describe("EntryStorageService", () => {
     
     // Setup mocks
     StorageService.getTimerData = jest.fn();
-    StorageService.setTimerData = jest.fn();
+    StorageService.setTimerMetadata = jest.fn();
     StorageService.getData = jest.fn();
     StorageService.setData = jest.fn();
     StorageService.removeData = jest.fn();
@@ -85,16 +85,22 @@ describe("EntryStorageService", () => {
   });
 
   describe("getAllEntries", () => {
-    test("should return entries from timerData", async () => {
+    test("should return entries from recent storage", async () => {
       const mockEntries = [
-        { id: "e1", startTime: 1000, createdAt: 1000 },
-        { id: "e2", startTime: 2000, createdAt: 2000 },
+        { id: "e1", startTime: 1000, endTime: 2000, duration: 1000, description: "", createdAt: 1000, checklistItemId: null },
+        { id: "e2", startTime: 2000, endTime: 3000, duration: 1000, description: "", createdAt: 2000, checklistItemId: null },
       ];
 
-      StorageService.getTimerData.mockResolvedValue({
-        entries: mockEntries,
-        state: "idle",
-      });
+      // Mock the new storage structure - compressed entries
+      const compressed = mockEntries.map(e => [
+        e.id, e.startTime, e.endTime, e.duration, e.description, e.createdAt, e.checklistItemId
+      ]);
+
+      // First call: return compressed recent entries
+      // Subsequent calls: return null (no archive pages)
+      StorageService.getData
+        .mockResolvedValueOnce(compressed) // timerEntries_recent
+        .mockResolvedValue(null); // archive pages
 
       const entries = await EntryStorageService.getAllEntries(tMock);
 
@@ -104,10 +110,7 @@ describe("EntryStorageService", () => {
     });
 
     test("should return empty array if no entries", async () => {
-      StorageService.getTimerData.mockResolvedValue({
-        entries: [],
-        state: "idle",
-      });
+      StorageService.getData.mockResolvedValue(null);
 
       const entries = await EntryStorageService.getAllEntries(tMock);
 
@@ -115,7 +118,7 @@ describe("EntryStorageService", () => {
     });
 
     test("should handle errors gracefully", async () => {
-      StorageService.getTimerData.mockRejectedValue(
+      StorageService.getData.mockRejectedValue(
         new Error("Storage error"),
       );
 
@@ -143,7 +146,8 @@ describe("EntryStorageService", () => {
         currentEntry: null,
       };
 
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
+      StorageService.setData.mockResolvedValue({ success: true }); // For recent entries
 
       const result = await EntryStorageService.saveEntries(
         tMock,
@@ -152,7 +156,8 @@ describe("EntryStorageService", () => {
       );
 
       expect(result.success).toBe(true);
-      expect(StorageService.setTimerData).toHaveBeenCalled();
+      expect(StorageService.setTimerMetadata).toHaveBeenCalled();
+      expect(StorageService.setData).toHaveBeenCalled();
     });
 
     test("should split entries between recent and archived", async () => {
@@ -168,7 +173,7 @@ describe("EntryStorageService", () => {
 
       const timerData = { state: "idle", currentEntry: null };
 
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
       StorageService.setData.mockResolvedValue({ success: true });
 
       const result = await EntryStorageService.saveEntries(
@@ -186,7 +191,7 @@ describe("EntryStorageService", () => {
       const entries = [{ id: "e1", createdAt: 1000 }];
       const timerData = { state: "idle" };
 
-      StorageService.setTimerData.mockResolvedValue({
+      StorageService.setTimerMetadata.mockResolvedValue({
         success: false,
         error: "Storage full",
       });
@@ -205,15 +210,20 @@ describe("EntryStorageService", () => {
   describe("deleteEntry", () => {
     test("should delete entry by ID", async () => {
       const entries = [
-        { id: "e1", startTime: 1000, createdAt: 1000 },
-        { id: "e2", startTime: 2000, createdAt: 2000 },
+        { id: "e1", startTime: 1000, endTime: 2000, duration: 1000, description: "", createdAt: 1000, checklistItemId: null },
+        { id: "e2", startTime: 2000, endTime: 3000, duration: 1000, description: "", createdAt: 2000, checklistItemId: null },
       ];
 
-      StorageService.getTimerData
-        .mockResolvedValueOnce({ entries, state: "idle" })
-        .mockResolvedValueOnce({ entries: [], state: "idle" });
-
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      // Mock getAllEntries to return both entries
+      const compressed = entries.map(e => [e.id, e.startTime, e.endTime, e.duration, e.description, e.createdAt, e.checklistItemId]);
+      StorageService.getData
+        .mockResolvedValueOnce(compressed) // recent entries for getAllEntries
+        .mockResolvedValue(null); // archive pages return null
+      
+      StorageService.getTimerData.mockResolvedValue({ state: "idle" });
+      
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
+      StorageService.setData.mockResolvedValue({ success: true });
 
       const result = await EntryStorageService.deleteEntry(tMock, "e1");
 
@@ -244,17 +254,21 @@ describe("EntryStorageService", () => {
         {
           id: "e1",
           startTime: 1000,
+          endTime: 2000,
           duration: 1000,
           description: "Old",
           createdAt: 1000,
+          checklistItemId: null,
         },
       ];
 
-      StorageService.getTimerData
-        .mockResolvedValueOnce({ entries, state: "idle" })
-        .mockResolvedValueOnce({ entries: [], state: "idle" });
+      // Mock getAllEntries
+      const compressed = entries.map(e => [e.id, e.startTime, e.endTime, e.duration, e.description, e.createdAt, e.checklistItemId]);
+      StorageService.getData.mockResolvedValue(compressed);
+      StorageService.getTimerData.mockResolvedValue({ state: "idle" });
 
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
+      StorageService.setData.mockResolvedValue({ success: true });
 
       const result = await EntryStorageService.updateEntry(tMock, "e1", {
         description: "Updated",
@@ -415,7 +429,7 @@ describe("EntryStorageService", () => {
         createdAt: (i + 1) * 1000,
       }));
 
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
       StorageService.setData.mockResolvedValue({ success: true });
       StorageService.getData.mockResolvedValue(null);
 
@@ -429,11 +443,14 @@ describe("EntryStorageService", () => {
 
   describe("Error handling coverage", () => {
     test("getAllEntries should handle getData errors gracefully", async () => {
+      // Mock migration path: old format with entries in timerData
+      StorageService.getData
+        .mockResolvedValueOnce(null) // No recent entries
+        .mockRejectedValue(new Error("Storage error")); // Archives fail
+        
       StorageService.getTimerData.mockResolvedValue({
-        entries: [{ id: "e1", createdAt: 1000 }],
+        entries: [{ id: "e1", startTime: 1000, endTime: 2000, duration: 1000, description: "", createdAt: 1000, checklistItemId: null }],
       });
-      
-      StorageService.getData.mockRejectedValue(new Error("Storage error"));
 
       const entries = await EntryStorageService.getAllEntries(tMock);
 
@@ -451,7 +468,7 @@ describe("EntryStorageService", () => {
         createdAt: (i + 1) * 1000,
       }));
 
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
       StorageService.setData.mockRejectedValue(new Error("Write error"));
 
       const result = await EntryStorageService.saveEntries(tMock, entries, { state: "idle" });
@@ -463,7 +480,7 @@ describe("EntryStorageService", () => {
     test("deleteEntry should handle errors", async () => {
       // getAllEntries catches errors, so deleteEntry succeeds with empty list
       StorageService.getTimerData.mockRejectedValue(new Error("Read error"));
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
       StorageService.getData.mockResolvedValue(null);
 
       const result = await EntryStorageService.deleteEntry(tMock, "entry_1");
@@ -476,7 +493,7 @@ describe("EntryStorageService", () => {
     test("updateEntry should handle errors", async () => {
       // getAllEntries catches errors, so updateEntry succeeds with empty list
       StorageService.getTimerData.mockRejectedValue(new Error("Read error"));
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
       StorageService.getData.mockResolvedValue(null);
 
       const result = await EntryStorageService.updateEntry(tMock, "entry_1", {
@@ -505,18 +522,20 @@ describe("EntryStorageService", () => {
     });
 
     test("getAllEntries should handle outer catch block", async () => {
+      // Mock migration path
+      StorageService.getData.mockResolvedValueOnce(null); // No recent entries
       StorageService.getTimerData.mockResolvedValue({
-        entries: [{ id: "e1", createdAt: 1000 }],
+        entries: [{ id: "e1", startTime: 1000, endTime: 2000, duration: 1000, description: "", createdAt: 1000, checklistItemId: null }],
       });
 
-      // Make getData throw an unexpected error
-      StorageService.getData.mockImplementation(() => {
+      // Make subsequent getData throw an unexpected error
+      StorageService.getData.mockImplementationOnce(() => {
         throw new Error("Unexpected error");
       });
 
       const entries = await EntryStorageService.getAllEntries(tMock);
 
-      // Should still return main entries
+      // Should still return entries from migration path
       expect(entries.length).toBe(1);
       expect(entries[0].id).toBe("e1");
     });
@@ -531,7 +550,7 @@ describe("EntryStorageService", () => {
         createdAt: (i + 1) * 1000,
       }));
 
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
       StorageService.setData.mockRejectedValue(new Error("Archive write failed"));
 
       const result = await EntryStorageService.saveEntries(tMock, entries, { state: "idle" });
@@ -581,7 +600,7 @@ describe("EntryStorageService", () => {
         createdAt: (i + 1) * 1000,
       }));
 
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
       StorageService.setData.mockResolvedValue({ success: true });
 
       await EntryStorageService.saveEntries(tMock, entries, { state: "idle" });
@@ -597,7 +616,7 @@ describe("EntryStorageService", () => {
         entries: [{ id: "e1", createdAt: 1000, description: "Old" }],
       });
       StorageService.getData.mockResolvedValue(null);
-      StorageService.setTimerData.mockResolvedValue({ success: false, error: "Save failed" });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: false, error: "Save failed" });
 
       const result = await EntryStorageService.updateEntry(tMock, "e1", {
         description: "New",
@@ -612,7 +631,7 @@ describe("EntryStorageService", () => {
         entries: [{ id: "e1", createdAt: 1000 }],
       });
       StorageService.getData.mockResolvedValue(null);
-      StorageService.setTimerData.mockResolvedValue({ success: false, error: "Save failed" });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: false, error: "Save failed" });
 
       const result = await EntryStorageService.deleteEntry(tMock, "e1");
 

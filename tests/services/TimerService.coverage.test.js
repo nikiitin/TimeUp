@@ -480,10 +480,12 @@ describe("TimerService - Comprehensive Coverage", () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
       await TimerService.stopTimer(t, "Second entry");
 
-      const timerData = await StorageService.getTimerData(t);
+      // Import EntryStorageService to get entries
+      const EntryStorageService = (await import("../../src/services/EntryStorageService.js")).default;
+      const entries = await EntryStorageService.getAllEntries(t);
 
-      expect(timerData.entries.length).toBe(2);
-      timerData.entries.forEach((entry) => {
+      expect(entries.length).toBe(2);
+      entries.forEach((entry) => {
         expect(entry.duration).toBeGreaterThan(0);
       });
     });
@@ -499,10 +501,11 @@ describe("TimerService - Comprehensive Coverage", () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
       await TimerService.stopItemTimer(t, "item-1");
 
-      const timerData = await StorageService.getTimerData(t);
+      const EntryStorageService = (await import("../../src/services/EntryStorageService.js")).default;
+      const entries = await EntryStorageService.getAllEntries(t);
 
-      const globalEntries = timerData.entries.filter((e) => !e.checklistItemId);
-      const itemEntries = timerData.entries.filter(
+      const globalEntries = entries.filter((e) => !e.checklistItemId);
+      const itemEntries = entries.filter(
         (e) => e.checklistItemId === "item-1",
       );
 
@@ -519,19 +522,22 @@ describe("TimerService - Comprehensive Coverage", () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
       await TimerService.stopTimer(t);
 
-      const timerData = await StorageService.getTimerData(t);
+      const EntryStorageService = (await import("../../src/services/EntryStorageService.js")).default;
+      const entries = await EntryStorageService.getAllEntries(t);
 
-      expect(timerData.entries.length).toBe(2);
+      expect(entries.length).toBe(2);
     });
 
     test("should handle entries with missing duration during intermediate states", async () => {
       // Start but don't stop - no entry created yet
       await TimerService.startTimer(t);
 
+      const EntryStorageService = (await import("../../src/services/EntryStorageService.js")).default;
+      const entries = await EntryStorageService.getAllEntries(t);
       const timerData = await StorageService.getTimerData(t);
 
       // No completed entries yet
-      expect(timerData.entries.length).toBe(0);
+      expect(entries.length).toBe(0);
       // But currentEntry exists
       expect(timerData.currentEntry).toBeDefined();
     });

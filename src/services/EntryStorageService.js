@@ -56,20 +56,39 @@ export const decompressEntry = (compressed) => {
 };
 
 /**
- * Gets all entries for a card (combines main + archived).
+ * Gets all entries for a card (combines recent + archived).
+ * Includes migration from old format (entries in timerData) to new format.
  * @param {Object} t - Trello client
  * @returns {Promise<Array>} All entries sorted by createdAt (newest first)
  */
 export const getAllEntries = async (t) => {
-  let mainEntries = [];
+  let recentEntries = [];
   let archivedEntries = [];
 
   try {
-    // Get main timer data entries using getTimerData (which can be mocked in tests)
-    const timerData = await StorageService.getTimerData(t);
-    mainEntries = Array.isArray(timerData?.entries) ? timerData.entries : [];
+    // Get recent entries from separate storage key
+    const recentCompressed = await StorageService.getData(
+      t,
+      "card",
+      "shared",
+      `${STORAGE_KEYS.ENTRIES}_recent`
+    );
+    
+    if (Array.isArray(recentCompressed)) {
+      recentEntries = recentCompressed.map(decompressEntry).filter(Boolean);
+    }
+    
+    // MIGRATION: Check if old format exists (entries in timerData)
+    if (recentEntries.length === 0) {
+      const timerData = await StorageService.getTimerData(t);
+      if (timerData?.entries && Array.isArray(timerData.entries) && timerData.entries.length > 0) {
+        console.warn("[EntryStorageService] Migrating entries from old format to new format");
+        // Use entries from timerData and trigger migration on next save
+        recentEntries = timerData.entries;
+      }
+    }
   } catch (error) {
-    console.error("[EntryStorageService] Error getting main entries:", error);
+    console.error("[EntryStorageService] Error getting recent entries:", error);
   }
 
   // Try to get archived entries (may not exist or be accessible in tests)
@@ -96,12 +115,12 @@ export const getAllEntries = async (t) => {
       }
     }
   } catch (error) {
-    // Archived entries not available (e.g., in tests) - just use main entries
+    // Archived entries not available (e.g., in tests) - just use recent entries
     console.warn("[EntryStorageService] Archived entries not available:", error.message);
   }
 
   // Combine and sort by createdAt (newest first)
-  const allEntries = [...mainEntries, ...archivedEntries];
+  const allEntries = [...recentEntries, ...archivedEntries];
   allEntries.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   return allEntries;
@@ -124,16 +143,26 @@ export const saveEntries = async (t, entries, timerData) => {
     const recentEntries = sortedEntries.slice(0, ENTRIES_PER_MAIN_STORAGE);
     const oldEntries = sortedEntries.slice(ENTRIES_PER_MAIN_STORAGE);
 
-    // Update timerData with recent entries only
-    const updatedTimerData = {
-      ...timerData,
-      entries: recentEntries,
-    };
+    // CRITICAL: Save metadata WITHOUT entries to avoid 4KB limit
+    // Metadata includes state, currentEntry, estimatedTime, checklistItems
+    const metadataResult = await StorageService.setTimerMetadata(t, timerData);
+    if (!metadataResult.success) {
+      return metadataResult;
+    }
 
-    // Save main timer data (metadata + recent entries)
-    const mainResult = await StorageService.setTimerData(t, updatedTimerData);
-    if (!mainResult.success) {
-      return mainResult;
+    // Save recent entries to separate key (compressed)
+    if (recentEntries.length > 0) {
+      const compressedRecent = recentEntries.map(compressEntry);
+      const recentResult = await StorageService.setData(
+        t,
+        "card",
+        "shared",
+        `${STORAGE_KEYS.ENTRIES}_recent`,
+        compressedRecent
+      );
+      if (!recentResult.success) {
+        return recentResult;
+      }
     }
 
     // Archive old entries in pages
