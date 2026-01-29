@@ -5,13 +5,16 @@ description: Start a local development server for testing the Power-Up
 # Serve TimeUp Locally
 
 ## Prerequisites
+
 - Node.js installed (for npx)
 - Or Python 3 installed (alternative)
 
 ## Steps
 
 // turbo
+
 1. Start a local HTTP server on port 8080:
+
 ```bash
 npx -y serve . -l 8080
 ```
@@ -28,11 +31,13 @@ npx -y serve . -l 8080
 ## Alternative: Python Server
 
 // turbo
+
 ```bash
 python3 -m http.server 8080
 ```
 
 ## Notes
+
 - Changes to files are reflected immediately (no build step)
 - Check browser console for JavaScript errors
 - Trello requires HTTPS for production; localhost is allowed for development

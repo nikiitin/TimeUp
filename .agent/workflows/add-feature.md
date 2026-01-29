@@ -9,6 +9,7 @@ Follow this workflow to add features while maintaining architecture consistency.
 ## 1. Plan the Feature
 
 Before coding, identify:
+
 - [ ] Which Power-Up capability is affected? (`card-buttons`, `card-badges`, etc.)
 - [ ] Does it need new data stored? (Update `TimerData` model)
 - [ ] Does it need new UI? (Which view file?)
@@ -23,14 +24,16 @@ If adding new storage keys, states, or defaults:
 ```javascript
 // Add new storage key
 export const STORAGE_KEYS = {
-    // ... existing
-    NEW_KEY: 'newKey',
+  // ... existing
+  NEW_KEY: "newKey",
 };
 
 // Add new default
 export const DEFAULTS = {
-    // ... existing
-    NEW_DATA: { /* default structure */ },
+  // ... existing
+  NEW_DATA: {
+    /* default structure */
+  },
 };
 ```
 
@@ -39,6 +42,7 @@ export const DEFAULTS = {
 All business logic goes in `src/services/`.
 
 **Pattern to follow**:
+
 ```javascript
 /**
  * Does something important.
@@ -47,20 +51,21 @@ All business logic goes in `src/services/`.
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
 export const doSomething = async (t, someParam) => {
-    try {
-        // Validate input
-        // Get current data
-        // Perform operation
-        // Save updated data
-        return { success: true, data: updatedData };
-    } catch (error) {
-        console.error('[ServiceName] doSomething error:', error);
-        return { success: false, error: error.message };
-    }
+  try {
+    // Validate input
+    // Get current data
+    // Perform operation
+    // Save updated data
+    return { success: true, data: updatedData };
+  } catch (error) {
+    console.error("[ServiceName] doSomething error:", error);
+    return { success: false, error: error.message };
+  }
 };
 ```
 
 **Remember**:
+
 - Always wrap in try/catch
 - Always return `{ success, data?, error? }` pattern
 - Log errors with `[ServiceName]` prefix
@@ -70,36 +75,42 @@ export const doSomething = async (t, someParam) => {
 UI files only handle DOM manipulation. They import and call services.
 
 **Pattern**:
+
 ```javascript
-import SomeService from '../services/SomeService.js';
+import SomeService from "../services/SomeService.js";
 
 // Get DOM elements
-const myButton = document.getElementById('my-button');
+const myButton = document.getElementById("my-button");
 
 // Event handler calls service
-myButton.addEventListener('click', async () => {
-    const result = await SomeService.doSomething(t, value);
-    if (result.success) {
-        // Update display with result.data
-    } else {
-        // Show error to user
-    }
+myButton.addEventListener("click", async () => {
+  const result = await SomeService.doSomething(t, value);
+  if (result.success) {
+    // Update display with result.data
+  } else {
+    // Show error to user
+  }
 });
 ```
 
 ## 5. Add CSS (if needed)
 
 **For new components**: Add to `styles/components.css` using BEM:
+
 ```css
-.feature-name { }
-.feature-name__element { }
-.feature-name__element--modifier { }
+.feature-name {
+}
+.feature-name__element {
+}
+.feature-name__element--modifier {
+}
 ```
 
 **For new colors**: First add to `styles/variables.css`:
+
 ```css
 :root {
-    --color-feature: #hexvalue;
+  --color-feature: #hexvalue;
 }
 ```
 
@@ -109,16 +120,17 @@ If adding a new Power-Up capability, register it in `src/main.js`:
 
 ```javascript
 TrelloPowerUp.initialize({
-    // ... existing capabilities
-    'new-capability': async (t) => {
-        // Return capability configuration
-    },
+  // ... existing capabilities
+  "new-capability": async (t) => {
+    // Return capability configuration
+  },
 });
 ```
 
 ## 7. Test
 
 Follow `/test-in-trello` workflow to verify:
+
 - [ ] Feature works with timer running
 - [ ] Feature works with timer stopped
 - [ ] Feature works with zero entries
@@ -129,6 +141,7 @@ Follow `/test-in-trello` workflow to verify:
 ## 8. Pre-Commit Review
 
 Before committing, verify all items in `.agent/rules.md`:
+
 - [ ] Security: XSS prevention (escape all external data in HTML)
 - [ ] Error handling: No silent failures (all errors notified to user)
 - [ ] Performance: No redundant API calls in refresh loops

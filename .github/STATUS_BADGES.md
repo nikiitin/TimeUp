@@ -1,41 +1,49 @@
-#  Status Badges for README
+# Status Badges for README
 
 Add these badges to your main `README.md` to display CI/CD status:
 
 ## Recommended Badges
 
 ### Essential Badges
+
 ```markdown
 <!-- CI/CD Status -->
+
 [![CI Status](https://github.com/nikiitin/TimeUp/actions/workflows/ci.yml/badge.svg)](https://github.com/nikiitin/TimeUp/actions/workflows/ci.yml)
 [![Deploy Status](https://github.com/nikiitin/TimeUp/actions/workflows/deploy.yml/badge.svg)](https://github.com/nikiitin/TimeUp/actions/workflows/deploy.yml)
 
 <!-- Coverage (after Codecov setup) -->
+
 [![codecov](https://codecov.io/gh/nikiitin/TimeUp/branch/main/graph/badge.svg)](https://codecov.io/gh/nikiitin/TimeUp)
 
 <!-- Version -->
+
 [![GitHub release](https://img.shields.io/github/release/nikiitin/TimeUp.svg)](https://github.com/nikiitin/TimeUp/releases)
 [![License](https://img.shields.io/github/license/nikiitin/TimeUp.svg)](LICENSE)
 ```
 
 ### Optional Badges
+
 ```markdown
 <!-- Maintenance -->
+
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/nikiitin/TimeUp/graphs/commit-activity)
 [![GitHub last commit](https://img.shields.io/github/last-commit/nikiitin/TimeUp.svg)](https://github.com/nikiitin/TimeUp/commits/main)
 
 <!-- Dependencies -->
+
 [![Dependencies Status](https://img.shields.io/david/nikiitin/TimeUp.svg)](https://github.com/nikiitin/TimeUp)
 [![Known Vulnerabilities](https://snyk.io/test/github/nikiitin/TimeUp/badge.svg)](https://snyk.io/test/github/nikiitin/TimeUp)
 
 <!-- Code Quality -->
+
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/nikiitin/TimeUp.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/nikiitin/TimeUp/context:javascript)
 ```
 
 ## Sample README Header
 
-```markdown
-# TimeUp 
+````markdown
+# TimeUp
 
 > Trello Power-Up for Time Tracking
 
@@ -51,13 +59,13 @@ Track time spent on Trello cards with precision. Start, stop, pause timers, and 
 
 ## Features
 
--  **Timer Controls**: Start, stop, pause timers per card
--  **Reports**: Generate detailed time reports
--  **Checklist Integration**: Track time per checklist item
--  **Cost Calculation**: Set hourly rates
--  **Time Estimates**: Set and track against estimates
--  **Mobile Friendly**: Works on all devices
--  **Privacy First**: All data stored in Trello
+- **Timer Controls**: Start, stop, pause timers per card
+- **Reports**: Generate detailed time reports
+- **Checklist Integration**: Track time per checklist item
+- **Cost Calculation**: Set hourly rates
+- **Time Estimates**: Set and track against estimates
+- **Mobile Friendly**: Works on all devices
+- **Privacy First**: All data stored in Trello
 
 ## Quick Start
 
@@ -83,6 +91,7 @@ npm run test:coverage
 # Start dev server
 npm start
 ```
+````
 
 See [Contributing Guide](CONTRIBUTING.md) for development setup.
 
@@ -90,18 +99,19 @@ See [Contributing Guide](CONTRIBUTING.md) for development setup.
 
 This project uses GitHub Actions for:
 
--  Automated testing on every push
--  Automatic deployment to GitHub Pages
--  Security scanning
--  Weekly dependency updates
--  Coverage tracking
+- Automated testing on every push
+- Automatic deployment to GitHub Pages
+- Security scanning
+- Weekly dependency updates
+- Coverage tracking
 
 See [CI/CD Guide](.github/CI_CD_GUIDE.md) for details.
 
 ## License
 
 MIT © [Your Name](LICENSE)
-```
+
+````
 
 ## Badge Styles
 
@@ -119,7 +129,7 @@ Shields.io offers different styles:
 
 <!-- Plastic -->
 ![Badge](https://img.shields.io/badge/style-plastic-green?style=plastic)
-```
+````
 
 ## Custom Badges
 
@@ -127,9 +137,11 @@ Create custom badges at [shields.io](https://shields.io/):
 
 ```markdown
 <!-- Custom badge -->
+
 ![Custom](https://img.shields.io/badge/TimeUp-v1.0.0-blue?style=flat-square&logo=trello)
 
 <!-- With emoji -->
+
 ![Status](https://img.shields.io/badge/status-%20active-success)
 ```
 
@@ -168,6 +180,7 @@ Works automatically when you create releases:
 ## Badge Placement
 
 ### Option 1: Top of README (Horizontal)
+
 ```markdown
 # TimeUp
 
@@ -177,6 +190,7 @@ Description...
 ```
 
 ### Option 2: Below Title (Vertical)
+
 ```markdown
 # TimeUp
 
@@ -188,13 +202,14 @@ Description...
 ```
 
 ### Option 3: In Table
+
 ```markdown
 # TimeUp
 
-| Status | Badge |
-|--------|-------|
-| CI | [![CI](badge1)] |
-| Deploy | [![Deploy](badge2)] |
+| Status   | Badge                 |
+| -------- | --------------------- |
+| CI       | [![CI](badge1)]       |
+| Deploy   | [![Deploy](badge2)]   |
 | Coverage | [![Coverage](badge3)] |
 ```
 
@@ -214,15 +229,19 @@ Customize badge colors:
 
 ```markdown
 <!-- Success -->
+
 ![Badge](https://img.shields.io/badge/tests-passing-brightgreen)
 
 <!-- Warning -->
+
 ![Badge](https://img.shields.io/badge/coverage-85%25-yellow)
 
 <!-- Error -->
+
 ![Badge](https://img.shields.io/badge/build-failing-red)
 
 <!-- Info -->
+
 ![Badge](https://img.shields.io/badge/status-beta-blue)
 ```
 

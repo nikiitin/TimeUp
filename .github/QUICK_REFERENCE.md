@@ -1,6 +1,6 @@
 # CI/CD Quick Reference Card
 
-##  Common Commands
+## Common Commands
 
 ```bash
 # Run tests
@@ -37,7 +37,7 @@ git push origin feature/my-feature
 # → Review and merge
 ```
 
-##  Release Workflow
+## Release Workflow
 
 ```bash
 # Option 1: Git tag
@@ -48,7 +48,7 @@ git push origin v1.2.0
 # Actions → Release → Run workflow → Enter version
 ```
 
-##  Check CI Status
+## Check CI Status
 
 ```bash
 # View on GitHub
@@ -58,7 +58,7 @@ https://github.com/vnicolas/TimeUp/actions
 https://github.com/vnicolas/TimeUp/actions/workflows/ci.yml
 ```
 
-##  Debugging CI Failures
+## Debugging CI Failures
 
 1. Go to **Actions** tab
 2. Click on failed workflow
@@ -66,7 +66,7 @@ https://github.com/vnicolas/TimeUp/actions/workflows/ci.yml
 4. Expand failed step
 5. Read error logs
 
-##  Conventional Commits
+## Conventional Commits
 
 ```
 feat: new feature
@@ -79,7 +79,7 @@ chore: maintenance
 perf: performance
 ```
 
-##  Coverage Thresholds
+## Coverage Thresholds
 
 ```
 Minimum required:
@@ -89,29 +89,29 @@ Minimum required:
 └── Lines:      90%
 
 Current status:
-├── Statements: 95.74% 
-├── Branches:   91.38% 
-├── Functions:  98.82% 
-└── Lines:      95.59% 
+├── Statements: 95.74%
+├── Branches:   91.38%
+├── Functions:  98.82%
+└── Lines:      95.59%
 ```
 
-##  Workflow Triggers
+## Workflow Triggers
 
-| Workflow | Trigger |
-|----------|---------|
-| CI | Push to any branch, PR to main/develop |
-| Deploy | Push to main, manual |
-| Maintenance | Mondays 9 AM UTC, manual |
-| Release | Version tags (v*.*.*), manual |
+| Workflow    | Trigger                                |
+| ----------- | -------------------------------------- |
+| CI          | Push to any branch, PR to main/develop |
+| Deploy      | Push to main, manual                   |
+| Maintenance | Mondays 9 AM UTC, manual               |
+| Release     | Version tags (v*.*.\*), manual         |
 
-##  Artifacts
+## Artifacts
 
-| Artifact | Workflow | Location |
-|----------|----------|----------|
-| Coverage Report | CI | Actions → Workflow → Artifacts |
+| Artifact           | Workflow    | Location                       |
+| ------------------ | ----------- | ------------------------------ |
+| Coverage Report    | CI          | Actions → Workflow → Artifacts |
 | Maintenance Report | Maintenance | Actions → Workflow → Artifacts |
-| Coverage Trend | Maintenance | Actions → Workflow → Artifacts |
-| Test Stability | Maintenance | Actions → Workflow → Artifacts |
+| Coverage Trend     | Maintenance | Actions → Workflow → Artifacts |
+| Test Stability     | Maintenance | Actions → Workflow → Artifacts |
 
 ## 🚨 Emergency Fixes
 
@@ -136,12 +136,13 @@ git push origin hotfix/critical-issue
 ## 🔐 Required Checks
 
 Before merge to main:
--  All tests pass
--  Coverage ≥90%
--  No console.log statements
--  JSON files valid
--  No security vulnerabilities
--  1 approval from code owner
+
+- All tests pass
+- Coverage ≥90%
+- No console.log statements
+- JSON files valid
+- No security vulnerabilities
+- 1 approval from code owner
 
 ## 📍 Important URLs
 
@@ -153,7 +154,7 @@ GitHub Pages: https://vnicolas.github.io/TimeUp/
 Codecov:      https://codecov.io/gh/vnicolas/TimeUp
 ```
 
-##  Tips
+## Tips
 
 - Run `npm test` before pushing
 - Keep PRs small (< 500 lines)
@@ -162,7 +163,7 @@ Codecov:      https://codecov.io/gh/vnicolas/TimeUp
 - Update tests with code changes
 - Monitor Dependabot PRs weekly
 
-##  Need Help?
+## Need Help?
 
 1. Check [CI_CD_GUIDE.md](.github/CI_CD_GUIDE.md)
 2. Check [SETUP_GUIDE.md](.github/SETUP_GUIDE.md)

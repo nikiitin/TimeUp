@@ -5,19 +5,22 @@ description: Deploy TimeUp to GitHub Pages
 # Deploy to GitHub Pages
 
 ## Prerequisites
+
 - Repository pushed to GitHub
 - GitHub Pages enabled in repo settings
 
 ## Steps
 
 // turbo
+
 1. Ensure all changes are committed:
+
 ```bash
 git status
 ```
 
-// turbo
-2. Push to main branch:
+// turbo 2. Push to main branch:
+
 ```bash
 git push origin main
 ```
@@ -44,7 +47,9 @@ git push origin main
 ## Verify Deployment
 
 // turbo
+
 1. Check deployment status:
+
 ```bash
 git log -1 --format="%H %s"
 ```
@@ -56,10 +61,12 @@ git log -1 --format="%H %s"
 ## Troubleshooting
 
 ### 404 on pages
+
 - Ensure `index.html` is in the root directory
 - Check GitHub Pages source settings
 
 ### Old version showing
+
 - Hard refresh the page (Ctrl+Shift+R)
 - Check that the commit was pushed
 - Wait for GitHub Actions to complete
