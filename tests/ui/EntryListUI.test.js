@@ -28,6 +28,10 @@ describe("EntryListUI", () => {
     entryListUI = new EntryListUI({}, "entries-container", {
       onRefresh: jest.fn(),
       getChecklists: () => [],
+      getBoardMembers: () => [
+        { id: "member-1", fullName: "Alice Smith" },
+        { id: "member-2", fullName: "Bob Jones" },
+      ],
     });
   });
 
@@ -50,6 +54,37 @@ describe("EntryListUI", () => {
     expect(container.querySelectorAll(".entry").length).toBe(1);
     expect(container.innerHTML).toContain("Test Work");
     expect(container.innerHTML).toContain("10m");
+  });
+
+  test("should display member name when entry has memberId", () => {
+    const entries = [
+      {
+        id: "e1",
+        startTime: Date.now(),
+        duration: 600000,
+        description: "Test Work",
+        memberId: "member-1",
+      },
+    ];
+    entryListUI.render(entries);
+
+    expect(container.innerHTML).toContain("Alice Smith");
+    expect(container.querySelector(".entry__member")).not.toBeNull();
+  });
+
+  test("should not display member element when no memberId", () => {
+    const entries = [
+      {
+        id: "e1",
+        startTime: Date.now(),
+        duration: 600000,
+        description: "Test Work",
+        memberId: null,
+      },
+    ];
+    entryListUI.render(entries);
+
+    expect(container.querySelector(".entry__member")).toBeNull();
   });
 
   test("should enter edit mode on click", () => {

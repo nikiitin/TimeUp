@@ -85,6 +85,7 @@
     <script type="module">
       import StorageService from "../src/services/StorageService.js";
       import ChecklistService from "../src/services/ChecklistService.js";
+      import TrelloService from "../src/services/TrelloService.js";
       import { AppConfig } from "../src/config/AppConfig.js";
       import { TIMER_STATE } from "../src/utils/constants.js";
 
@@ -108,6 +109,7 @@
 
       // -- State --
       let cachedChecklists = [];
+      let cachedBoardMembers = [];
       let updateInterval = null;
 
       console.log("[App] Initializing controllers...");
@@ -153,6 +155,7 @@
       const entryListUI = new EntryListUI(t, "entries", {
         onRefresh: () => refresh(),
         getChecklists: () => cachedChecklists,
+        getBoardMembers: () => cachedBoardMembers,
       });
 
       // 4. Checklist Controls
@@ -206,6 +209,9 @@
         // 1. Fetch Checklists (Auth check handled inside service return)
         const newChecklists = await ChecklistService.getChecklists(t);
 
+        // 2. Fetch Board Members
+        cachedBoardMembers = await TrelloService.getBoardMembers(t);
+
         if (newChecklists === null) {
           // Not Authorized
           authUI.show();
@@ -215,7 +221,7 @@
           cachedChecklists = newChecklists;
           estimateUI.setChecklists(cachedChecklists);
 
-          // 2. Update UI
+          // 3. Update UI
           await refresh();
 
           // Resize (safe approach)

@@ -60,6 +60,7 @@ describe("TrelloService", () => {
         id: "test-member-id",
         fullName: "Test User",
         username: "testuser",
+        avatar: null,
       });
     });
 
@@ -68,6 +69,32 @@ describe("TrelloService", () => {
 
       const result = await TrelloService.getMember(mockT);
       expect(result).toBeNull();
+    });
+  });
+
+  describe("getBoardMembers", () => {
+    test("returns board members", async () => {
+      const result = await TrelloService.getBoardMembers(mockT);
+
+      expect(result).toEqual([
+        { id: "member-1", fullName: "Alice Smith", username: "alice" },
+        { id: "member-2", fullName: "Bob Jones", username: "bob" },
+        { id: "test-member-id", fullName: "Test User", username: "testuser" },
+      ]);
+    });
+
+    test("returns empty array on error", async () => {
+      mockT.board = createErrorMock("Board error");
+
+      const result = await TrelloService.getBoardMembers(mockT);
+      expect(result).toEqual([]);
+    });
+
+    test("returns empty array when no members", async () => {
+      mockT.board = jest.fn(async () => ({}));
+
+      const result = await TrelloService.getBoardMembers(mockT);
+      expect(result).toEqual([]);
     });
   });
 

@@ -6,10 +6,14 @@
 import { jest } from "@jest/globals";
 import TimerService from "../../src/services/TimerService.js";
 import StorageService from "../../src/services/StorageService.js";
+import TrelloService from "../../src/services/TrelloService.js";
 import { TIMER_STATE, DEFAULTS, VALIDATION } from "../../src/utils/constants.js";
 
 // Mock StorageService
 jest.mock("../../src/services/StorageService.js");
+
+// Mock TrelloService
+jest.mock("../../src/services/TrelloService.js");
 
 describe("TimerService", () => {
   let tMock;
@@ -36,6 +40,13 @@ describe("TimerService", () => {
       .mockResolvedValue({ success: true });
     StorageService.setData = jest.fn().mockResolvedValue({ success: true });
     StorageService.getData = jest.fn().mockResolvedValue(null);
+
+    // Mock TrelloService for member attribution
+    TrelloService.getMember = jest.fn().mockResolvedValue({
+      id: "test-member-id",
+      fullName: "Test User",
+      username: "testuser",
+    });
 
     jest.clearAllMocks();
   });
@@ -149,6 +160,37 @@ describe("TimerService", () => {
       expect(result.data.totalTime).toBeGreaterThan(0);
       // recentEntries should have the new entry
       expect(result.data.recentEntries.length).toBe(1);
+    });
+
+    test("should include memberId in entry when stopping timer", async () => {
+      StorageService.getTimerData.mockResolvedValue({
+        ...getMockData(),
+        state: TIMER_STATE.RUNNING,
+        currentEntry: { startTime: Date.now() - 1000, pausedDuration: 0 },
+      });
+      TrelloService.getMember.mockResolvedValue({
+        id: "user-123",
+        fullName: "John Doe",
+      });
+
+      const result = await TimerService.stopTimer(tMock, "");
+
+      expect(result.success).toBe(true);
+      expect(result.entry.memberId).toBe("user-123");
+    });
+
+    test("should handle null member gracefully", async () => {
+      StorageService.getTimerData.mockResolvedValue({
+        ...getMockData(),
+        state: TIMER_STATE.RUNNING,
+        currentEntry: { startTime: Date.now() - 1000, pausedDuration: 0 },
+      });
+      TrelloService.getMember.mockResolvedValue(null);
+
+      const result = await TimerService.stopTimer(tMock, "");
+
+      expect(result.success).toBe(true);
+      expect(result.entry.memberId).toBeNull();
     });
 
     test("should fail if timer not running", async () => {
@@ -292,6 +334,31 @@ describe("TimerService", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("No active timer");
+    });
+
+    test("should include memberId in entry when stopping item timer", async () => {
+      const dataWithRunningItem = {
+        ...getMockData(),
+        checklistTotals: {
+          item1: {
+            state: TIMER_STATE.RUNNING,
+            currentEntry: { startTime: Date.now() - 1000, pausedDuration: 0 },
+            totalTime: 0,
+            entryCount: 0,
+          },
+        },
+      };
+      StorageService.getTimerData.mockResolvedValue(dataWithRunningItem);
+      TrelloService.getMember.mockResolvedValue({
+        id: "user-456",
+        fullName: "Jane Doe",
+      });
+
+      const result = await TimerService.stopItemTimer(tMock, "item1", "");
+
+      expect(result.success).toBe(true);
+      expect(result.entry.memberId).toBe("user-456");
+      expect(result.entry.checklistItemId).toBe("item1");
     });
   });
 

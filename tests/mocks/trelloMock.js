@@ -55,17 +55,29 @@ export const createTrelloMock = (overrides = {}) => {
     ]),
 
     // Board methods
-    board: jest.fn(async () => ({
-      id: "test-board-id",
-      name: "Test Board",
-      url: "https://trello.com/b/test",
-    })),
+    board: jest.fn(async (...fields) => {
+      const result = {
+        id: "test-board-id",
+        name: "Test Board",
+        url: "https://trello.com/b/test",
+      };
+      // If requesting members field, include board members
+      if (fields.includes("members")) {
+        result.members = [
+          { id: "member-1", fullName: "Alice Smith", username: "alice" },
+          { id: "member-2", fullName: "Bob Jones", username: "bob" },
+          { id: "test-member-id", fullName: "Test User", username: "testuser" },
+        ];
+      }
+      return result;
+    }),
 
     // Member methods
     member: jest.fn(async () => ({
       id: "test-member-id",
       fullName: "Test User",
       username: "testuser",
+      avatar: null,
     })),
 
     // UI methods

@@ -701,6 +701,43 @@ body {
   color: var(--aura-text);
 }
 
+.entry__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0; /* Allow flex child to shrink below content size */
+}
+
+.entry__time {
+  font-size: 12px;
+  color: var(--aura-text-muted);
+}
+
+.entry__member {
+  font-size: 11px;
+  color: var(--aura-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry__label {
+  font-size: 11px;
+  color: var(--aura-success);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry__desc {
+  font-size: 12px;
+  color: var(--aura-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .btn-delete {
   background: none;
   border: none;

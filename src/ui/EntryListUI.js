@@ -12,17 +12,32 @@ import TimerService from "../services/TimerService.js";
 import { VALIDATION } from "../utils/constants.js";
 
 export class EntryListUI {
-  constructor(t, containerId, { onRefresh, getChecklists }) {
+  constructor(t, containerId, { onRefresh, getChecklists, getBoardMembers }) {
     this.t = t;
     this.container = document.getElementById(containerId);
     this.onRefresh = onRefresh;
     this.getChecklists = getChecklists; // Function to get current checklists for dropdowns
+    this.getBoardMembers = getBoardMembers; // Function to get board members for assignment
 
     this.editingId = null;
     this.currentEntries = [];
     this.itemNameCache = null; // Cache for O(1) checklist item lookups
+    this.memberCache = null; // Cache for O(1) member lookups
 
     // No global listeners here, we attach per render for simplicity with the list items
+  }
+
+  /**
+   * Builds a Map of memberId -> member for O(1) lookups.
+   * @private
+   */
+  _buildMemberCache() {
+    const members = this.getBoardMembers ? this.getBoardMembers() : [];
+    this.memberCache = new Map();
+
+    for (const member of members) {
+      this.memberCache.set(member.id, member);
+    }
   }
 
   /**
@@ -49,8 +64,9 @@ export class EntryListUI {
       return;
     }
 
-    // Build cache for O(1) checklist item lookups
+    // Build caches for O(1) lookups
     this._buildItemNameCache();
+    this._buildMemberCache();
 
     const sorted = [...this.currentEntries].reverse();
     const entriesHtml = sorted
@@ -72,10 +88,15 @@ export class EntryListUI {
   }
 
   _renderView(entry) {
-    // O(1) lookup using pre-built cache
+    // O(1) lookup using pre-built caches
     const itemName =
       entry.checklistItemId && this.itemNameCache
         ? this.itemNameCache.get(entry.checklistItemId)
+        : null;
+
+    const member =
+      entry.memberId && this.memberCache
+        ? this.memberCache.get(entry.memberId)
         : null;
 
     const labelHtml = itemName
@@ -84,12 +105,16 @@ export class EntryListUI {
     const descHtml = entry.description
       ? `<span class="entry__desc">${this._escape(entry.description)}</span>`
       : "";
+    const memberHtml = member
+      ? `<span class="entry__member" title="${this._escape(member.fullName)}">👤 ${this._escape(member.fullName)}</span>`
+      : "";
 
     return `
             <div class="entry ${itemName ? "entry--linked" : ""}"
                  data-id="${this._escape(entry.id)}" role="button" tabindex="0">
                 <div class="entry__info">
                     <span class="entry__time">${this._escape(formatTimestamp(entry.startTime, { showDate: true }))}</span>
+                    ${memberHtml}
                     ${labelHtml}
                     ${descHtml}
                 </div>
@@ -103,15 +128,23 @@ export class EntryListUI {
 
   _renderEdit(entry) {
     const checklists = this.getChecklists ? this.getChecklists() : [];
-    // Flatten for select
-    const options = [];
+    const members = this.getBoardMembers ? this.getBoardMembers() : [];
+
+    // Flatten checklist items for select
+    const checklistOptions = [];
     checklists.forEach((cl) => {
       (cl.checkItems || []).forEach((item) => {
-        options.push(
+        checklistOptions.push(
           `<option value="${this._escape(item.id)}" ${entry.checklistItemId === item.id ? "selected" : ""}>${this._escape(item.name)}</option>`,
         );
       });
     });
+
+    // Build member options
+    const memberOptions = members.map(
+      (m) =>
+        `<option value="${this._escape(m.id)}" ${entry.memberId === m.id ? "selected" : ""}>${this._escape(m.fullName)}</option>`,
+    );
 
     return `
             <div class="entry entry--editing" data-id="${this._escape(entry.id)}">
@@ -120,10 +153,17 @@ export class EntryListUI {
                     <input type="text" class="entry__edit-input" id="edit-duration-input" value="${this._escape(formatDuration(entry.duration, { compact: true }))}">
                  </div>
                  <div class="entry__edit-row">
+                    <span class="entry__edit-label">Member:</span>
+                    <select class="entry__edit-select" id="edit-member-select">
+                        <option value="">— Unknown —</option>
+                        ${memberOptions.join("")}
+                    </select>
+                 </div>
+                 <div class="entry__edit-row">
                     <span class="entry__edit-label">Checklist:</span>
                     <select class="entry__edit-select" id="edit-checklist-select">
                         <option value="">— None —</option>
-                        ${options.join("")}
+                        ${checklistOptions.join("")}
                     </select>
                  </div>
                  <div class="entry__edit-row">
@@ -190,7 +230,10 @@ export class EntryListUI {
   async _handleSave() {
     const durationInput = this.container.querySelector("#edit-duration-input");
     const descInput = this.container.querySelector("#edit-desc-input");
-    const select = this.container.querySelector("#edit-checklist-select");
+    const checklistSelect = this.container.querySelector(
+      "#edit-checklist-select",
+    );
+    const memberSelect = this.container.querySelector("#edit-member-select");
 
     const ms = parseTimeString(durationInput.value);
     if (!ms) {
@@ -201,7 +244,8 @@ export class EntryListUI {
     const updates = {
       duration: ms,
       description: descInput.value,
-      checklistItemId: select.value || null,
+      checklistItemId: checklistSelect.value || null,
+      memberId: memberSelect.value || null,
     };
 
     const result = await TimerService.updateEntry(

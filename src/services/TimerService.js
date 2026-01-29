@@ -6,6 +6,7 @@
 import { TIMER_STATE, DEFAULTS, VALIDATION } from "../utils/constants.js";
 import { getElapsedTime } from "../utils/formatTime.js";
 import StorageService from "./StorageService.js";
+import TrelloService from "./TrelloService.js";
 
 const MAX_RECENT_ENTRIES = 5;
 
@@ -15,6 +16,7 @@ const MAX_RECENT_ENTRIES = 5;
  * @param {number} endTime - End timestamp
  * @param {string} [description=''] - Description
  * @param {string} [checklistItemId=null] - Optional checklist item ID
+ * @param {string} [memberId=null] - ID of member who created the entry
  * @returns {Object} Time entry
  */
 const createEntry = (
@@ -22,6 +24,7 @@ const createEntry = (
   endTime,
   description = "",
   checklistItemId = null,
+  memberId = null,
 ) => {
   const truncatedDescription = (description || "").substring(
     0,
@@ -36,6 +39,7 @@ const createEntry = (
     description: truncatedDescription,
     createdAt: endTime,
     checklistItemId,
+    memberId,
   };
 };
 
@@ -130,7 +134,18 @@ export const stopTimer = async (t, description = "") => {
 
     const now = Date.now();
     const { startTime, pausedDuration = 0 } = timerData.currentEntry;
-    const newEntry = createEntry(startTime, now, description);
+
+    // Get current member for attribution
+    const member = await TrelloService.getMember(t);
+    const memberId = member?.id || null;
+
+    const newEntry = createEntry(
+      startTime,
+      now,
+      description,
+      null,
+      memberId,
+    );
     newEntry.duration = now - startTime - pausedDuration;
 
     const updatedData = {
@@ -292,7 +307,12 @@ export const startItemTimer = async (t, checkItemId) => {
       const now = Date.now();
       const { startTime, pausedDuration = 0 } = timerData.currentEntry;
       const duration = now - startTime - pausedDuration;
-      const newEntry = createEntry(startTime, now, "");
+
+      // Get current member for attribution
+      const member = await TrelloService.getMember(t);
+      const memberId = member?.id || null;
+
+      const newEntry = createEntry(startTime, now, "", null, memberId);
       newEntry.duration = duration;
 
       timerData.totalTime += duration;
@@ -354,7 +374,18 @@ export const stopItemTimer = async (t, checkItemId, description = "") => {
     const now = Date.now();
     const { startTime, pausedDuration = 0 } = itemTotal.currentEntry;
     const duration = now - startTime - pausedDuration;
-    const newEntry = createEntry(startTime, now, description, checkItemId);
+
+    // Get current member for attribution
+    const member = await TrelloService.getMember(t);
+    const memberId = member?.id || null;
+
+    const newEntry = createEntry(
+      startTime,
+      now,
+      description,
+      checkItemId,
+      memberId,
+    );
     newEntry.duration = duration;
 
     const updatedData = {
