@@ -671,6 +671,16 @@ body {
   border: 1px solid var(--aura-border);
 }
 
+.entries-header {
+  padding: 8px 14px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--aura-text-dark);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
 /* Aura Scrollbar Styling */
 .entries-list::-webkit-scrollbar {
   width: 6px;

@@ -53,7 +53,7 @@ export class EntryListUI {
     this._buildItemNameCache();
 
     const sorted = [...this.currentEntries].reverse();
-    const html = sorted
+    const entriesHtml = sorted
       .map((entry) => {
         if (entry.id === this.editingId) {
           return this._renderEdit(entry);
@@ -61,6 +61,11 @@ export class EntryListUI {
         return this._renderView(entry);
       })
       .join("");
+
+    const html = `
+      <div class="entries-header">Recent History (last 5)</div>
+      ${entriesHtml}
+    `;
 
     this.container.innerHTML = html;
     this._attachListeners();
