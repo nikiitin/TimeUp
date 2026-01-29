@@ -2,7 +2,7 @@
 
 **A lightweight time tracking Power-Up for Trello**
 
-TimeUp enables seamless time tracking directly within your Trello workflow. Track time spent on individual cards, view detailed time entries, and generate comprehensive reports—all without leaving your board.
+TimeUp enables seamless time tracking directly within your Trello workflow. Track time spent on individual cards, set estimates, and monitor progress with checklist-level granularity—all without leaving your board.
 
 ---
 
@@ -13,19 +13,19 @@ TimeUp enables seamless time tracking directly within your Trello workflow. Trac
 - **One-click timer**: Start and stop timers directly from the card with a single button
 - **Persistent tracking**: Timer state is preserved across sessions and devices
 - **Automatic entries**: Each timing session is recorded with start time and duration
+- **Member attribution**: Track who recorded each time entry
 
-### Inline Time Display
+### Checklist Integration
 
-- **Embedded section**: Timer controls appear directly inside the card, not in a separate popup
-- **Live updates**: Running time displays in real-time with automatic refresh
-- **Entry history**: View all recorded time entries with date, time, and duration
+- **Item-level timers**: Track time on individual checklist items
+- **Automatic estimates**: Estimates calculated from checklist item estimates
+- **Progress visualization**: Progress bar shows time spent vs estimated
 
-### Board-Level Reporting
+### Time Estimates
 
-- **Cross-card aggregation**: Combine time data from all cards on the board
-- **Date range filtering**: Generate reports for specific time periods
-- **Daily summaries**: Entries grouped by date with subtotals
-- **CSV export**: Download report data for use in spreadsheets or invoicing
+- **Manual estimates**: Set time estimates in flexible formats (2h 30m, 1:30:00)
+- **Checklist-based estimates**: Auto-calculate from checklist item estimates
+- **Visual progress**: Color-coded progress bar (green → yellow → red)
 
 ### Visual Indicators
 
@@ -67,20 +67,19 @@ TimeUp enables seamless time tracking directly within your Trello workflow. Trac
 3. Click **Start** to begin tracking
 4. Click **Stop** when finished—the entry is automatically saved
 
-### Viewing Entries
+### Setting Estimates
 
-Time entries appear directly below the timer in each card, showing:
+1. In the card's Time Tracker section, find the estimate input
+2. Enter time in formats like `2h 30m`, `1:30:00`, or `90m`
+3. Click **Set** to save the estimate
+4. Progress bar will show time spent vs estimate
 
-- Date and time when the session started
-- Duration of the session
-- Running total for the card
+### Checklist Time Tracking
 
-### Generating Reports
-
-1. Click **Time Report** in the board header
-2. Select a date range using the From/To date pickers
-3. Click **Load Report** to view aggregated data
-4. Click **Export CSV** to download the data
+1. Authorize Trello access when prompted (read-only)
+2. Click on any checklist item's timer icon
+3. Track time per checklist item individually
+4. Item estimates contribute to card total estimate
 
 ---
 
@@ -100,26 +99,33 @@ TimeUp is built as a client-side Trello Power-Up with no external server depende
 TimeUp/
 ├── index.html              # Power-Up connector
 ├── views/
-│   ├── card-section.html   # Embedded timer UI
-│   ├── card-button.html    # Popup timer view
-│   └── report.html         # Board-level report
+│   └── card-section.html   # Embedded timer UI
 ├── src/
 │   ├── main.js             # Capability registration
+│   ├── config/
+│   │   └── AppConfig.js    # Application configuration
 │   ├── services/
-│   │   ├── StorageService.js
-│   │   ├── TimerService.js
-│   │   ├── TrelloService.js
-│   │   └── ReportService.js
+│   │   ├── StorageService.js   # Trello storage abstraction
+│   │   ├── TimerService.js     # Timer state machine
+│   │   ├── TrelloService.js    # Trello API wrapper
+│   │   └── ChecklistService.js # Checklist integration
 │   ├── ui/
-│   │   └── CardButtonUI.js
+│   │   ├── TimerUI.js          # Timer controls
+│   │   ├── EstimateUI.js       # Estimate input/display
+│   │   ├── EntryListUI.js      # Time entry list
+│   │   ├── ChecklistUI.js      # Checklist timers
+│   │   ├── TimePickerUI.js     # Duration picker
+│   │   ├── AuthUI.js           # Authorization UI
+│   │   └── CardButtonUI.js     # Card button rendering
 │   └── utils/
-│       ├── constants.js
-│       ├── formatTime.js
-│       └── validators.js
+│       ├── constants.js        # App constants
+│       ├── formatTime.js       # Time formatting
+│       ├── escapeHtml.js       # XSS prevention
+│       └── validators.js       # Input validation
 └── styles/
-    ├── variables.css
-    ├── base.css
-    └── components.css
+    ├── variables.css           # CSS custom properties
+    ├── base.css                # Base styles
+    └── components.css          # Component styles
 ```
 
 ### Data Storage
@@ -128,11 +134,13 @@ Timer data is stored per-card using Trello's shared scope:
 
 ```javascript
 {
-  state: 'idle' | 'running',
-  startTime: number | null,
-  entries: [
-    { startTime: number, duration: number }
-  ]
+  state: 'idle' | 'running' | 'paused',
+  currentEntry: { startTime, pausedDuration } | null,
+  estimatedTime: number | null,
+  manualEstimateSet: boolean,
+  totalTime: number,  // Aggregated total in milliseconds
+  recentEntries: [],  // Last 5 entries for display
+  checklistTotals: {} // Per-item aggregated times
 }
 ```
 

@@ -51,6 +51,7 @@
           class="estimate-input"
           id="estimate-input"
           placeholder="e.g. 2h 30m"
+          aria-label="Time estimate"
         />
         <button class="btn-small" id="btn-set-estimate">Set</button>
         <span class="estimate-display" id="estimate-display" hidden></span>
@@ -63,7 +64,7 @@
         </button>
       </div>
 
-      <div class="progress-bar" id="progress-bar" hidden>
+      <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden>
         <div class="progress-bar__fill" id="progress-fill"></div>
       </div>
 

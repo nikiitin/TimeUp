@@ -10,6 +10,7 @@ import {
 } from "../utils/formatTime.js";
 import TimerService from "../services/TimerService.js";
 import { VALIDATION } from "../utils/constants.js";
+import { escapeHtml } from "../utils/escapeHtml.js";
 
 export class EntryListUI {
   constructor(t, containerId, { onRefresh, getChecklists, getBoardMembers }) {
@@ -262,17 +263,6 @@ export class EntryListUI {
   }
 
   _escape(str) {
-    if (!str) return "";
-    return String(str).replace(
-      /[<>&"']/g,
-      (c) =>
-        ({
-          "<": "&lt;",
-          ">": "&gt;",
-          "&": "&amp;",
-          '"': "&quot;",
-          "'": "&#39;",
-        })[c],
-    );
+    return escapeHtml(str ?? "");
   }
 }

@@ -32,7 +32,7 @@ const createEntry = (
   );
 
   return {
-    id: `e_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`,
+    id: `e_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`,
     startTime,
     endTime,
     duration: endTime - startTime,

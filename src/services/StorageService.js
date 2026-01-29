@@ -32,6 +32,18 @@ export const getData = async (
   }
 };
 
+/**
+ * Saves data to Trello storage with size limit validation.
+ * @param {Object} t - Trello Power-Up client instance
+ * @param {string} scope - Storage scope ('card' | 'board' | 'member')
+ * @param {string} visibility - Visibility ('shared' | 'private')
+ * @param {string} key - Storage key
+ * @param {*} value - Value to store (will be JSON stringified)
+ * @returns {Promise<{success: boolean, size?: number, error?: string}>} Result object
+ * @example
+ * const result = await setData(t, 'card', 'shared', 'timerData', { state: 'idle' });
+ * if (!result.success) console.error(result.error);
+ */
 export const setData = async (t, scope, visibility, key, value) => {
   try {
     const jsonString = JSON.stringify(value);

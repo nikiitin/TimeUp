@@ -111,5 +111,5 @@ export const BADGE_COLORS = {
 export const VALIDATION = {
   MAX_DESCRIPTION_LENGTH: 120,
   /** Maximum checklist items that can have time data (estimates/timers) due to storage limits */
-  MAX_CHECKLIST_ITEMS: 20,
+  MAX_CHECKLIST_ITEMS: 15,
 };

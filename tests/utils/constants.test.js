@@ -99,7 +99,7 @@ describe("Constants exports", () => {
     });
 
     test("has max checklist items limit", () => {
-      expect(VALIDATION.MAX_CHECKLIST_ITEMS).toBe(20);
+      expect(VALIDATION.MAX_CHECKLIST_ITEMS).toBe(15);
     });
   });
 });
