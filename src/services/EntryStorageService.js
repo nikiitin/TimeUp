@@ -151,18 +151,17 @@ export const saveEntries = async (t, entries, timerData) => {
     }
 
     // Save recent entries to separate key (compressed)
-    if (recentEntries.length > 0) {
-      const compressedRecent = recentEntries.map(compressEntry);
-      const recentResult = await StorageService.setData(
-        t,
-        "card",
-        "shared",
-        `${STORAGE_KEYS.ENTRIES}_recent`,
-        compressedRecent
-      );
-      if (!recentResult.success) {
-        return recentResult;
-      }
+    // ALWAYS save this key (even if empty) to mark we're using the new format
+    const compressedRecent = recentEntries.map(compressEntry);
+    const recentResult = await StorageService.setData(
+      t,
+      "card",
+      "shared",
+      `${STORAGE_KEYS.ENTRIES}_recent`,
+      compressedRecent
+    );
+    if (!recentResult.success) {
+      return recentResult;
     }
 
     // Archive old entries in pages
