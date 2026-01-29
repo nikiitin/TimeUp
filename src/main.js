@@ -161,6 +161,16 @@ TrelloPowerUp.initialize(
               height: 500,
             }),
         },
+        {
+          icon: "https://cdn-icons-png.flaticon.com/512/3524/3524659.png",
+          text: "🔧 Storage Diagnostic",
+          callback: (t) =>
+            t.popup({
+              title: "Storage Diagnostic",
+              url: "./views/diagnostic.html",
+              height: 600,
+            }),
+        },
       ];
     },
   },
