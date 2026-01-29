@@ -269,6 +269,7 @@ export const startItemTimer = async (t, checkItemId) => {
       totalTime: 0,
       entryCount: 0,
       estimatedTime: null,
+      state: TIMER_STATE.IDLE,
       currentEntry: null,
     };
 
@@ -278,6 +279,7 @@ export const startItemTimer = async (t, checkItemId) => {
         ...timerData.checklistTotals,
         [checkItemId]: {
           ...itemTotal,
+          state: TIMER_STATE.RUNNING,
           currentEntry: { startTime: Date.now(), pausedDuration: 0 },
         },
       },
@@ -323,6 +325,7 @@ export const stopItemTimer = async (t, checkItemId, description = "") => {
         ...timerData.checklistTotals,
         [checkItemId]: {
           ...itemTotal,
+          state: TIMER_STATE.IDLE,
           totalTime: itemTotal.totalTime + duration,
           entryCount: itemTotal.entryCount + 1,
           currentEntry: null,
@@ -354,6 +357,7 @@ export const setItemEstimate = async (t, checkItemId, estimatedTimeMs) => {
       totalTime: 0,
       entryCount: 0,
       estimatedTime: null,
+      state: TIMER_STATE.IDLE,
       currentEntry: null,
     };
 

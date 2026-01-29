@@ -21,10 +21,10 @@ describe('ReportService', () => {
             // Setup timer data for each card - mock t.get with card-specific data
             mockT.get = jest.fn(async (cardId, visibility, key) => {
                 if (cardId === 'card-1' && key === STORAGE_KEYS.TIMER_DATA) {
-                    return { entries: [{ id: 'e1', duration: 1000 }] };
+                    return { totalTime: 1000, recentEntries: [{ id: 'e1', duration: 1000 }] };
                 }
                 if (cardId === 'card-2' && key === STORAGE_KEYS.TIMER_DATA) {
-                    return { entries: [{ id: 'e2', duration: 2000 }] };
+                    return { totalTime: 2000, recentEntries: [{ id: 'e2', duration: 2000 }] };
                 }
                 return null;
             });
@@ -34,15 +34,16 @@ describe('ReportService', () => {
             expect(result).toHaveLength(2);
             expect(result[0].cardId).toBe('card-1');
             expect(result[0].cardName).toBe('Task 1');
-            expect(result[0].entries).toHaveLength(1);
+            expect(result[0].totalTime).toBe(1000);
+            expect(result[0].recentEntries).toHaveLength(1);
         });
 
-        test('skips cards with no entries', async () => {
+        test('skips cards with no totalTime', async () => {
             const mockT = createTrelloMock();
             mockT.cards = jest.fn(async () => [
                 { id: 'card-1', name: 'Task 1' },
             ]);
-            mockT.get = jest.fn(async () => ({ entries: [] }));
+            mockT.get = jest.fn(async () => ({ totalTime: 0, recentEntries: [] }));
 
             const result = await ReportService.fetchAllCardTimers(mockT);
             expect(result).toHaveLength(0);
@@ -60,16 +61,18 @@ describe('ReportService', () => {
     });
 
     describe('flattenEntries', () => {
-        test('flattens nested entries', () => {
+        test('flattens card data into entries with card metadata', () => {
             const cardData = [
-                { entries: [{ id: 'e1' }, { id: 'e2' }] },
-                { entries: [{ id: 'e3' }] },
+                { cardId: 'c1', cardName: 'Task 1', totalTime: 3000, recentEntries: [{ id: 'e1' }, { id: 'e2' }] },
+                { cardId: 'c2', cardName: 'Task 2', totalTime: 1000, recentEntries: [{ id: 'e3' }] },
             ];
 
             const result = ReportService.flattenEntries(cardData);
 
             expect(result).toHaveLength(3);
             expect(result.map(e => e.id)).toEqual(['e1', 'e2', 'e3']);
+            expect(result[0].cardId).toBe('c1');
+            expect(result[0].cardName).toBe('Task 1');
         });
 
         test('returns empty array for empty input', () => {
@@ -148,41 +151,40 @@ describe('ReportService', () => {
     });
 
     describe('groupByCard', () => {
-        test('groups entries by card', () => {
-            const entries = [
-                { cardId: 'c1', cardName: 'Task 1', duration: 1000 },
-                { cardId: 'c1', cardName: 'Task 1', duration: 2000 },
-                { cardId: 'c2', cardName: 'Task 2', duration: 3000 },
+        test('groups card data by cardId', () => {
+            const cardData = [
+                { cardId: 'c1', cardName: 'Task 1', totalTime: 3000, recentEntries: [{ id: 'e1' }, { id: 'e2' }] },
+                { cardId: 'c2', cardName: 'Task 2', totalTime: 5000, recentEntries: [{ id: 'e3' }] },
             ];
 
-            const result = ReportService.groupByCard(entries);
+            const result = ReportService.groupByCard(cardData);
 
             expect(Object.keys(result)).toHaveLength(2);
-            expect(result['c1'].entries).toHaveLength(2);
-            expect(result['c1'].totalDuration).toBe(3000);
+            expect(result['c1'].totalTime).toBe(3000);
+            expect(result['c1'].recentEntries).toHaveLength(2);
             expect(result['c2'].cardName).toBe('Task 2');
         });
     });
 
     describe('calculateTotal', () => {
-        test('sums all durations', () => {
-            const entries = [
-                { duration: 1000 },
-                { duration: 2000 },
-                { duration: 3000 },
+        test('sums all totalTime values', () => {
+            const cardData = [
+                { cardId: 'c1', totalTime: 1000 },
+                { cardId: 'c2', totalTime: 2000 },
+                { cardId: 'c3', totalTime: 3000 },
             ];
 
-            expect(ReportService.calculateTotal(entries)).toBe(6000);
+            expect(ReportService.calculateTotal(cardData)).toBe(6000);
         });
 
-        test('handles missing duration', () => {
-            const entries = [
-                { duration: 1000 },
-                { other: 'data' },
-                { duration: 2000 },
+        test('handles missing totalTime', () => {
+            const cardData = [
+                { cardId: 'c1', totalTime: 1000 },
+                { cardId: 'c2', other: 'data' },
+                { cardId: 'c3', totalTime: 2000 },
             ];
 
-            expect(ReportService.calculateTotal(entries)).toBe(3000);
+            expect(ReportService.calculateTotal(cardData)).toBe(3000);
         });
 
         test('returns 0 for empty array', () => {
@@ -192,38 +194,40 @@ describe('ReportService', () => {
 
     describe('generateCSV', () => {
         test('generates CSV with headers and data', () => {
-            const entries = [
+            const cardData = [
                 {
-                    startTime: new Date('2025-01-20T10:30:00').getTime(),
+                    cardId: 'c1',
                     cardName: 'Test Task',
-                    duration: 3600000,
+                    totalTime: 3600000,
+                    recentEntries: [{ id: 'e1' }],
                 },
             ];
 
-            const csv = ReportService.generateCSV(entries);
+            const csv = ReportService.generateCSV(cardData);
 
-            expect(csv).toContain('Date,Time,Card Name,Duration,Minutes');
-            expect(csv).toContain('2025-01-20');
+            expect(csv).toContain('Card Name,Total Time,Hours,Recent Entries Count');
             expect(csv).toContain('Test Task');
-            expect(csv).toContain('60');
+            expect(csv).toContain('1.00'); // 1 hour
+            expect(csv).toContain(',1'); // 1 entry count
         });
 
         test('escapes quotes in card names', () => {
-            const entries = [
+            const cardData = [
                 {
-                    startTime: Date.now(),
+                    cardId: 'c1',
                     cardName: 'Task with "quotes"',
-                    duration: 1000,
+                    totalTime: 1000,
+                    recentEntries: [],
                 },
             ];
 
-            const csv = ReportService.generateCSV(entries);
+            const csv = ReportService.generateCSV(cardData);
             expect(csv).toContain('""quotes""');
         });
 
-        test('returns only headers for empty entries', () => {
+        test('returns only headers for empty data', () => {
             const csv = ReportService.generateCSV([]);
-            expect(csv).toBe('Date,Time,Card Name,Duration,Minutes');
+            expect(csv).toBe('Card Name,Total Time,Hours,Recent Entries Count');
         });
     });
 
@@ -262,7 +266,8 @@ describe('ReportService', () => {
                 ]),
                 get: jest.fn()
                     .mockResolvedValueOnce({
-                        entries: [{ id: 'e1', startTime: 1000, endTime: 2000 }],
+                        totalTime: 1000,
+                        recentEntries: [{ id: 'e1', startTime: 1000, endTime: 2000 }],
                     })
                     .mockRejectedValueOnce(new Error('Card 2 failed')),
             };
@@ -275,5 +280,5 @@ describe('ReportService', () => {
         });
     });
 
-    // Note: downloadCSV is not tested as it requires DOM APIs
+    // Note: downloadCSV requires DOM APIs and is tested in UI integration tests
 });

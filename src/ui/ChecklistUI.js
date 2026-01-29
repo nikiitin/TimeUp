@@ -139,13 +139,11 @@ export class ChecklistUI {
     // Iterate over all checklist rows in DOM
     this.container.querySelectorAll(".checklist-row").forEach((row) => {
       const itemId = row.dataset.id;
-      const itemData = timerData.checklistItems?.[itemId];
+      const itemData = timerData.checklistTotals?.[itemId];
       const isRunning = itemData?.state === TIMER_STATE.RUNNING;
 
-      const itemEntries = (timerData.entries || []).filter(
-        (e) => e.checklistItemId === itemId,
-      );
-      let totalTime = this._sumDurations(itemEntries);
+      // Use totalTime from checklistTotals directly
+      let totalTime = itemData?.totalTime || 0;
       if (isRunning && itemData) {
         totalTime += TimerService.getItemCurrentElapsed(itemData);
       }

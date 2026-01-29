@@ -70,6 +70,13 @@ describe("ChecklistService", () => {
       expect(result).toEqual([]);
     });
 
+    test("returns empty array when cardId missing", async () => {
+      mockT.getContext = jest.fn().mockReturnValue({ card: null });
+
+      const result = await getChecklists(mockT);
+      expect(result).toEqual([]);
+    });
+
     test("returns empty array on API error", async () => {
       global.fetch.mockResolvedValue({
         ok: false,
@@ -134,7 +141,7 @@ describe("ChecklistService", () => {
 
     test("sums estimates from all items", () => {
       const timerData = {
-        checklistItems: {
+        checklistTotals: {
           item1: { estimatedTime: 3600000 },
           item2: { estimatedTime: 1800000 },
         },
@@ -154,7 +161,7 @@ describe("ChecklistService", () => {
 
     test("ignores items without estimates", () => {
       const timerData = {
-        checklistItems: {
+        checklistTotals: {
           item1: { estimatedTime: 3600000 },
           item2: { estimatedTime: null },
         },
@@ -185,7 +192,7 @@ describe("ChecklistService", () => {
       const timerData = {
         manualEstimateSet: true,
         estimatedTime: 7200000,
-        checklistItems: { item1: { estimatedTime: 3600000 } },
+        checklistTotals: { item1: { estimatedTime: 3600000 } },
       };
 
       expect(getEffectiveEstimate(timerData, checklists)).toBe(7200000);
@@ -195,7 +202,7 @@ describe("ChecklistService", () => {
       const timerData = {
         manualEstimateSet: false,
         estimatedTime: null,
-        checklistItems: { item1: { estimatedTime: 3600000 } },
+        checklistTotals: { item1: { estimatedTime: 3600000 } },
       };
 
       expect(getEffectiveEstimate(timerData, checklists)).toBe(3600000);
@@ -204,7 +211,7 @@ describe("ChecklistService", () => {
     test("returns null when no estimates anywhere", () => {
       const timerData = {
         manualEstimateSet: false,
-        checklistItems: {},
+        checklistTotals: {},
       };
 
       expect(getEffectiveEstimate(timerData, checklists)).toBe(null);
@@ -214,34 +221,35 @@ describe("ChecklistService", () => {
   describe("getCheckItemData", () => {
     test("returns existing item data", () => {
       const timerData = {
-        checklistItems: {
-          item1: { estimatedTime: 5000, state: TIMER_STATE.RUNNING },
+        checklistTotals: {
+          item1: { estimatedTime: 5000, state: TIMER_STATE.RUNNING, totalTime: 1000 },
         },
       };
 
       const data = getCheckItemData(timerData, "item1");
       expect(data.estimatedTime).toBe(5000);
       expect(data.state).toBe(TIMER_STATE.RUNNING);
+      expect(data.totalTime).toBe(1000);
     });
 
     test("returns default for missing item", () => {
       const data = getCheckItemData({}, "missing");
       expect(data.state).toBe(TIMER_STATE.IDLE);
+      expect(data.totalTime).toBe(0);
     });
   });
 
   describe("getCheckItemTotalTime", () => {
-    test("returns 0 for empty entries", () => {
-      expect(getCheckItemTotalTime({ entries: [] }, "item1")).toBe(0);
+    test("returns 0 for empty checklistTotals", () => {
+      expect(getCheckItemTotalTime({ checklistTotals: {} }, "item1")).toBe(0);
     });
 
-    test("sums entry durations for specific item", () => {
+    test("returns totalTime for specific item", () => {
       const timerData = {
-        entries: [
-          { checklistItemId: "item1", duration: 1000 },
-          { checklistItemId: "item2", duration: 5000 },
-          { checklistItemId: "item1", duration: 2000 },
-        ],
+        checklistTotals: {
+          item1: { totalTime: 3000 },
+          item2: { totalTime: 5000 },
+        },
       };
       expect(getCheckItemTotalTime(timerData, "item1")).toBe(3000);
     });
@@ -250,7 +258,7 @@ describe("ChecklistService", () => {
   describe("getRunningCheckItem", () => {
     test("returns isRunning false when no items running", () => {
       const timerData = {
-        checklistItems: {
+        checklistTotals: {
           item1: { state: TIMER_STATE.IDLE },
         },
       };
@@ -262,7 +270,7 @@ describe("ChecklistService", () => {
 
     test("returns running item ID", () => {
       const timerData = {
-        checklistItems: {
+        checklistTotals: {
           item1: { state: TIMER_STATE.IDLE },
           item2: { state: TIMER_STATE.RUNNING },
         },

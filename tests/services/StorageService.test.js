@@ -141,23 +141,31 @@ describe("StorageService", () => {
   });
 
   describe("getTimerData", () => {
-    test("returns timer data with entries from card storage", async () => {
-      const timerData = {
+    test("returns timer data merged with defaults from card storage", async () => {
+      const storedData = {
         state: "running",
         currentEntry: { startTime: 1000 },
-        checklistItems: {},
-        entries: [{ id: "e1", duration: 1000 }],
+        checklistTotals: {},
+        totalTime: 5000,
+        recentEntries: [{ id: "e1", duration: 1000 }],
       };
 
       mockT._setStorage(
         "card",
         STORAGE_SCOPES.CARD_SHARED,
         STORAGE_KEYS.TIMER_DATA,
-        timerData,
+        storedData,
       );
 
       const result = await StorageService.getTimerData(mockT);
-      expect(result).toEqual(timerData);
+      // getTimerData merges stored data with defaults
+      expect(result.state).toBe("running");
+      expect(result.currentEntry).toEqual({ startTime: 1000 });
+      expect(result.totalTime).toBe(5000);
+      expect(result.recentEntries).toEqual([{ id: "e1", duration: 1000 }]);
+      // Default fields are added
+      expect(result.estimatedTime).toBe(null);
+      expect(result.manualEstimateSet).toBe(false);
     });
 
     test("returns defaults when no data exists", async () => {
@@ -166,19 +174,20 @@ describe("StorageService", () => {
     });
   });
 
-  describe("setTimerMetadata", () => {
-    test("saves complete timer data including entries to timerData key", async () => {
+  describe("setTimerData", () => {
+    test("saves complete timer data to timerData key", async () => {
       const timerData = {
-        entries: [{ id: "e1" }],
+        recentEntries: [{ id: "e1" }],
         state: "idle",
         currentEntry: null,
-        checklistItems: { item1: { estimatedTime: 100 } },
+        checklistTotals: { item1: { totalTime: 100, estimatedTime: 200 } },
+        totalTime: 100,
       };
 
-      const result = await StorageService.setTimerMetadata(mockT, timerData);
+      const result = await StorageService.setTimerData(mockT, timerData);
       expect(result.success).toBe(true);
 
-      // Check that complete timerData is saved (not split)
+      // Check that complete timerData is saved
       const savedTimerData = mockT._getStorage(
         "card",
         STORAGE_SCOPES.CARD_SHARED,
@@ -186,8 +195,9 @@ describe("StorageService", () => {
       );
 
       expect(savedTimerData).toEqual(timerData);
-      expect(savedTimerData.entries).toEqual(timerData.entries); // Entries included
-      expect(savedTimerData.checklistItems).toEqual(timerData.checklistItems);
+      expect(savedTimerData.recentEntries).toEqual(timerData.recentEntries);
+      expect(savedTimerData.checklistTotals).toEqual(timerData.checklistTotals);
+      expect(savedTimerData.totalTime).toBe(100);
     });
   });
 
@@ -262,28 +272,30 @@ describe("StorageService", () => {
       expect(() => StorageService.calculateUsage(circular)).toThrow();
     });
 
-    test("setTimerMetadata should strip entries and save only metadata", async () => {
+    test("setTimerData should save complete data structure", async () => {
       const fullData = {
-        entries: [{ id: "e1" }, { id: "e2" }],
+        recentEntries: [{ id: "e1" }, { id: "e2" }],
         state: "running",
         currentEntry: { startTime: 123 },
-        checklistItems: {},
+        checklistTotals: {},
+        totalTime: 5000,
       };
 
-      const result = await StorageService.setTimerMetadata(mockT, fullData);
+      const result = await StorageService.setTimerData(mockT, fullData);
 
       expect(result.success).toBe(true);
 
-      // Verify entries were stripped
+      // Verify complete structure was saved
       const saved = mockT._getStorage(
         "card",
         STORAGE_SCOPES.CARD_SHARED,
         STORAGE_KEYS.TIMER_DATA,
       );
 
-      expect(saved.entries).toBeUndefined();
+      expect(saved.recentEntries).toHaveLength(2);
       expect(saved.state).toBe("running");
       expect(saved.currentEntry).toBeDefined();
+      expect(saved.totalTime).toBe(5000);
     });
 
     test("removeData should handle errors gracefully", async () => {

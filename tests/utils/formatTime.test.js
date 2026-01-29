@@ -195,43 +195,43 @@ describe('sumDurations', () => {
 
 describe('getRemainingTime', () => {
     test('returns null if no estimate', () => {
-        expect(getRemainingTime([], null)).toBeNull();
-        expect(getRemainingTime([], 0)).toBeNull();
-        expect(getRemainingTime([], -100)).toBeNull();
+        expect(getRemainingTime(0, null)).toBeNull();
+        expect(getRemainingTime(0, 0)).toBeNull();
+        expect(getRemainingTime(0, -100)).toBeNull();
     });
 
     test('calculates remaining time correctly', () => {
-        const entries = [{ duration: 1800000 }]; // 30 min
+        const totalTime = 1800000; // 30 min
         const estimate = 3600000; // 1 hour
 
-        const result = getRemainingTime(entries, estimate);
+        const result = getRemainingTime(totalTime, estimate);
         expect(result.remaining).toBe(1800000);
         expect(result.isOverBudget).toBe(false);
         expect(result.percentComplete).toBe(50);
     });
 
     test('detects over budget', () => {
-        const entries = [{ duration: 4000000 }];
+        const totalTime = 4000000;
         const estimate = 3600000;
 
-        const result = getRemainingTime(entries, estimate);
+        const result = getRemainingTime(totalTime, estimate);
         expect(result.remaining).toBeLessThan(0);
         expect(result.isOverBudget).toBe(true);
     });
 
     test('calculates percentage correctly', () => {
-        const entries = [{ duration: 900000 }]; // 15 min
+        const totalTime = 900000; // 15 min
         const estimate = 3600000; // 1 hour
 
-        const result = getRemainingTime(entries, estimate);
+        const result = getRemainingTime(totalTime, estimate);
         expect(result.percentComplete).toBe(25);
     });
 
     test('caps percentage at 100', () => {
-        const entries = [{ duration: 7200000 }]; // 2 hours
+        const totalTime = 7200000; // 2 hours
         const estimate = 3600000; // 1 hour
 
-        const result = getRemainingTime(entries, estimate);
+        const result = getRemainingTime(totalTime, estimate);
         expect(result.percentComplete).toBe(100);
     });
 });
