@@ -10,6 +10,8 @@ import StorageService from "./services/StorageService.js";
 import TimerService from "./services/TimerService.js";
 import { getRunningCheckItem } from "./services/ChecklistService.js";
 
+console.log("[TimeUp] main.js loaded - initializing Power-Up");
+
 // SVG clock icon (works well on dark backgrounds)
 const ICON_TIMER =
   "data:image/svg+xml," +
@@ -24,8 +26,10 @@ const ICON_TIMER =
 TrelloPowerUp.initialize(
   {
     "card-badges": async (t) => {
+      console.log("[TimeUp] card-badges called");
       try {
         const timerData = await StorageService.getTimerData(t);
+        console.log("[TimeUp] card-badges timerData:", timerData.state, "running:", timerData.state === TIMER_STATE.RUNNING);
         const badges = [];
 
         // Check if any timer is running (global or checklist)
