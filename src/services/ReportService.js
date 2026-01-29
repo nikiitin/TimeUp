@@ -7,50 +7,27 @@ import { formatDuration } from '../utils/formatTime.js';
 
 /**
  * Fetches timer data from all cards on the board.
- * Note: This requires loading AttachmentStorageService for each card context.
- * Since we can't easily change card context, we load from card attachments.
  * @param {Object} t - Trello Power-Up client
- * @returns {Promise<Array>} Array of {cardId, cardName, entries}
+ * @returns {Promise<Array>} Array of {cardId, cardName, totalTime, recentEntries}
  */
 export const fetchAllCardTimers = async (t) => {
     try {
         // Get all cards on the board
-        const cards = await t.cards('id', 'name', 'attachments');
+        const cards = await t.cards('id', 'name');
         const results = [];
 
         for (const card of cards) {
             try {
-                // Look for TimeUp attachment on this card
-                const attachment = card.attachments?.find(att => att.name === 'timeup_entries.json');
+                // Load timer data for this card
+                const timerData = await t.get(card.id, 'shared', 'timerData');
                 
-                if (attachment) {
-                    let data;
-                    const dataUrl = attachment.url;
-                    
-                    if (dataUrl.startsWith('data:')) {
-                        // Data URL - decode base64 manually
-                        const base64Data = dataUrl.split(',')[1];
-                        if (base64Data) {
-                            const jsonString = atob(base64Data);
-                            data = JSON.parse(jsonString);
-                        }
-                    } else {
-                        // HTTP URL - use fetch
-                        const response = await fetch(dataUrl);
-                        data = await response.json();
-                    }
-                    
-                    if (data?.entries?.length > 0) {
-                        results.push({
-                            cardId: card.id,
-                            cardName: card.name,
-                            entries: data.entries.map(entry => ({
-                                ...entry,
-                                cardId: card.id,
-                                cardName: card.name,
-                            })),
-                        });
-                    }
+                if (timerData && timerData.totalTime > 0) {
+                    results.push({
+                        cardId: card.id,
+                        cardName: card.name,
+                        totalTime: timerData.totalTime || 0,
+                        recentEntries: timerData.recentEntries || [],
+                    });
                 }
             } catch (err) {
                 console.warn(`[ReportService] Failed to get data for card ${card.id}:`, err);
@@ -65,12 +42,27 @@ export const fetchAllCardTimers = async (t) => {
 };
 
 /**
- * Flattens card data into a single array of entries.
+ * Flattens card data into array of entries with card metadata.
  * @param {Array} cardData - Array from fetchAllCardTimers
- * @returns {Array} Flat array of entries with card metadata
+ * @returns {Array} Flat array of entries
  */
 export const flattenEntries = (cardData) => {
-    return cardData.flatMap(card => card.entries);
+    return cardData.flatMap(card => 
+        (card.recentEntries || []).map(entry => ({
+            ...entry,
+            cardId: card.cardId,
+            cardName: card.cardName,
+        }))
+    );
+};
+
+/**
+ * Calculates total duration from card data.
+ * @param {Array} cardData - Array from fetchAllCardTimers
+ * @returns {number} Total duration in milliseconds
+ */
+export const calculateTotal = (cardData) => {
+    return cardData.reduce((sum, card) => sum + (card.totalTime || 0), 0);
 };
 
 /**
@@ -120,53 +112,43 @@ export const groupByDate = (entries) => {
 };
 
 /**
- * Groups entries by card.
- * @param {Array} entries - Array of entries
- * @returns {Object} Map of cardId to {cardName, entries, totalDuration}
+ * Groups card data by card.
+ * @param {Array} cardData - Array from fetchAllCardTimers
+ * @returns {Object} Map of cardId to {cardName, totalTime, recentEntries}
  */
-export const groupByCard = (entries) => {
+export const groupByCard = (cardData) => {
     const grouped = {};
 
-    entries.forEach(entry => {
-        if (!grouped[entry.cardId]) {
-            grouped[entry.cardId] = {
-                cardName: entry.cardName,
-                entries: [],
-                totalDuration: 0,
-            };
-        }
-        grouped[entry.cardId].entries.push(entry);
-        grouped[entry.cardId].totalDuration += entry.duration || 0;
+    cardData.forEach(card => {
+        grouped[card.cardId] = {
+            cardName: card.cardName,
+            totalTime: card.totalTime,
+            recentEntries: card.recentEntries || [],
+        };
     });
 
     return grouped;
 };
 
 /**
- * Calculates total duration from entries.
- * @param {Array} entries - Array of entries
- * @returns {number} Total duration in milliseconds
- */
-export const calculateTotal = (entries) => {
-    return entries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
-};
-
-/**
- * Generates a CSV string from report data.
- * @param {Array} entries - Flat array of entries with card metadata
+ * Generates a CSV string from card data.
+ * @param {Array} cardData - Array from fetchAllCardTimers
  * @returns {string} CSV content
  */
-export const generateCSV = (entries) => {
-    const headers = ['Date', 'Time', 'Card Name', 'Duration', 'Minutes'];
+export const generateCSV = (cardData) => {
+    const headers = ['Card Name', 'Total Time', 'Hours', 'Recent Entries Count'];
 
-    const rows = entries.map(entry => {
-        const date = new Date(entry.startTime);
-        const dateStr = date.toISOString().split('T')[0];
-        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const durationStr = formatDuration(entry.duration, { compact: true });
-        const minutes = Math.round(entry.duration / 60000);
+    const rows = cardData.map(card => {
+        const hours = (card.totalTime / (1000 * 60 * 60)).toFixed(2);
+        const durationStr = formatDuration(card.totalTime, { compact: false });
+        const entryCount = (card.recentEntries || []).length;
 
-        return [dateStr, timeStr, `"${entry.cardName.replace(/"/g, '""')}"`, durationStr, minutes].join(',');
+        return [
+            `"${card.cardName.replace(/"/g, '""')}"`,
+            durationStr,
+            hours,
+            entryCount
+        ].join(',');
     });
 
     return [headers.join(','), ...rows].join('\n');

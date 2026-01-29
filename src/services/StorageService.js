@@ -112,9 +112,9 @@ export const removeData = async (t, scope, visibility, key) => {
 // =============================================================================
 
 /**
- * Gets timer data (metadata only - no entries, no checklistItems).
- * NOTE: This only loads metadata. Use EntryStorageService.getAllEntries() for entries
- * and getChecklistItems() for checklist data.
+ * Gets timer data from card storage.
+ * @param {Object} t - Trello Power-Up client instance
+ * @returns {Promise<Object>} Timer data
  */
 export const getTimerData = async (t) => {
   const timerData = await getData(
@@ -125,66 +125,26 @@ export const getTimerData = async (t) => {
     DEFAULTS.TIMER_DATA,
   );
 
-  // Load checklist items from separate storage
-  const checklistItems = await getData(
-    t,
-    "card",
-    STORAGE_SCOPES.CARD_SHARED,
-    STORAGE_KEYS.CHECKLIST_ITEMS,
-    {},
-  );
-  
-  timerData.checklistItems = checklistItems;
-  timerData.entries = []; // Entries must be loaded via AttachmentStorageService.getAllEntries()
-
-  return timerData;
+  // Ensure structure is valid
+  return {
+    ...DEFAULTS.TIMER_DATA,
+    ...timerData,
+  };
 };
 
 /**
- * Saves ONLY timer metadata (state, estimates) WITHOUT entries or checklistItems.
- * Used by AttachmentStorageService to save metadata while entries are handled separately.
+ * Saves timer data to card storage.
  * @param {Object} t - Trello client
- * @param {Object} metadata - Timer metadata (entries will be stored in attachments, checklistItems stored separately)
+ * @param {Object} timerData - Complete timer data to save
  * @returns {Promise<{success: boolean, size?: number, error?: string}>}
  */
-export const setTimerMetadata = async (t, metadata) => {
-  const { entries, checklistItems, ...metadataOnly } = metadata;
-  
-  // Debug logging to see what's being saved
-  console.log("[setTimerMetadata] Metadata size:", JSON.stringify(metadataOnly).length, "chars");
-  console.log("[setTimerMetadata] Metadata keys:", Object.keys(metadataOnly));
-  console.log("[setTimerMetadata] ACTUAL METADATA:", JSON.stringify(metadataOnly));
-  
-  // Save checklist items to separate storage key to prevent metadata bloat
-  if (checklistItems && Object.keys(checklistItems).length > 0) {
-    console.log("[setTimerMetadata] Saving", Object.keys(checklistItems).length, "checklist items separately");
-    await setData(
-      t,
-      "card",
-      STORAGE_SCOPES.CARD_SHARED,
-      STORAGE_KEYS.CHECKLIST_ITEMS,
-      checklistItems,
-    );
-  }
-  
-  // Check what's currently in storage before overwriting
-  try {
-    const currentData = await t.get("card", "shared", STORAGE_KEYS.TIMER_DATA);
-    if (currentData) {
-      console.log("[setTimerMetadata] CURRENT timerData in storage:", JSON.stringify(currentData).length, "chars");
-      console.log("[setTimerMetadata] CURRENT keys:", Object.keys(currentData));
-    }
-  } catch (e) {
-    console.log("[setTimerMetadata] Could not read current storage:", e.message);
-  }
-  
-  // Save minimal metadata (state, currentEntry, estimatedTime only)
+export const setTimerData = async (t, timerData) => {
   return await setData(
     t,
     "card",
     STORAGE_SCOPES.CARD_SHARED,
     STORAGE_KEYS.TIMER_DATA,
-    metadataOnly,
+    timerData,
   );
 };
 
@@ -266,7 +226,7 @@ const StorageService = {
   setData,
   removeData,
   getTimerData,
-  setTimerMetadata,
+  setTimerData,
   calculateUsage,
   getBoardSettings,
   setBoardSettings,

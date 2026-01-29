@@ -56,20 +56,13 @@ describe("Constants exports", () => {
   describe("DEFAULTS", () => {
     test("TIMER_DATA has correct structure", () => {
       expect(DEFAULTS.TIMER_DATA).toEqual({
-        entries: [],
         state: TIMER_STATE.IDLE,
         currentEntry: null,
         estimatedTime: null,
         manualEstimateSet: false,
-        checklistItems: {},
-      });
-    });
-
-    test("CHECKLIST_ITEM_DATA has correct structure", () => {
-      expect(DEFAULTS.CHECKLIST_ITEM_DATA).toEqual({
-        estimatedTime: null,
-        state: TIMER_STATE.IDLE,
-        currentEntry: null,
+        totalTime: 0,
+        recentEntries: [],
+        checklistTotals: {},
       });
     });
 

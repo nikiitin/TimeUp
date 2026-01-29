@@ -71,17 +71,19 @@ export const APP_INFO = {
  */
 export const DEFAULTS = {
   TIMER_DATA: {
-    entries: [],
     state: TIMER_STATE.IDLE,
     currentEntry: null,
     estimatedTime: null, // Estimated time in milliseconds (manual override)
     manualEstimateSet: false, // true = user set manually, false = calculated from checklists
-    checklistItems: {}, // { [checkItemId]: ChecklistItemData }
-  },
-  CHECKLIST_ITEM_DATA: {
-    estimatedTime: null,
-    state: TIMER_STATE.IDLE,
-    currentEntry: null,
+    
+    // Aggregated total time - ONE number for all time tracked
+    totalTime: 0,
+    
+    // Only keep last 5 entries for display/editing
+    recentEntries: [],
+    
+    // Checklist item totals (aggregated, not individual entries)
+    checklistTotals: {}, // { [checkItemId]: { totalTime, entryCount, estimatedTime } }
   },
   BOARD_SETTINGS: {
     hourlyRate: null,

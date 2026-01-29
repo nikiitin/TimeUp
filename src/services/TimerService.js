@@ -1,21 +1,23 @@
 /**
  * TimeUp - Timer Service
- * Business logic for timer operations
+ * Business logic for timer operations using aggregated totals
  */
 
 import { TIMER_STATE, DEFAULTS, VALIDATION } from "../utils/constants.js";
 import { getElapsedTime } from "../utils/formatTime.js";
 import StorageService from "./StorageService.js";
-import AttachmentStorageService from "./AttachmentStorageService.js";
+
+const MAX_RECENT_ENTRIES = 5;
 
 /**
  * Creates a new time entry.
  * @param {number} startTime - Start timestamp
  * @param {number} endTime - End timestamp
  * @param {string} [description=''] - Description
+ * @param {string} [checklistItemId=null] - Optional checklist item ID
  * @returns {Object} Time entry
  */
-const createEntry = (startTime, endTime, description = "") => {
+const createEntry = (startTime, endTime, description = "", checklistItemId = null) => {
   const truncatedDescription = (description || "").substring(
     0,
     VALIDATION.MAX_DESCRIPTION_LENGTH,
@@ -27,78 +29,20 @@ const createEntry = (startTime, endTime, description = "") => {
     endTime,
     duration: endTime - startTime,
     description: truncatedDescription,
-    createdAt: endTime, // Use endTime as creation timestamp
+    createdAt: endTime,
+    checklistItemId,
   };
 };
 
 /**
- * Common helper to handle AttachmentStorageService results.
- * Saves unlimited entries as card attachments.
- * @param {Object} t - Trello client
- * @param {Object} updatedData - The data to save
- * @param {Object} extra - Extra fields to include in success response
- * @returns {Promise<Object>} Timer response
+ * Adds an entry to recent entries (max 5, newest first).
+ * @param {Array} recentEntries - Current recent entries
+ * @param {Object} newEntry - New entry to add
+ * @returns {Array} Updated recent entries
  */
-const handleSaveResult = async (t, updatedData, extra = {}) => {
-  try {
-    // Save entries to attachment storage
-    const result = await AttachmentStorageService.saveEntries(
-      t,
-      updatedData.entries || [],
-      updatedData
-    );
-    
-    if (result.success) {
-      return { success: true, data: updatedData, ...extra };
-    }
-    
-    const errorMsg =
-      result.error === "LIMIT_EXCEEDED"
-        ? "Storage limit reached. Try shortening descriptions."
-        : "Save failed";
-    return { success: false, error: errorMsg };
-  } catch (error) {
-    console.error("[TimerService] handleSaveResult error:", error);
-    return { success: false, error: error.message };
-  }
-};
-
-/**
- * Stops a checklist item timer and creates linked entries.
- * Helper to reduce duplication in timer switching logic.
- * @param {Object} timerData - Current timer data
- * @param {string} itemId - Checklist item ID to stop
- * @param {Object} itemData - Current item data
- * @param {string} [description=''] - Entry description
- * @returns {{timerData: Object, entry: Object}} Updated timer data and created entry
- */
-const stopItemAndCreateEntry = (
-  timerData,
-  itemId,
-  itemData,
-  description = "",
-) => {
-  const now = Date.now();
-  const { startTime, pausedDuration = 0 } = itemData.currentEntry;
-  const newEntry = createEntry(startTime, now, description);
-  newEntry.duration = now - startTime - pausedDuration;
-  newEntry.checklistItemId = itemId;
-
-  return {
-    entry: newEntry,
-    timerData: {
-      ...timerData,
-      entries: [...timerData.entries, newEntry],
-      checklistItems: {
-        ...timerData.checklistItems,
-        [itemId]: {
-          ...itemData,
-          state: TIMER_STATE.IDLE,
-          currentEntry: null,
-        },
-      },
-    },
-  };
+const addToRecentEntries = (recentEntries, newEntry) => {
+  const updated = [newEntry, ...recentEntries];
+  return updated.slice(0, MAX_RECENT_ENTRIES);
 };
 
 /**
@@ -107,29 +51,20 @@ const stopItemAndCreateEntry = (
  * @returns {Object} Validated timer data
  */
 const validateTimerData = (data) => ({
-  entries: Array.isArray(data?.entries) ? data.entries : [],
-  state: Object.values(TIMER_STATE).includes(data?.state)
-    ? data.state
-    : TIMER_STATE.IDLE,
-  currentEntry: data?.currentEntry ?? null,
-  estimatedTime:
-    typeof data?.estimatedTime === "number" ? data.estimatedTime : null,
-  manualEstimateSet: data?.manualEstimateSet ?? false,
-  checklistItems: data?.checklistItems ?? {},
+  ...DEFAULTS.TIMER_DATA,
+  ...data,
+  recentEntries: Array.isArray(data?.recentEntries) ? data.recentEntries : [],
+  checklistTotals: data?.checklistTotals ?? {},
 });
 
 /**
- * Starts the global timer. If a checklist item timer is running, stops it first (switch behavior).
+ * Starts the global timer.
  * @param {Object} t - Trello client
- * @returns {Promise<{success: boolean, data?: Object, stoppedItemId?: string, error?: string}>}
+ * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
 export const startTimer = async (t) => {
   try {
-    // Load all entries (main + archived)
-    const allEntries = await AttachmentStorageService.getAllEntries(t);
-    let timerData = validateTimerData(await StorageService.getTimerData(t));
-    timerData.entries = allEntries; // Merge all entries
-    let stoppedItemId = null;
+    const timerData = validateTimerData(await StorageService.getTimerData(t));
 
     if (timerData.state === TIMER_STATE.RUNNING) {
       return {
@@ -139,22 +74,16 @@ export const startTimer = async (t) => {
       };
     }
 
-    // Switch behavior: stop any running checklist timer first
-    for (const [id, item] of Object.entries(timerData.checklistItems)) {
-      if (item.state === TIMER_STATE.RUNNING && item.currentEntry) {
-        stoppedItemId = id;
-        const result = stopItemAndCreateEntry(timerData, id, item, "");
-        timerData = result.timerData;
-        break;
-      }
-    }
-
     const updatedData = {
       ...timerData,
       state: TIMER_STATE.RUNNING,
       currentEntry: { startTime: Date.now(), pausedDuration: 0 },
     };
-    return await handleSaveResult(t, updatedData, { stoppedItemId });
+
+    const result = await StorageService.setTimerData(t, updatedData);
+    return result.success
+      ? { success: true, data: updatedData }
+      : { success: false, error: result.error };
   } catch (error) {
     console.error("[TimerService] startTimer error:", error);
     return { success: false, error: error.message };
@@ -169,26 +98,29 @@ export const startTimer = async (t) => {
  */
 export const stopTimer = async (t, description = "") => {
   try {
-    // Load all entries (main + archived)
-    const allEntries = await AttachmentStorageService.getAllEntries(t);
     const timerData = validateTimerData(await StorageService.getTimerData(t));
-    timerData.entries = allEntries; // Merge all entries
-    
+
     if (timerData.state === TIMER_STATE.IDLE || !timerData.currentEntry) {
-      console.warn("[TimerService] Cannot stop: No active timer");
       return { success: false, error: "No active timer", data: timerData };
     }
+
     const now = Date.now();
     const { startTime, pausedDuration = 0 } = timerData.currentEntry;
     const newEntry = createEntry(startTime, now, description);
     newEntry.duration = now - startTime - pausedDuration;
+
     const updatedData = {
       ...timerData,
-      entries: [...timerData.entries, newEntry],
       state: TIMER_STATE.IDLE,
       currentEntry: null,
+      totalTime: timerData.totalTime + newEntry.duration,
+      recentEntries: addToRecentEntries(timerData.recentEntries, newEntry),
     };
-    return await handleSaveResult(t, updatedData, { entry: newEntry });
+
+    const result = await StorageService.setTimerData(t, updatedData);
+    return result.success
+      ? { success: true, data: updatedData, entry: newEntry }
+      : { success: false, error: result.error };
   } catch (error) {
     console.error("[TimerService] stopTimer error:", error);
     return { success: false, error: error.message };
@@ -196,7 +128,7 @@ export const stopTimer = async (t, description = "") => {
 };
 
 /**
- * Gets current elapsed time.
+ * Gets current elapsed time for running timer.
  * @param {Object} timerData - Timer data
  * @returns {number} Elapsed ms
  */
@@ -205,15 +137,13 @@ export const getCurrentElapsed = (timerData) => {
   const { startTime, pausedDuration = 0 } = timerData.currentEntry;
   if (timerData.state === TIMER_STATE.RUNNING)
     return getElapsedTime(startTime) - pausedDuration;
-  return timerData.currentEntry.elapsedBeforePause ?? 0;
+  return 0;
 };
 
 /**
- * Sets the time estimate for a card (manual override).
- * When set, this value overrides the calculated checklist estimate.
- * When cleared (null), the estimate falls back to the sum of checklist item estimates if any exist.
+ * Sets the time estimate for a card.
  * @param {Object} t - Trello client
- * @param {number|null} estimatedTimeMs - Estimated time in milliseconds, or null to clear and use checklist-based estimate
+ * @param {number|null} estimatedTimeMs - Estimated time in milliseconds
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
 export const setEstimate = async (t, estimatedTimeMs) => {
@@ -222,10 +152,13 @@ export const setEstimate = async (t, estimatedTimeMs) => {
     const updatedData = {
       ...timerData,
       estimatedTime: estimatedTimeMs,
-      // If setting a value, mark as manual. If clearing (null), revert to calculated.
       manualEstimateSet: estimatedTimeMs !== null && estimatedTimeMs > 0,
     };
-    return await handleSaveResult(t, updatedData);
+
+    const result = await StorageService.setTimerData(t, updatedData);
+    return result.success
+      ? { success: true, data: updatedData }
+      : { success: false, error: result.error };
   } catch (error) {
     console.error("[TimerService] setEstimate error:", error);
     return { success: false, error: error.message };
@@ -233,29 +166,30 @@ export const setEstimate = async (t, estimatedTimeMs) => {
 };
 
 /**
- * Deletes a time entry by ID.
- * Uses EntryStorageService to handle entries across all storage locations.
+ * Deletes a recent entry by ID.
  * @param {Object} t - Trello client
  * @param {string} entryId - ID of the entry to delete
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
 export const deleteEntry = async (t, entryId) => {
   try {
-    const result = await AttachmentStorageService.deleteEntry(t, entryId);
-    
-    if (!result.found) {
-      const timerData = validateTimerData(await StorageService.getTimerData(t));
-      return { success: false, error: "Entry not found", data: timerData };
-    }
-    
-    if (!result.success) {
-      return { success: false, error: result.error };
-    }
-    
-    // Return updated timerData with all entries
     const timerData = validateTimerData(await StorageService.getTimerData(t));
-    timerData.entries = result.entries;
-    return { success: true, data: timerData };
+    const entry = timerData.recentEntries.find((e) => e.id === entryId);
+
+    if (!entry) {
+      return { success: false, error: "Entry not found in recent entries" };
+    }
+
+    const updatedData = {
+      ...timerData,
+      recentEntries: timerData.recentEntries.filter((e) => e.id !== entryId),
+      totalTime: Math.max(0, timerData.totalTime - entry.duration),
+    };
+
+    const result = await StorageService.setTimerData(t, updatedData);
+    return result.success
+      ? { success: true, data: updatedData }
+      : { success: false, error: result.error };
   } catch (error) {
     console.error("[TimerService] deleteEntry error:", error);
     return { success: false, error: error.message };
@@ -263,132 +197,96 @@ export const deleteEntry = async (t, entryId) => {
 };
 
 /**
- * Updates an existing time entry.
- * Uses EntryStorageService to handle entries across all storage locations.
+ * Updates a recent entry.
  * @param {Object} t - Trello client
  * @param {string} entryId - Entry ID to update
- * @param {Object} updates - Fields to update: { duration?, checklistItemId?, description? }
- * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+ * @param {Object} updates - Fields to update
+ * @returns {Promise<{success: boolean, data?: Object, entry?: Object, error?: string}>}
  */
 export const updateEntry = async (t, entryId, updates) => {
   try {
-    // Prepare updates with validation
-    const sanitizedUpdates = {};
-    
-    if (updates.duration !== undefined) {
-      sanitizedUpdates.duration = updates.duration;
-    }
-    
-    if (updates.checklistItemId !== undefined) {
-      sanitizedUpdates.checklistItemId = updates.checklistItemId || null;
-    }
-    
-    if (updates.description !== undefined) {
-      sanitizedUpdates.description = (updates.description || "").substring(
-        0,
-        VALIDATION.MAX_DESCRIPTION_LENGTH,
-      );
-    }
-    
-    const result = await AttachmentStorageService.updateEntry(t, entryId, sanitizedUpdates);
-    
-    if (!result.found) {
-      const timerData = validateTimerData(await StorageService.getTimerData(t));
-      return { success: false, error: "Entry not found", data: timerData };
-    }
-    
-    if (!result.success) {
-      return { success: false, error: result.error };
-    }
-    
-    // Return updated timerData with all entries
     const timerData = validateTimerData(await StorageService.getTimerData(t));
-    timerData.entries = result.entries;
-    const updatedEntry = result.entries.find(e => e.id === entryId);
-    return { success: true, data: timerData, entry: updatedEntry };
+    const entryIndex = timerData.recentEntries.findIndex((e) => e.id === entryId);
+
+    if (entryIndex === -1) {
+      return { success: false, error: "Entry not found in recent entries" };
+    }
+
+    const oldEntry = timerData.recentEntries[entryIndex];
+    const updatedEntry = { ...oldEntry, ...updates };
+
+    // Adjust totalTime if duration changed
+    const durationDelta = (updates.duration || oldEntry.duration) - oldEntry.duration;
+
+    const updatedData = {
+      ...timerData,
+      recentEntries: timerData.recentEntries.map((e, i) =>
+        i === entryIndex ? updatedEntry : e
+      ),
+      totalTime: timerData.totalTime + durationDelta,
+    };
+
+    const result = await StorageService.setTimerData(t, updatedData);
+    return result.success
+      ? { success: true, data: updatedData, entry: updatedEntry }
+      : { success: false, error: result.error };
   } catch (error) {
     console.error("[TimerService] updateEntry error:", error);
     return { success: false, error: error.message };
   }
 };
+
 // =============================================================================
 // CHECKLIST ITEM TIMER OPERATIONS
 // =============================================================================
 
 /**
- * Gets or initializes checklist item data.
- * @param {Object} checklistItems - Current checklistItems map
- * @param {string} itemId - Checklist item ID
- * @returns {Object} Checklist item data
- */
-const getOrInitItemData = (checklistItems, itemId) => {
-  return checklistItems[itemId] || { ...DEFAULTS.CHECKLIST_ITEM_DATA };
-};
-
-/**
  * Starts timer for a specific checklist item.
- * Switch behavior: stops global timer or other checklist timer first.
  * @param {Object} t - Trello client
  * @param {string} checkItemId - Checklist item ID
- * @returns {Promise<{success: boolean, data?: Object, stoppedItemId?: string, stoppedGlobal?: boolean, error?: string}>}
+ * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
 export const startItemTimer = async (t, checkItemId) => {
   try {
-    // Load all entries (main + archived)
-    const allEntries = await AttachmentStorageService.getAllEntries(t);
-    let timerData = validateTimerData(await StorageService.getTimerData(t));
-    timerData.entries = allEntries; // Merge all entries
-    let stoppedItemId = null;
-    let stoppedGlobal = false;
+    const timerData = validateTimerData(await StorageService.getTimerData(t));
 
-    // Switch behavior: stop any other running checklist timer first
-    for (const [id, item] of Object.entries(timerData.checklistItems)) {
-      if (
-        item.state === TIMER_STATE.RUNNING &&
-        item.currentEntry &&
-        id !== checkItemId
-      ) {
-        stoppedItemId = id;
-        const result = stopItemAndCreateEntry(timerData, id, item, "");
-        timerData = result.timerData;
-        break;
-      }
-    }
-
-    // Switch behavior: stop global timer if running
+    // Stop global timer if running
     if (timerData.state === TIMER_STATE.RUNNING && timerData.currentEntry) {
-      stoppedGlobal = true;
       const now = Date.now();
       const { startTime, pausedDuration = 0 } = timerData.currentEntry;
+      const duration = now - startTime - pausedDuration;
       const newEntry = createEntry(startTime, now, "");
-      newEntry.duration = now - startTime - pausedDuration;
+      newEntry.duration = duration;
 
-      timerData = {
-        ...timerData,
-        entries: [...timerData.entries, newEntry],
-        state: TIMER_STATE.IDLE,
-        currentEntry: null,
-      };
+      timerData.totalTime += duration;
+      timerData.recentEntries = addToRecentEntries(timerData.recentEntries, newEntry);
+      timerData.state = TIMER_STATE.IDLE;
+      timerData.currentEntry = null;
     }
 
-    const itemData = getOrInitItemData(timerData.checklistItems, checkItemId);
+    // Get or initialize checklist item total
+    const itemTotal = timerData.checklistTotals[checkItemId] || {
+      totalTime: 0,
+      entryCount: 0,
+      estimatedTime: null,
+      currentEntry: null,
+    };
 
     const updatedData = {
       ...timerData,
-      checklistItems: {
-        ...timerData.checklistItems,
+      checklistTotals: {
+        ...timerData.checklistTotals,
         [checkItemId]: {
-          ...itemData,
-          state: TIMER_STATE.RUNNING,
+          ...itemTotal,
           currentEntry: { startTime: Date.now(), pausedDuration: 0 },
         },
       },
     };
 
-    return await handleSaveResult(t, updatedData, {
-      stoppedItemId,
-      stoppedGlobal,
-    });
+    const result = await StorageService.setTimerData(t, updatedData);
+    return result.success
+      ? { success: true, data: updatedData }
+      : { success: false, error: result.error };
   } catch (error) {
     console.error("[TimerService] startItemTimer error:", error);
     return { success: false, error: error.message };
@@ -396,7 +294,7 @@ export const startItemTimer = async (t, checkItemId) => {
 };
 
 /**
- * Stops timer for a specific checklist item and saves entry.
+ * Stops timer for a specific checklist item.
  * @param {Object} t - Trello client
  * @param {string} checkItemId - Checklist item ID
  * @param {string} [description=''] - Entry description
@@ -404,45 +302,38 @@ export const startItemTimer = async (t, checkItemId) => {
  */
 export const stopItemTimer = async (t, checkItemId, description = "") => {
   try {
-    // Load all entries (main + archived)
-    const allEntries = await AttachmentStorageService.getAllEntries(t);
     const timerData = validateTimerData(await StorageService.getTimerData(t));
-    timerData.entries = allEntries; // Merge all entries
-    const itemData = timerData.checklistItems[checkItemId];
+    const itemTotal = timerData.checklistTotals[checkItemId];
 
-    if (
-      !itemData ||
-      itemData.state !== TIMER_STATE.RUNNING ||
-      !itemData.currentEntry
-    ) {
-      return {
-        success: false,
-        error: "No active timer for this item",
-        data: timerData,
-      };
+    if (!itemTotal?.currentEntry) {
+      return { success: false, error: "No active timer for this item" };
     }
 
     const now = Date.now();
-    const { startTime, pausedDuration = 0 } = itemData.currentEntry;
-    const newEntry = createEntry(startTime, now, description);
-    newEntry.duration = now - startTime - pausedDuration;
-    newEntry.checklistItemId = checkItemId; // Link to checklist item
+    const { startTime, pausedDuration = 0 } = itemTotal.currentEntry;
+    const duration = now - startTime - pausedDuration;
+    const newEntry = createEntry(startTime, now, description, checkItemId);
+    newEntry.duration = duration;
 
     const updatedData = {
       ...timerData,
-      // Also add to global entries (linked entry)
-      entries: [...timerData.entries, newEntry],
-      checklistItems: {
-        ...timerData.checklistItems,
+      totalTime: timerData.totalTime + duration,
+      recentEntries: addToRecentEntries(timerData.recentEntries, newEntry),
+      checklistTotals: {
+        ...timerData.checklistTotals,
         [checkItemId]: {
-          ...itemData,
-          state: TIMER_STATE.IDLE,
+          ...itemTotal,
+          totalTime: itemTotal.totalTime + duration,
+          entryCount: itemTotal.entryCount + 1,
           currentEntry: null,
         },
       },
     };
 
-    return await handleSaveResult(t, updatedData, { entry: newEntry });
+    const result = await StorageService.setTimerData(t, updatedData);
+    return result.success
+      ? { success: true, data: updatedData, entry: newEntry }
+      : { success: false, error: result.error };
   } catch (error) {
     console.error("[TimerService] stopItemTimer error:", error);
     return { success: false, error: error.message };
@@ -453,26 +344,34 @@ export const stopItemTimer = async (t, checkItemId, description = "") => {
  * Sets estimate for a specific checklist item.
  * @param {Object} t - Trello client
  * @param {string} checkItemId - Checklist item ID
- * @param {number|null} estimatedTimeMs - Estimate in ms, or null to clear
+ * @param {number|null} estimatedTimeMs - Estimate in ms
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
 export const setItemEstimate = async (t, checkItemId, estimatedTimeMs) => {
   try {
     const timerData = validateTimerData(await StorageService.getTimerData(t));
-    const itemData = getOrInitItemData(timerData.checklistItems, checkItemId);
+    const itemTotal = timerData.checklistTotals[checkItemId] || {
+      totalTime: 0,
+      entryCount: 0,
+      estimatedTime: null,
+      currentEntry: null,
+    };
 
     const updatedData = {
       ...timerData,
-      checklistItems: {
-        ...timerData.checklistItems,
+      checklistTotals: {
+        ...timerData.checklistTotals,
         [checkItemId]: {
-          ...itemData,
+          ...itemTotal,
           estimatedTime: estimatedTimeMs,
         },
       },
     };
 
-    return await handleSaveResult(t, updatedData);
+    const result = await StorageService.setTimerData(t, updatedData);
+    return result.success
+      ? { success: true, data: updatedData }
+      : { success: false, error: result.error };
   } catch (error) {
     console.error("[TimerService] setItemEstimate error:", error);
     return { success: false, error: error.message };
@@ -481,31 +380,22 @@ export const setItemEstimate = async (t, checkItemId, estimatedTimeMs) => {
 
 /**
  * Gets current elapsed time for a checklist item.
- * @param {Object} itemData - Checklist item data
+ * @param {Object} itemTotal - Checklist item total data
  * @returns {number} Elapsed ms
  */
-export const getItemCurrentElapsed = (itemData) => {
-  if (!itemData?.currentEntry) return 0;
-  const { startTime, pausedDuration = 0 } = itemData.currentEntry;
-  if (itemData.state === TIMER_STATE.RUNNING)
-    return getElapsedTime(startTime) - pausedDuration;
-  return 0;
+export const getItemCurrentElapsed = (itemTotal) => {
+  if (!itemTotal?.currentEntry) return 0;
+  const { startTime, pausedDuration = 0 } = itemTotal.currentEntry;
+  return getElapsedTime(startTime) - pausedDuration;
 };
+
 /**
- * Gets storage usage stats for timer data.
- * Considers both metadata and entries keys separately.
+ * Gets storage usage stats.
  * @param {Object} timerData - Current timer data
- * @returns {Object} Usage stats for the most full key
+ * @returns {Object} Usage stats
  */
 export const getStorageUsage = (timerData) => {
-  const { entries, ...metadata } = timerData;
-  const metadataUsage = StorageService.calculateUsage(metadata);
-  const entriesUsage = StorageService.calculateUsage(entries);
-
-  // Return the one that is more full
-  return metadataUsage.percent > entriesUsage.percent
-    ? metadataUsage
-    : entriesUsage;
+  return StorageService.calculateUsage(timerData);
 };
 
 const TimerService = {
@@ -515,11 +405,11 @@ const TimerService = {
   setEstimate,
   deleteEntry,
   updateEntry,
-  // Checklist item operations
   startItemTimer,
   stopItemTimer,
   setItemEstimate,
   getItemCurrentElapsed,
   getStorageUsage,
 };
+
 export default TimerService;

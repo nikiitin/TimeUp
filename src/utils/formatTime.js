@@ -153,14 +153,13 @@ export const sumDurations = (entries) => {
  * @example
  * getRemainingTime([{ duration: 1800000 }], 3600000) // { remaining: 1800000, isOverBudget: false, percentComplete: 50 }
  */
-export const getRemainingTime = (entries, estimatedTime) => {
+export const getRemainingTime = (totalTime, estimatedTime) => {
     if (typeof estimatedTime !== 'number' || estimatedTime <= 0) {
         return null;
     }
 
-    const spent = sumDurations(entries);
-    const remaining = estimatedTime - spent;
-    const percentComplete = Math.min(100, Math.round((spent / estimatedTime) * 100));
+    const remaining = estimatedTime - totalTime;
+    const percentComplete = Math.min(100, Math.round((totalTime / estimatedTime) * 100));
 
     return {
         remaining,

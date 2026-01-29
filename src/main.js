@@ -7,12 +7,10 @@ import { TIMER_STATE, APP_INFO, BADGE_COLORS } from "./utils/constants.js";
 import { AppConfig } from "./config/AppConfig.js";
 import {
   formatDuration,
-  sumDurations,
   getRemainingTime,
 } from "./utils/formatTime.js";
 import StorageService from "./services/StorageService.js";
 import TimerService from "./services/TimerService.js";
-import AttachmentStorageService from "./services/AttachmentStorageService.js";
 
 // SVG clock icon (works well on dark backgrounds)
 const ICON_TIMER =
@@ -66,13 +64,10 @@ TrelloPowerUp.initialize(
     "card-badges": async (t) => {
       try {
         const timerData = await StorageService.getTimerData(t);
-        // Load entries from attachment storage for badge calculations
-        const entries = await AttachmentStorageService.getAllEntries(t);
         const badges = [];
 
         // Show running indicator
         if (timerData.state === TIMER_STATE.RUNNING) {
-          const elapsed = TimerService.getCurrentElapsed(timerData);
           badges.push({
             dynamic: async () => ({
               text: formatDuration(
@@ -87,11 +82,10 @@ TrelloPowerUp.initialize(
           });
         }
 
-        // Show total time if entries exist
-        const total = sumDurations(entries);
-        if (total > 0) {
+        // Show total time
+        if (timerData.totalTime > 0) {
           badges.push({
-            text: formatDuration(total, { compact: true, showSeconds: false }),
+            text: formatDuration(timerData.totalTime, { compact: true, showSeconds: false }),
             color: BADGE_COLORS.DEFAULT,
             icon: ICON_TIMER,
           });
@@ -99,7 +93,7 @@ TrelloPowerUp.initialize(
 
         // Show remaining time if estimate is set
         const remainingInfo = getRemainingTime(
-          entries,
+          timerData.totalTime,
           timerData.estimatedTime,
         );
         if (remainingInfo) {
@@ -127,18 +121,15 @@ TrelloPowerUp.initialize(
     "card-detail-badges": async (t) => {
       try {
         const timerData = await StorageService.getTimerData(t);
-        // Load entries from attachment storage
-        const entries = await AttachmentStorageService.getAllEntries(t);
-        const total = sumDurations(entries);
 
-        if (total === 0 && timerData.state === TIMER_STATE.IDLE) {
+        if (timerData.totalTime === 0 && timerData.state === TIMER_STATE.IDLE) {
           return [];
         }
 
         return [
           {
             title: "Total Time",
-            text: formatDuration(total, { compact: true }),
+            text: formatDuration(timerData.totalTime, { compact: true }),
             color:
               timerData.state === TIMER_STATE.RUNNING
                 ? BADGE_COLORS.RUNNING
