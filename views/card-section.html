@@ -113,7 +113,6 @@
       let cachedBoardMembers = [];
       let updateInterval = null;
 
-      console.log("[App] Initializing controllers...");
       // -- Initialize Controllers --
 
       // 1. Timer Header
@@ -202,7 +201,7 @@
           // Always resize to fit new content (like checklist items)
           t.sizeTo("body").catch(() => {});
         } catch (error) {
-          console.error("Refresh loop error:", error);
+          // Silent failure
         }
       };
 

@@ -12,7 +12,6 @@ export const getCard = async (t) => {
   try {
     return await t.card("id", "name", "url");
   } catch (error) {
-    console.error("[TrelloService] getCard error:", error);
     return null;
   }
 };
@@ -26,7 +25,6 @@ export const getBoard = async (t) => {
   try {
     return await t.board("id", "name", "url");
   } catch (error) {
-    console.error("[TrelloService] getBoard error:", error);
     return null;
   }
 };
@@ -40,7 +38,6 @@ export const getMember = async (t) => {
   try {
     return await t.member("id", "fullName", "username", "avatar");
   } catch (error) {
-    console.error("[TrelloService] getMember error:", error);
     return null;
   }
 };
@@ -55,7 +52,6 @@ export const getBoardMembers = async (t) => {
     const board = await t.board("members");
     return board?.members || [];
   } catch (error) {
-    console.error("[TrelloService] getBoardMembers error:", error);
     return [];
   }
 };
@@ -69,7 +65,7 @@ export const closePopup = async (t) => {
   try {
     await t.closePopup();
   } catch (error) {
-    console.error("[TrelloService] closePopup error:", error);
+    // Silent failure
   }
 };
 

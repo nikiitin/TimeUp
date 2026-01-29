@@ -158,7 +158,7 @@ const init = async (t) => {
       startUpdateLoop(t);
     }
   } catch (error) {
-    console.error("[CardButtonUI] init error:", error);
+    // Silent failure
   }
 };
 

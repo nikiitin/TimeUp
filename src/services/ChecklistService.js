@@ -20,18 +20,15 @@ export const getChecklists = async (t) => {
     const isAuthorized = await restApi.isAuthorized();
 
     if (!isAuthorized) {
-      console.warn("[ChecklistService] Not authorized for REST API.");
       return null;
     }
 
     const token = await restApi.getToken();
     if (!token) {
-      console.warn("[ChecklistService] Authorized but no token?");
       return [];
     }
 
     if (!cardId) {
-      console.error("[ChecklistService] No card ID found in context.");
       return [];
     }
 
@@ -46,7 +43,6 @@ export const getChecklists = async (t) => {
 
     return (await response.json()) || [];
   } catch (error) {
-    console.error("[ChecklistService] REST API error:", error);
     return [];
   }
 };

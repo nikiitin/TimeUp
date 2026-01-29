@@ -46,11 +46,9 @@ export class TimerUI {
       if (result.success && this.onRefresh) {
         this.onRefresh();
       } else if (!result.success) {
-        console.error("[TimerUI] Action failed:", result.error);
         alert(`Timer action failed: ${result.error}`);
       }
     } catch (error) {
-      console.error("Timer operation failed:", error);
       alert(`Timer error: ${error.message}`);
     }
   }

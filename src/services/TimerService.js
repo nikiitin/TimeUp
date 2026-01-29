@@ -113,7 +113,6 @@ export const startTimer = async (t) => {
       ? { success: true, data: updatedData }
       : { success: false, error: result.error };
   } catch (error) {
-    console.error("[TimerService] startTimer error:", error);
     return { success: false, error: error.message };
   }
 };
@@ -161,7 +160,6 @@ export const stopTimer = async (t, description = "") => {
       ? { success: true, data: updatedData, entry: newEntry }
       : { success: false, error: result.error };
   } catch (error) {
-    console.error("[TimerService] stopTimer error:", error);
     return { success: false, error: error.message };
   }
 };
@@ -199,7 +197,6 @@ export const setEstimate = async (t, estimatedTimeMs) => {
       ? { success: true, data: updatedData }
       : { success: false, error: result.error };
   } catch (error) {
-    console.error("[TimerService] setEstimate error:", error);
     return { success: false, error: error.message };
   }
 };
@@ -230,7 +227,6 @@ export const deleteEntry = async (t, entryId) => {
       ? { success: true, data: updatedData }
       : { success: false, error: result.error };
   } catch (error) {
-    console.error("[TimerService] deleteEntry error:", error);
     return { success: false, error: error.message };
   }
 };
@@ -273,7 +269,6 @@ export const updateEntry = async (t, entryId, updates) => {
       ? { success: true, data: updatedData, entry: updatedEntry }
       : { success: false, error: result.error };
   } catch (error) {
-    console.error("[TimerService] updateEntry error:", error);
     return { success: false, error: error.message };
   }
 };
@@ -350,7 +345,6 @@ export const startItemTimer = async (t, checkItemId) => {
       ? { success: true, data: updatedData }
       : { success: false, error: result.error };
   } catch (error) {
-    console.error("[TimerService] startItemTimer error:", error);
     return { success: false, error: error.message };
   }
 };
@@ -409,7 +403,6 @@ export const stopItemTimer = async (t, checkItemId, description = "") => {
       ? { success: true, data: updatedData, entry: newEntry }
       : { success: false, error: result.error };
   } catch (error) {
-    console.error("[TimerService] stopItemTimer error:", error);
     return { success: false, error: error.message };
   }
 };
@@ -459,7 +452,6 @@ export const setItemEstimate = async (t, checkItemId, estimatedTimeMs) => {
       ? { success: true, data: updatedData }
       : { success: false, error: result.error };
   } catch (error) {
-    console.error("[TimerService] setItemEstimate error:", error);
     return { success: false, error: error.message };
   }
 };

@@ -24,10 +24,6 @@ export const getData = async (
     const data = await t.get(scope, visibility, key);
     return data ?? defaultValue;
   } catch (error) {
-    console.error(
-      `[StorageService] Failed to get "${key}" from ${scope}/${visibility}:`,
-      error,
-    );
     return defaultValue;
   }
 };
@@ -42,16 +38,13 @@ export const getData = async (
  * @returns {Promise<{success: boolean, size?: number, error?: string}>} Result object
  * @example
  * const result = await setData(t, 'card', 'shared', 'timerData', { state: 'idle' });
- * if (!result.success) console.error(result.error);
+ * if (!result.success) alert(result.error);
  */
 export const setData = async (t, scope, visibility, key, value) => {
   try {
     const jsonString = JSON.stringify(value);
 
     if (jsonString.length > STORAGE_LIMIT) {
-      console.error(
-        `[StorageService] Size limit exceeded for "${key}": ${jsonString.length}/${STORAGE_LIMIT} characters.`,
-      );
       return {
         success: false,
         error: "LIMIT_EXCEEDED",
@@ -63,10 +56,6 @@ export const setData = async (t, scope, visibility, key, value) => {
 
     return { success: true, size: jsonString.length };
   } catch (error) {
-    console.error(
-      `[StorageService] Failed to set "${key}" in ${scope}/${visibility}:`,
-      error,
-    );
     return { success: false, error: error.message };
   }
 };
@@ -99,10 +88,6 @@ export const removeData = async (t, scope, visibility, key) => {
     await t.remove(scope, visibility, key);
     return true;
   } catch (error) {
-    console.error(
-      `[StorageService] Failed to remove "${key}" from ${scope}/${visibility}:`,
-      error,
-    );
     return false;
   }
 };

@@ -286,7 +286,6 @@ export class ChecklistUI {
     if (result.success) {
       if (this.onRefresh) this.onRefresh();
     } else {
-      console.error("Checklist toggle failed", result.error);
       alert(`Failed to toggle timer: ${result.error}`);
     }
   }

@@ -21,7 +21,7 @@ export class AuthUI {
           this.hide();
           if (this.onAuthorized) this.onAuthorized();
         } catch (e) {
-          console.error("Authorization failed:", e);
+          // Silent failure
         }
       });
     }

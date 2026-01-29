@@ -70,7 +70,6 @@ TrelloPowerUp.initialize(
 
         return badges;
       } catch (error) {
-        console.error("[Main] card-badges error:", error);
         return [];
       }
     },
@@ -92,7 +91,6 @@ TrelloPowerUp.initialize(
           },
         ];
       } catch (error) {
-        console.error("[Main] card-detail-badges error:", error);
         return [];
       }
     },

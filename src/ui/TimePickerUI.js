@@ -19,8 +19,6 @@ export class TimePickerUI {
 
     if (this.container) {
       this._ensureRender();
-    } else {
-      console.error("[TimePickerUI] Container not found:", containerId);
     }
   }
 
