@@ -6,7 +6,7 @@
 import { TIMER_STATE, DEFAULTS, VALIDATION } from "../utils/constants.js";
 import { getElapsedTime } from "../utils/formatTime.js";
 import StorageService from "./StorageService.js";
-import EntryStorageService from "./EntryStorageService.js";
+import AttachmentStorageService from "./AttachmentStorageService.js";
 
 /**
  * Creates a new time entry.
@@ -42,7 +42,7 @@ const createEntry = (startTime, endTime, description = "") => {
 const handleSaveResult = async (t, updatedData, extra = {}) => {
   try {
     // Use EntryStorageService to save with automatic archival
-    const result = await EntryStorageService.saveEntries(
+    const result = await AttachmentStorageService.saveEntries(
       t,
       updatedData.entries || [],
       updatedData
@@ -126,7 +126,7 @@ const validateTimerData = (data) => ({
 export const startTimer = async (t) => {
   try {
     // Load all entries (main + archived)
-    const allEntries = await EntryStorageService.getAllEntries(t);
+    const allEntries = await AttachmentStorageService.getAllEntries(t);
     let timerData = validateTimerData(await StorageService.getTimerData(t));
     timerData.entries = allEntries; // Merge all entries
     let stoppedItemId = null;
@@ -170,7 +170,7 @@ export const startTimer = async (t) => {
 export const stopTimer = async (t, description = "") => {
   try {
     // Load all entries (main + archived)
-    const allEntries = await EntryStorageService.getAllEntries(t);
+    const allEntries = await AttachmentStorageService.getAllEntries(t);
     const timerData = validateTimerData(await StorageService.getTimerData(t));
     timerData.entries = allEntries; // Merge all entries
     
@@ -241,7 +241,7 @@ export const setEstimate = async (t, estimatedTimeMs) => {
  */
 export const deleteEntry = async (t, entryId) => {
   try {
-    const result = await EntryStorageService.deleteEntry(t, entryId);
+    const result = await AttachmentStorageService.deleteEntry(t, entryId);
     
     if (!result.found) {
       const timerData = validateTimerData(await StorageService.getTimerData(t));
@@ -290,7 +290,7 @@ export const updateEntry = async (t, entryId, updates) => {
       );
     }
     
-    const result = await EntryStorageService.updateEntry(t, entryId, sanitizedUpdates);
+    const result = await AttachmentStorageService.updateEntry(t, entryId, sanitizedUpdates);
     
     if (!result.found) {
       const timerData = validateTimerData(await StorageService.getTimerData(t));
@@ -335,7 +335,7 @@ const getOrInitItemData = (checklistItems, itemId) => {
 export const startItemTimer = async (t, checkItemId) => {
   try {
     // Load all entries (main + archived)
-    const allEntries = await EntryStorageService.getAllEntries(t);
+    const allEntries = await AttachmentStorageService.getAllEntries(t);
     let timerData = validateTimerData(await StorageService.getTimerData(t));
     timerData.entries = allEntries; // Merge all entries
     let stoppedItemId = null;
@@ -405,7 +405,7 @@ export const startItemTimer = async (t, checkItemId) => {
 export const stopItemTimer = async (t, checkItemId, description = "") => {
   try {
     // Load all entries (main + archived)
-    const allEntries = await EntryStorageService.getAllEntries(t);
+    const allEntries = await AttachmentStorageService.getAllEntries(t);
     const timerData = validateTimerData(await StorageService.getTimerData(t));
     timerData.entries = allEntries; // Merge all entries
     const itemData = timerData.checklistItems[checkItemId];

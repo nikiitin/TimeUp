@@ -186,9 +186,9 @@
         try {
           const timerData = await StorageService.getTimerData(t);
           
-          // Load entries separately (they're no longer in timerData)
-          const { default: EntryStorageService } = await import("../src/services/EntryStorageService.js");
-          const entries = await EntryStorageService.getAllEntries(t);
+          // Load entries from attachment storage (unlimited entries)
+          const { default: AttachmentStorageService } = await import("../src/services/AttachmentStorageService.js");
+          const entries = await AttachmentStorageService.getAllEntries(t);
           timerData.entries = entries;
 
           // Update UI Components

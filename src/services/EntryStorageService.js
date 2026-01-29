@@ -5,16 +5,16 @@ import StorageService from "./StorageService.js";
  * EntryStorageService - Handles unlimited time entries using paginated storage
  * 
  * Strategy:
- * 1. Store recent entries (last 5) in separate timerEntries_recent key
- * 2. Archive older entries to separate paginated keys (timerEntries_0, timerEntries_1, etc.)
+ * 1. Store recent entries (last 5) in card storage (timerEntries_recent)
+ * 2. Archive older entries to BOARD storage with card-specific keys
  * 3. Compress entry format to reduce storage footprint by 40%
- * 4. Each archive page holds ~20 compressed entries (safe margin under 4KB limit)
+ * 4. Board storage has 8KB limit SHARED across ALL cards on the board
  * 
- * This allows 500+ entries per card while maintaining performance and staying under Trello's 4KB limit.
+ * This allows ~200 entries per card while staying under storage limits.
  */
 
-const ENTRIES_PER_MAIN_STORAGE = 5; // Recent entries in timerEntries_recent (separate from metadata)
-const ENTRIES_PER_ARCHIVE_PAGE = 30; // Entries per archive key (compressed, stays under 4KB limit)
+const ENTRIES_PER_MAIN_STORAGE = 5; // Recent entries in card storage
+const ENTRIES_PER_ARCHIVE_PAGE = 15; // Reduced to fit more cards in 8KB board limit
 
 /**
  * Compresses entry to reduce storage size by ~40%.
