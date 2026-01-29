@@ -32,15 +32,32 @@ export const getAllEntries = async (t) => {
       return await loadFromLegacyStorage(t);
     }
     
-    // Download and parse attachment
-    const response = await fetch(attachment.url);
-    if (!response.ok) {
-      console.error('[AttachmentStorage] Failed to fetch attachment:', response.status);
-      return await loadFromLegacyStorage(t);
-    }
+    // Parse attachment data
+    // Trello stores data URLs as-is, but we need to decode them manually
+    const dataUrl = attachment.url;
     
-    const data = await response.json();
-    return Array.isArray(data.entries) ? data.entries : [];
+    if (dataUrl.startsWith('data:')) {
+      // Data URL format: data:application/json;base64,<base64string>
+      const base64Data = dataUrl.split(',')[1];
+      if (!base64Data) {
+        console.error('[AttachmentStorage] Invalid data URL format');
+        return await loadFromLegacyStorage(t);
+      }
+      
+      const jsonString = atob(base64Data); // Decode base64
+      const data = JSON.parse(jsonString);
+      return Array.isArray(data.entries) ? data.entries : [];
+    } else {
+      // HTTP URL - use fetch
+      const response = await fetch(dataUrl);
+      if (!response.ok) {
+        console.error('[AttachmentStorage] Failed to fetch attachment:', response.status);
+        return await loadFromLegacyStorage(t);
+      }
+      
+      const data = await response.json();
+      return Array.isArray(data.entries) ? data.entries : [];
+    }
     
   } catch (error) {
     console.error('[AttachmentStorage] Error loading entries:', error);
@@ -81,14 +98,8 @@ export const saveEntries = async (t, entries) => {
       reader.readAsDataURL(blob);
     });
     
-    // Remove old attachment if exists
-    const card = await t.card('attachments');
-    const oldAttachment = card.attachments?.find(att => att.name === ATTACHMENT_NAME);
-    if (oldAttachment) {
-      await t.remove('card', 'attachment', oldAttachment.id);
-    }
-    
     // Attach new file using data URL
+    // Note: Trello automatically replaces attachments with the same name
     await t.attach({
       name: ATTACHMENT_NAME,
       url: dataUrl

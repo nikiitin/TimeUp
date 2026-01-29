@@ -12,6 +12,7 @@ import {
 } from "./utils/formatTime.js";
 import StorageService from "./services/StorageService.js";
 import TimerService from "./services/TimerService.js";
+import AttachmentStorageService from "./services/AttachmentStorageService.js";
 
 // SVG clock icon (works well on dark backgrounds)
 const ICON_TIMER =
@@ -65,6 +66,8 @@ TrelloPowerUp.initialize(
     "card-badges": async (t) => {
       try {
         const timerData = await StorageService.getTimerData(t);
+        // Load entries from attachment storage for badge calculations
+        const entries = await AttachmentStorageService.getAllEntries(t);
         const badges = [];
 
         // Show running indicator
@@ -85,7 +88,7 @@ TrelloPowerUp.initialize(
         }
 
         // Show total time if entries exist
-        const total = sumDurations(timerData.entries);
+        const total = sumDurations(entries);
         if (total > 0) {
           badges.push({
             text: formatDuration(total, { compact: true, showSeconds: false }),
@@ -96,7 +99,7 @@ TrelloPowerUp.initialize(
 
         // Show remaining time if estimate is set
         const remainingInfo = getRemainingTime(
-          timerData.entries,
+          entries,
           timerData.estimatedTime,
         );
         if (remainingInfo) {
@@ -124,7 +127,9 @@ TrelloPowerUp.initialize(
     "card-detail-badges": async (t) => {
       try {
         const timerData = await StorageService.getTimerData(t);
-        const total = sumDurations(timerData.entries);
+        // Load entries from attachment storage
+        const entries = await AttachmentStorageService.getAllEntries(t);
+        const total = sumDurations(entries);
 
         if (total === 0 && timerData.state === TIMER_STATE.IDLE) {
           return [];

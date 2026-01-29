@@ -2,15 +2,25 @@ import { STORAGE_KEYS } from "../utils/constants.js";
 import StorageService from "./StorageService.js";
 
 /**
- * EntryStorageService - Handles unlimited time entries using paginated storage
+ * ⚠️ DEPRECATED - FOR MIGRATION ONLY ⚠️
  * 
- * Strategy:
+ * EntryStorageService - Legacy paginated storage system
+ * 
+ * This service is NO LONGER USED for new data storage.
+ * It has been replaced by AttachmentStorageService which stores
+ * unlimited entries as card attachments.
+ * 
+ * This file is kept ONLY for migration purposes:
+ * - AttachmentStorageService.loadFromLegacyStorage() uses this to migrate old data
+ * - Diagnostic tool can read old storage format
+ * 
+ * DO NOT USE IN NEW CODE. Use AttachmentStorageService instead.
+ * 
+ * Original Strategy (now deprecated):
  * 1. Store recent entries (last 5) in card storage (timerEntries_recent)
  * 2. Archive older entries to BOARD storage with card-specific keys
  * 3. Compress entry format to reduce storage footprint by 40%
  * 4. Board storage has 8KB limit SHARED across ALL cards on the board
- * 
- * This allows ~200 entries per card while staying under storage limits.
  */
 
 const ENTRIES_PER_MAIN_STORAGE = 5; // Recent entries in card storage

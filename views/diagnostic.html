@@ -72,11 +72,11 @@
 </head>
 <body>
   <h1>🔍 Storage Diagnostic</h1>
-  <p>This tool shows ALL data stored for this card</p>
+  <p><strong>New Architecture:</strong> Time entries are now stored as card attachments (unlimited size). Only metadata remains in pluginData.</p>
   
   <button onclick="loadAllStorage()">🔄 Scan Storage</button>
-  <button onclick="clearOldEntries()">🗑️ Clear Old Card Archives</button>
-  <button onclick="migrateToBoard()">🔄 Migrate to Board Storage</button>
+  <button onclick="clearOldEntries()">🗑️ Clear Old Archives</button>
+  <button onclick="showAttachments()">📎 Show Attachments</button>
   
   <div id="results"></div>
 
@@ -170,26 +170,77 @@
     }
     
     async function clearOldEntries() {
-      if (!confirm('Clear OLD card-level timerEntries_X keys? (These are no longer used - archives are now in board storage)')) {
+      if (!confirm('Clear ALL old timerEntries_X keys and board archive keys? (These are no longer used - entries are now in attachments)')) {
         return;
       }
       
       try {
         const allData = await t.getAll();
         const cardShared = allData.card?.shared || {};
-        const keys = Object.keys(cardShared);
+        const boardShared = allData.board?.shared || {};
+        const cardId = t.getContext().card;
         
         let cleared = 0;
-        for (const key of keys) {
+        
+        // Clear old card-level archive keys
+        for (const key of Object.keys(cardShared)) {
           if (key.startsWith('timerEntries_') && key !== 'timerEntries_recent') {
             await t.remove('card', 'shared', key);
             cleared++;
           }
         }
         
-        alert(`Cleared ${cleared} old archive keys from card storage`);
+        // Clear board-level archive keys for this card
+        for (const key of Object.keys(boardShared)) {
+          if (key.startsWith(`card_${cardId}_entries_`)) {
+            await t.remove('board', 'shared', key);
+            cleared++;
+          }
+        }
+        
+        // Also clear the recent entries cache (will be rebuilt from attachment)
+        if (cardShared.timerEntries_recent) {
+          await t.remove('card', 'shared', 'timerEntries_recent');
+          cleared++;
+        }
+        
+        alert(`Cleared ${cleared} legacy storage keys. Entries are safe in attachment.`);
         await loadAllStorage();
         
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    }
+    
+    async function showAttachments() {
+      try {
+        const card = await t.card('attachments');
+        const timeupAttachment = card.attachments?.find(att => att.name === 'timeup_entries.json');
+        
+        if (!timeupAttachment) {
+          alert('No TimeUp attachment found. Start a timer to create one.');
+          return;
+        }
+        
+        const response = await fetch(timeupAttachment.url);
+        const data = await response.json();
+        
+        const results = document.getElementById('results');
+        results.innerHTML = `
+          <div class="storage-info" style="border-left-color: #61bd4f;">
+            <h2>📎 TimeUp Attachment</h2>
+            <div><strong>File:</strong> ${timeupAttachment.name}</div>
+            <div><strong>URL:</strong> <a href="${timeupAttachment.url}" target="_blank" style="color: #0079bf;">View Raw</a></div>
+            <div><strong>Version:</strong> ${data.version || 'unknown'}</div>
+            <div><strong>Last Update:</strong> ${new Date(data.lastUpdate).toLocaleString()}</div>
+            <div><strong>Entry Count:</strong> ${data.count || data.entries?.length || 0}</div>
+            <div><strong>File Size:</strong> ~${Math.round(JSON.stringify(data).length / 1024)} KB</div>
+          </div>
+          <div class="total" style="background: #61bd4f;">
+            ✅ Unlimited storage - No 4KB limit!
+          </div>
+          <p><em>Entries are stored in the attachment. Only metadata (~100 bytes) remains in pluginData.</em></p>
+        `;
       } catch (error) {
         alert(`Error: ${error.message}`);
       }

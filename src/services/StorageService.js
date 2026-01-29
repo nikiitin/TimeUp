@@ -135,16 +135,16 @@ export const getTimerData = async (t) => {
   );
   
   timerData.checklistItems = checklistItems;
-  timerData.entries = []; // Entries must be loaded via EntryStorageService.getAllEntries()
+  timerData.entries = []; // Entries must be loaded via AttachmentStorageService.getAllEntries()
 
   return timerData;
 };
 
 /**
  * Saves ONLY timer metadata (state, estimates) WITHOUT entries or checklistItems.
- * Used by EntryStorageService to save metadata while entries and checklistItems are handled separately.
+ * Used by AttachmentStorageService to save metadata while entries are handled separately.
  * @param {Object} t - Trello client
- * @param {Object} metadata - Timer metadata (entries and checklistItems will be stored separately)
+ * @param {Object} metadata - Timer metadata (entries will be stored in attachments, checklistItems stored separately)
  * @returns {Promise<{success: boolean, size?: number, error?: string}>}
  */
 export const setTimerMetadata = async (t, metadata) => {

@@ -32,8 +32,8 @@ const createEntry = (startTime, endTime, description = "") => {
 };
 
 /**
- * Common helper to handle StorageService results with entry pagination.
- * Uses EntryStorageService to support unlimited entries.
+ * Common helper to handle AttachmentStorageService results.
+ * Saves unlimited entries as card attachments.
  * @param {Object} t - Trello client
  * @param {Object} updatedData - The data to save
  * @param {Object} extra - Extra fields to include in success response
@@ -41,7 +41,7 @@ const createEntry = (startTime, endTime, description = "") => {
  */
 const handleSaveResult = async (t, updatedData, extra = {}) => {
   try {
-    // Use EntryStorageService to save with automatic archival
+    // Save entries to attachment storage
     const result = await AttachmentStorageService.saveEntries(
       t,
       updatedData.entries || [],

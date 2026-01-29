@@ -4,32 +4,53 @@
  */
 
 import { formatDuration } from '../utils/formatTime.js';
-import { STORAGE_KEYS, STORAGE_SCOPES } from '../utils/constants.js';
 
 /**
  * Fetches timer data from all cards on the board.
+ * Note: This requires loading AttachmentStorageService for each card context.
+ * Since we can't easily change card context, we load from card attachments.
  * @param {Object} t - Trello Power-Up client
  * @returns {Promise<Array>} Array of {cardId, cardName, entries}
  */
 export const fetchAllCardTimers = async (t) => {
     try {
         // Get all cards on the board
-        const cards = await t.cards('id', 'name');
+        const cards = await t.cards('id', 'name', 'attachments');
         const results = [];
 
         for (const card of cards) {
             try {
-                const timerData = await t.get(card.id, STORAGE_SCOPES.CARD_SHARED, STORAGE_KEYS.TIMER_DATA);
-                if (timerData?.entries?.length > 0) {
-                    results.push({
-                        cardId: card.id,
-                        cardName: card.name,
-                        entries: timerData.entries.map(entry => ({
-                            ...entry,
+                // Look for TimeUp attachment on this card
+                const attachment = card.attachments?.find(att => att.name === 'timeup_entries.json');
+                
+                if (attachment) {
+                    let data;
+                    const dataUrl = attachment.url;
+                    
+                    if (dataUrl.startsWith('data:')) {
+                        // Data URL - decode base64 manually
+                        const base64Data = dataUrl.split(',')[1];
+                        if (base64Data) {
+                            const jsonString = atob(base64Data);
+                            data = JSON.parse(jsonString);
+                        }
+                    } else {
+                        // HTTP URL - use fetch
+                        const response = await fetch(dataUrl);
+                        data = await response.json();
+                    }
+                    
+                    if (data?.entries?.length > 0) {
+                        results.push({
                             cardId: card.id,
                             cardName: card.name,
-                        })),
-                    });
+                            entries: data.entries.map(entry => ({
+                                ...entry,
+                                cardId: card.id,
+                                cardName: card.name,
+                            })),
+                        });
+                    }
                 }
             } catch (err) {
                 console.warn(`[ReportService] Failed to get data for card ${card.id}:`, err);
