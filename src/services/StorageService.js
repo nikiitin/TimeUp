@@ -35,6 +35,15 @@ export const getData = async (
 export const setData = async (t, scope, visibility, key, value) => {
   try {
     const jsonString = JSON.stringify(value);
+    
+    // Enhanced debug logging for timerData specifically
+    if (key === STORAGE_KEYS.TIMER_DATA) {
+      console.log("[setData] About to save timerData:");
+      console.log("  - Size:", jsonString.length, "chars");
+      console.log("  - Keys:", Object.keys(value));
+      console.log("  - Full value:", jsonString);
+    }
+    
     if (jsonString.length > STORAGE_LIMIT) {
       console.error(
         `[StorageService] Size limit exceeded for "${key}": ${jsonString.length}/${STORAGE_LIMIT} characters.`,
@@ -47,6 +56,11 @@ export const setData = async (t, scope, visibility, key, value) => {
     }
 
     await t.set(scope, visibility, key, value);
+    
+    if (key === STORAGE_KEYS.TIMER_DATA) {
+      console.log("[setData] Successfully saved timerData");
+    }
+    
     return { success: true, size: jsonString.length };
   } catch (error) {
     console.error(
@@ -139,6 +153,7 @@ export const setTimerMetadata = async (t, metadata) => {
   // Debug logging to see what's being saved
   console.log("[setTimerMetadata] Metadata size:", JSON.stringify(metadataOnly).length, "chars");
   console.log("[setTimerMetadata] Metadata keys:", Object.keys(metadataOnly));
+  console.log("[setTimerMetadata] ACTUAL METADATA:", JSON.stringify(metadataOnly));
   
   // Save checklist items to separate storage key to prevent metadata bloat
   if (checklistItems && Object.keys(checklistItems).length > 0) {
@@ -150,6 +165,17 @@ export const setTimerMetadata = async (t, metadata) => {
       STORAGE_KEYS.CHECKLIST_ITEMS,
       checklistItems,
     );
+  }
+  
+  // Check what's currently in storage before overwriting
+  try {
+    const currentData = await t.get("card", "shared", STORAGE_KEYS.TIMER_DATA);
+    if (currentData) {
+      console.log("[setTimerMetadata] CURRENT timerData in storage:", JSON.stringify(currentData).length, "chars");
+      console.log("[setTimerMetadata] CURRENT keys:", Object.keys(currentData));
+    }
+  } catch (e) {
+    console.log("[setTimerMetadata] Could not read current storage:", e.message);
   }
   
   // Save minimal metadata (state, currentEntry, estimatedTime only)
