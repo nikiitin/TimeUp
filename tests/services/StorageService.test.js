@@ -166,7 +166,7 @@ describe("StorageService", () => {
     });
   });
 
-  describe("setTimerData", () => {
+  describe("setTimerMetadata", () => {
     test("saves complete timer data including entries to timerData key", async () => {
       const timerData = {
         entries: [{ id: "e1" }],
@@ -175,7 +175,7 @@ describe("StorageService", () => {
         checklistItems: { item1: { estimatedTime: 100 } },
       };
 
-      const result = await StorageService.setTimerData(mockT, timerData);
+      const result = await StorageService.setTimerMetadata(mockT, timerData);
       expect(result.success).toBe(true);
 
       // Check that complete timerData is saved (not split)

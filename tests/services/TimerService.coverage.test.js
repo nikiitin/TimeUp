@@ -85,7 +85,7 @@ describe("TimerService - Comprehensive Coverage", () => {
           elapsedBeforePause: 5000,
         },
       };
-      await StorageService.setTimerData(t, pausedData);
+      await StorageService.setTimerMetadata(t, pausedData);
 
       const elapsed = TimerService.getCurrentElapsed(pausedData);
 
@@ -396,7 +396,7 @@ describe("TimerService - Comprehensive Coverage", () => {
           pausedDuration: 0,
         },
       };
-      await StorageService.setTimerData(t, timerData);
+      await StorageService.setTimerMetadata(t, timerData);
 
       // Start global timer - should stop FIRST active item only (uses break)
       const result = await TimerService.startTimer(t);

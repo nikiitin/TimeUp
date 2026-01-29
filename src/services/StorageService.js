@@ -127,24 +127,6 @@ export const getTimerData = async (t) => {
 };
 
 /**
- * Saves timer data (metadata + recent entries only).
- * NOTE: This saves entries to STORAGE_KEYS.TIMER_DATA, not STORAGE_KEYS.ENTRIES.
- * EntryStorageService handles archival to paginated keys separately.
- */
-export const setTimerData = async (t, timerData) => {
-  // Save complete timerData (includes recent entries in the object)
-  const result = await setData(
-    t,
-    "card",
-    STORAGE_SCOPES.CARD_SHARED,
-    STORAGE_KEYS.TIMER_DATA,
-    timerData,
-  );
-
-  return result;
-};
-
-/**
  * Saves ONLY timer metadata (state, estimates) WITHOUT entries or checklistItems.
  * Used by EntryStorageService to save metadata while entries and checklistItems are handled separately.
  * @param {Object} t - Trello client
@@ -154,8 +136,13 @@ export const setTimerData = async (t, timerData) => {
 export const setTimerMetadata = async (t, metadata) => {
   const { entries, checklistItems, ...metadataOnly } = metadata;
   
+  // Debug logging to see what's being saved
+  console.log("[setTimerMetadata] Metadata size:", JSON.stringify(metadataOnly).length, "chars");
+  console.log("[setTimerMetadata] Metadata keys:", Object.keys(metadataOnly));
+  
   // Save checklist items to separate storage key to prevent metadata bloat
   if (checklistItems && Object.keys(checklistItems).length > 0) {
+    console.log("[setTimerMetadata] Saving", Object.keys(checklistItems).length, "checklist items separately");
     await setData(
       t,
       "card",
@@ -253,7 +240,6 @@ const StorageService = {
   setData,
   removeData,
   getTimerData,
-  setTimerData,
   setTimerMetadata,
   calculateUsage,
   getBoardSettings,

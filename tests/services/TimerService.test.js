@@ -22,7 +22,7 @@ describe("TimerService", () => {
 
     // Mock methods on the default export object
     StorageService.getTimerData = jest.fn().mockResolvedValue(getMockData());
-    StorageService.setTimerData = jest
+    StorageService.setTimerMetadata = jest
       .fn()
       .mockResolvedValue({ success: true });
     StorageService.setTimerMetadata = jest
@@ -351,7 +351,7 @@ describe("TimerService", () => {
           },
         },
       });
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
 
       const result = await TimerService.startItemTimer(
         tMock,
@@ -369,7 +369,7 @@ describe("TimerService", () => {
         state: TIMER_STATE.RUNNING,
         currentEntry: { startTime: Date.now() - 5000, pausedDuration: 0 },
       });
-      StorageService.setTimerData.mockResolvedValue({ success: true });
+      StorageService.setTimerMetadata.mockResolvedValue({ success: true });
 
       const result = await TimerService.startItemTimer(
         tMock,
