@@ -148,17 +148,35 @@ const renderEntries = (entries) => {
  * @param {Object} t - Trello client
  */
 const init = async (t) => {
+  // Disable buttons during initialization to prevent race conditions
+  btnStart.disabled = true;
+  btnStop.disabled = true;
+
   try {
+    // Clear any existing interval to prevent multiple loops
+    if (updateInterval) {
+      clearInterval(updateInterval);
+      updateInterval = null;
+    }
+
+    // Fetch fresh timer data
     const timerData = await StorageService.getTimerData(t);
+
+    // Update UI with current state
     updateDisplay(timerData);
     renderEntries(timerData.recentEntries || []);
     updateEstimateUI(timerData);
 
+    // Start update loop if timer is running
     if (timerData.state === TIMER_STATE.RUNNING) {
       startUpdateLoop(t);
     }
   } catch (error) {
     // Silent failure
+  } finally {
+    // Re-enable buttons after initialization
+    btnStart.disabled = false;
+    btnStop.disabled = false;
   }
 };
 
@@ -193,21 +211,36 @@ t.render(() => init(t));
 
 // Event Listeners
 btnStart.addEventListener("click", async () => {
+  // Disable button to prevent double-clicks during async operation
+  btnStart.disabled = true;
+
   const result = await TimerService.startTimer(t);
   if (result.success) {
     updateDisplay(result.data);
     startUpdateLoop(t);
+  } else {
+    // Show error to user
+    alert(`Failed to start timer: ${result.error}`);
   }
+
+  btnStart.disabled = false;
 });
 
 btnStop.addEventListener("click", async () => {
+  // Disable button to prevent double-clicks
+  btnStop.disabled = true;
+
   stopUpdateLoop();
   const result = await TimerService.stopTimer(t);
   if (result.success) {
     updateDisplay(result.data);
     renderEntries(result.data.recentEntries || []);
     updateEstimateUI(result.data);
+  } else {
+    alert(`Failed to stop timer: ${result.error}`);
   }
+
+  btnStop.disabled = false;
 });
 
 btnSetEstimate.addEventListener("click", async () => {
