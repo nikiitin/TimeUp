@@ -78,7 +78,12 @@ export class TimerUI {
     // Update Description
     this.elements.description.hidden = !isRunning;
     if (isRunning && timerData.currentEntry) {
-      if (document.activeElement !== this.elements.description) {
+      // Only update if not currently focused AND field is empty
+      // This preserves user input while allowing updates from storage
+      const isEditing = document.activeElement === this.elements.description;
+      const hasUserInput = this.elements.description.value.trim() !== "";
+      
+      if (!isEditing && !hasUserInput) {
         this.elements.description.value =
           timerData.currentEntry.description || "";
       }
